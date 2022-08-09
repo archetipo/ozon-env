@@ -1,0 +1,59 @@
+{
+  "action": "",
+  "active": true,
+  "childs": [],
+  "components": [
+    {
+      "label": "Nome",
+      "spellcheck": false,
+      "tableView": true,
+      "key": "rec_name",
+      "type": "textfield",
+      "input": true
+    },
+    {
+      "label": "Descrizione",
+      "tableView": true,
+      "key": "label",
+      "type": "textfield",
+      "input": true
+    },
+    {
+      "type": "button",
+      "label": "Submit",
+      "key": "submit",
+      "disableOnInvalid": true,
+      "input": true,
+      "tableView": false
+    }
+  ],
+  "data_model": "",
+  "default": false,
+  "deleted": 0.0,
+  "demo": false,
+  "display": "form",
+  "handle_global_change": 1,
+  "links": {},
+  "list_order": 10,
+  "make_virtual_model": false,
+  "no_cancel": 0,
+  "parent": "",
+  "parent_name": "",
+  "path": "",
+  "process_id": "",
+  "process_task_id": "",
+  "process_tenant": "",
+  "projectId": "",
+  "properties": {
+    "rheader": "1",
+    "rfooter": "1",
+    "sort": "list_order:asc,rec_name:desc"
+  },
+  "rec_name": "prodotti",
+  "settings": {},
+  "sys": false,
+  "tags": [],
+  "title": "Prodotti",
+  "type": "resource"
+}
+

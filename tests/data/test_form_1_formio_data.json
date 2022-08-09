@@ -1,0 +1,53 @@
+{
+  "rec_name": "first_form",
+  "email": "name@company.it",
+  "firstName": "name",
+  "birthdate": "1987-12-17T12:00:00",
+  "appointmentDateTime": "2022-05-25T13:30:00",
+  "lastName": "LastName",
+  "howManySeats": 4,
+  "cardinalDirection": "south",
+  "favouriteSeason": "autumn",
+  "favouriteFood": [
+    "mexican",
+    "chinese"
+  ],
+  "monthDayYear": "2021-05-16T00:00:00",
+  "monthYear": "2021-05-16T00:00:00",
+  "dayMonthYear": "2021-05-16T00:00:00",
+  "dayMonth": "2021-05-16T00:00:00",
+  "day": "2021-05-16T00:00:00",
+  "month": "2021-05-16T00:00:00",
+  "year": "2021-05-16T00:00:00",
+  "survey": {
+    "overallExperience": "excellent",
+    "howWasCustomerSupport": "great",
+    "howWouldYouRateTheFormIoPlatform": "excellent"
+  },
+  "dataGrid": [
+    {
+      "textField": "abc",
+      "checkbox": true
+    },
+    {
+      "textField": "def",
+      "checkbox": false
+    }
+  ],
+  "textField": "Elephant",
+  "checkbox": true,
+  "textField1": "Lion",
+  "checkbox1": false,
+  "textFieldTab1": "text in tab 1",
+  "numberTab2": 2,
+  "uploadBase64": [
+    {
+      "filename": "test.png",
+      "content_type": "image/png",
+      "file_path": "test_form_1/29b9c28e-e28f-4ca6-876c-453a07d7277b",
+      "url": "test_form_1/29b9c28e-e28f-4ca6-876c-453a07d7277b/test.png",
+      "key": "29b9c28e-e28f-4ca6-876c-453a07d7277b"
+    }
+  ]
+
+}

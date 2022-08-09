@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+
+  database:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: servicetest
+      MONGO_INITDB_ROOT_PASSWORD: servicetest
+      MONGO_INITDB_DATABASE: servicetest
+    ports:
+      - "10000:27017"
+
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 9000:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://servicetest:servicetest@database:27017

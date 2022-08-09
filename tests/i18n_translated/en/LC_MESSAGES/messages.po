@@ -1,0 +1,59 @@
+# English translations for PROJECT.
+# Copyright (C) 2022 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2022-08-08 17:29+0200\n"
+"PO-Revision-Date: 2022-08-08 17:29+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.3\n"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:202
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:242
+#, python-format
+msgid "Not allowed chars in field name: %s"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:237
+msgid "Cannot save on db a virtual object"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:262
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:323
+#, python-format
+msgid "Duplicate key error %s: %s"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:269
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:330
+#, python-format
+msgid "Validation Error  %s "
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:277
+msgid "Duplicate session instance is not allowed"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:303
+msgid "Cannot update a virtual object"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:350
+msgid "Not found"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonOrm.py:119
+#, python-format
+msgid "Token %s not allowed"
+msgstr ""
+

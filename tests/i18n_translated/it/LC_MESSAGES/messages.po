@@ -1,0 +1,58 @@
+# Italian translations for PROJECT.
+# Copyright (C) 2022 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2022-08-08 15:07+0200\n"
+"PO-Revision-Date: 2022-08-08 15:07+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: it\n"
+"Language-Team: it <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.3\n"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:202
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:242
+#, python-format
+msgid "Not allowed chars in field name: %s"
+msgstr "Caratteri non consetiti nel campo name: %s"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:222
+msgid "Cannot save on db a virtual object"
+msgstr "Non è consetito salvare un oggetto virtuale"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:245
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:315
+#, python-format
+msgid "Duplicate key error %s: %s"
+msgstr "Errore Duplicato %s: %s"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:255
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:323
+#, python-format
+msgid "Validation Error  %s "
+msgstr "Errore di validazione %s"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:265
+msgid "Duplicate session instance is not allowed"
+msgstr "Non è consentito duplicare un record sessione"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:293
+msgid "Cannot update a virtual object"
+msgstr "Non e' consentito aggiornare un oggetto virtuale"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:343
+msgid "Not found"
+msgstr "Non Trovato"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonOrm.py:115
+#, python-format
+msgid "Token %s not allowed"
+msgstr "Token %s non abilitato"

@@ -4,6 +4,7 @@ import re
 import aiofiles
 import aiofiles.os
 import json
+import httpx
 
 
 async def read_json_file(file_path):

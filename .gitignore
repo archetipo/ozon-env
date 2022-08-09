@@ -7,3 +7,4 @@ dist
 tests/i18n
 poetry.lock
 #.coveralls.yml
+htmlcov

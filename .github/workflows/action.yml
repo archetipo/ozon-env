@@ -45,7 +45,7 @@ jobs:
 
 
   coveralls-finish:
-    needs: main
+    needs: ci
     if: github.repository == 'archetipo/ozon-env'
 
     runs-on: ubuntu-latest

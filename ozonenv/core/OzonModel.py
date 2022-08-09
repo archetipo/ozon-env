@@ -443,16 +443,16 @@ class OzonModelBase:
     ) -> list[Record]:
         _sort = self.eval_sort_str(sort)
         coll = self.db.engine.get_collection(self.name)
-        if limit > 0:
-            datas = (
-                await coll.aggregate(pipeline)
-                .sort(_sort)
-                .skip(skip)
-                .limit(limit)
-                .to_list(None)
-            )
-        else:
-            datas = await coll.aggregate(pipeline).sort(_sort).to_list(None)
+        if _sort:
+            s = {"$sort": {}}
+            for item in _sort:
+                s["$sort"][item[0]] = item[1]
+            pipeline.append(s)
+        if skip:
+            pipeline.append({"$skip": skip})
+        if limit:
+            pipeline.append({"$limit": limit})
+        datas = await coll.aggregate(pipeline).to_list(None)
         res = [
             Record(
                 model=f"{self.name}.agg",
@@ -509,7 +509,6 @@ class OzonModelBase:
                     "type": {"$first": "$type"},
                 }
             },
-            {"$sort": {"title": 1}},
         ]
         return await self.aggregate(
             pipeline, sort=sort, limit=limit, skip=skip

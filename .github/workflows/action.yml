@@ -43,4 +43,16 @@ jobs:
           flag-name: py${{ matrix.python-version }}-${{ matrix.os }}
           debug: true
 
-      
+
+  coveralls-finish:
+    needs: main
+    if: github.repository == 'archetipo/ozon-env'
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Send finished signal to Coveralls
+        uses: AndreMiras/coveralls-python-action@v20201129
+        with:
+          parallel-finished: true
+          debug: true

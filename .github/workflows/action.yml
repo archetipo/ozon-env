@@ -29,4 +29,10 @@ jobs:
         poetry install
     - name: Test with pytest
       run: |
-        run_test.sh
+        docker-compose up -d
+        poetry run flake8 ozonenv/**/*.py
+        poetry run bandit ozonenv/**/*.py
+        poetry run pytest --cov
+        docker-compose up -d
+      
+      

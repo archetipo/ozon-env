@@ -57,7 +57,7 @@ Optional dependencies need to be installed separately.
 pip(3) install git+https://github.com/archetipo/ozon-env
 ```
 
-### Tests Coverage and Code style
+### Tests, Coverage and Code style
 
 ```
 ./run_test.sh

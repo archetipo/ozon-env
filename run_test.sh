@@ -1,8 +1,6 @@
 #!/bin/bash
 echo "update system"
 poetry update
-echo "init service"
-. env/bin/activate
 docker-compose up -d
 echo "check code"
 poetry run black ozonenv/**/*.py

@@ -5,3 +5,4 @@ env
 dist
 .pytest_cache
 tests/i18n
+poetry.lock

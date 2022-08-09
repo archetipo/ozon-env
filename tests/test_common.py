@@ -13,7 +13,9 @@ pytestmark = pytest.mark.asyncio
 
 
 def get_i18n_localedir():
-    return f"{Path(__file__).parent.absolute()}/i18n"
+    dirname = f"{Path(__file__).parent.absolute()}/i18n"
+    Path(dirname).mkdir(parents=True, exist_ok=True)
+    return dirname
 
 
 def get_i18n_localedir_tr():

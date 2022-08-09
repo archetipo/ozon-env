@@ -35,7 +35,7 @@ jobs:
           poetry run pytest --cov
           docker-compose up -d
       - name: Coveralls
-        if: github.repository == 'psf/black' && matrix.os == 'ubuntu-latest'
+        if: github.repository == 'archetipo/ozon-env' && matrix.os == 'ubuntu-latest'
         uses: AndreMiras/coveralls-python-action@v20201129
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,4 @@
 import base64
-import requests
 import tempfile
 import re
 import aiofiles
@@ -14,7 +13,7 @@ async def read_json_file(file_path):
 
 
 def base64_encode_url(url):
-    content = requests.get(url).content
+    content = httpx.get(url).content
     tf = tempfile.TemporaryFile()
     tf.write(content)
     tf.seek(0)

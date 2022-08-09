@@ -1,6 +1,6 @@
-# ozon-env
 
-<h2 align="center">The Uncompromising Code Formatter</h2>
+
+<h2 align="center">ozon-env</h2>
 
 <p align="center">
 <a href="https://github.com/archetipo/ozon-env"><img alt="Actions Status" src="https://github.com/archetipo/ozon-env/workflows/ci/badge.svg"></a>

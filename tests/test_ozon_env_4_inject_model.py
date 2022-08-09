@@ -59,4 +59,5 @@ async def test_add_component_resource_1_product():
     await env.session_app({"current_session_token": "BA6BA930"})
     product_model = await env.add_schema(schema_dict)
     assert product_model.name == "prodotti"
+
     # add list prduct and test find/ and distinct

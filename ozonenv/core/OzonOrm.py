@@ -6,7 +6,6 @@ from db.mongodb_utils import (
     Mongo,
 )
 import time as time_
-from OzonRecord import Record
 from OzonModel import OzonModelBase
 from pydantic import BaseModel
 from OzonClient import OzonClient
@@ -15,7 +14,7 @@ from BaseModels import (
     Component,
     Session,
     AttachmentTrash,
-    BasicModel,
+    CoreModel,
 )
 import logging
 import aiofiles
@@ -44,7 +43,7 @@ class OzonEnvBase:
         self.model = ""
         self.models = {}
         self.session_is_api = False
-        self.user_session: Record
+        self.user_session: CoreModel
         self.session_token = None
         self.upload_folder = upload_folder
         if not upload_folder:
@@ -101,7 +100,7 @@ class OzonEnvBase:
         return self.get(model_name)
 
     async def add_static_model(
-        self, model_name: str, model_class: BasicModel
+        self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         return await self.orm.add_static_model(model_name, model_class)
 
@@ -135,7 +134,7 @@ class OzonEnvBase:
         await self.orm.init_models()
         await self.orm.init_session(self.session_token)
         self.user_session = self.orm.user_session
-        if self.user_session.is_error:
+        if self.user_session.is_error():
             return self.exception_response(
                 _("Token %s not allowed") % self.session_token
             )
@@ -150,7 +149,7 @@ class OzonOrm:
         self.env: OzonEnvBase = env
         self.lang = env.lang
         self.db: Mongo = env.db
-        self.user_session: Record = None
+        self.user_session: CoreModel = None
         self.orm_models = ["component", "session", "attachmenttrash"]
         self.orm_static_models_map = {
             "component": Component,
@@ -160,7 +159,7 @@ class OzonOrm:
         self.orm_sys_models = ["component", "session"]
 
     async def add_static_model(
-        self, model_name: str, model_class: BasicModel
+        self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         _model_name = model_name.replace(" ", "").strip().lower()
         self.orm_models.append(_model_name)
@@ -220,8 +219,8 @@ class OzonOrm:
             component = await self.env.get("component").load(
                 {"rec_name": model_name}
             )
-            if not component.is_error:
-                schema = component.data.copy()
+            if not component.is_error():
+                schema = component.get_dict_copy()
         await self.make_model(model_name, schema=schema, virtual=virtual)
 
     async def make_model(self, model_name, schema={}, virtual=False):
@@ -251,7 +250,7 @@ class OzonModel(OzonModelBase):
         orm: OzonOrm,
         session_model=False,
         virtual=False,
-        static: BasicModel = None,
+        static: CoreModel = None,
         schema={},
     ):
         self.orm: OzonOrm = orm

@@ -13,6 +13,11 @@ from db.BsonTypes import (
 import ujson
 import logging
 import copy
+from functools import reduce
+import operator
+
+# from datetime import datetime
+from dateutil.parser import parse
 
 logger = logging.getLogger("asyncio")
 
@@ -132,7 +137,7 @@ class CoreModel(BaseModel):
     process_task_id: str = ""
     data_value: Dict = {}
     owner_name: str = ""
-    deleted: Decimal128 = 0
+    deleted: int = 0
     list_order: int = 0
     owner_uid: str = ""
     owner_mail: str = ""
@@ -150,6 +155,9 @@ class CoreModel(BaseModel):
     childs: List[Any] = []
     create_datetime: DateTime = Field(default="1970-01-01T00:00:00")
     update_datetime: DateTime = Field(default="1970-01-01T00:00:00")
+    status: str = "ok"
+    message: str = ""
+    res_data: dict = {}
 
     @classmethod
     def str_name(cls, *args, **kwargs):
@@ -159,7 +167,11 @@ class CoreModel(BaseModel):
         self.id = PyObjectId()
 
     def get_dict(self):
-        return ujson.loads(self.json())
+        dict = ujson.loads(self.json())
+        dict.pop("status")
+        dict.pop("message")
+        dict.pop("res_data")
+        return dict
 
     def get_dict_copy(self):
         return copy.deepcopy(self.get_dict())
@@ -186,6 +198,99 @@ class CoreModel(BaseModel):
             if k in original_dict and not original_dict[k] == v
         }
         return diff.copy()
+
+    def is_error(self):
+        return self.status == "error"
+
+    def is_to_delete(self):
+        return self.deleted > 0
+
+    def selction_value(self, key, value, read_value):
+        setattr(self, key, value)
+        self.data_value[key] = read_value
+
+    def selction_value_from_record(self, key, src, src_key=""):
+        if not src_key:
+            src_key = key
+        setattr(self, key, getattr(src, src_key))
+        self.data_value[key] = src.data_value[src_key]
+
+    def set_active(self):
+        self.deleted = 0
+        self.active = True
+
+    def set_archive(self):
+        self.deleted = 0
+        self.active = False
+
+    def set_to_delete(self, timestamp):
+        self.deleted = timestamp
+        self.active = False
+
+    def set_list_order(self, val):
+        self.list_order = val
+
+    def scan_data(self, key, default=None):
+        data = self.get_dict()
+        try:
+            _keys = key.split(".")
+            keys = []
+            for v in _keys:
+                if str(v).isdigit():
+                    keys.append(int(v))
+                else:
+                    keys.append(v)
+            lastplace = reduce(operator.getitem, keys[:-1], data)
+            return lastplace.get(keys[-1], default)
+        except Exception as e:
+            print(f" error scan_data {e}")
+            return default
+
+    def get(self, val, default: Optional = None):
+        if "." in val:
+            return self.scan_data(val, default)
+        elif default:
+            return getattr(self, val, default)
+        else:
+            return getattr(self, val)
+
+    def set_from_child(self, key, nodes: str, default):
+        setattr(self, key, self.get(nodes, default))
+
+    @classmethod
+    def get_value_for_select_list(cls, list_src, key, label_key="label"):
+        for item in list_src:
+            if item.get("value") == key:
+                return item.get(label_key)
+        return ""
+
+    def selection_value_resources(
+        self, key, value, list_src, label_key="label"
+    ):
+        value_label = self.get_value_for_select_list(
+            list_src, value, label_key=label_key
+        )
+        self.selction_value(key, value, value_label)
+
+    def set(self, key, value):
+        setattr(self, key, value)
+
+    def set_many(self, data_dict):
+        for k, v in data_dict:
+            setattr(self, k, v)
+
+    def clone_data(self):
+        dat = self.get_dict_copy()
+        dat.pop("rec_name")
+        dat.pop("list_order")
+        return dat.copy()
+
+    def to_datetime(self, key):
+        v = self.get(key)
+        try:
+            return parse(v)
+        except Exception:
+            return v
 
     class Config:
         allow_population_by_field_name = True

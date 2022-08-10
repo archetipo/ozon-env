@@ -2,7 +2,7 @@ import pytest
 from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
 from pydantic.main import ModelMetaclass
-from ozonenv.core.OzonRecord import Record
+
 
 # from ozonenv.core.i18n import i18nlocaledir
 
@@ -21,11 +21,6 @@ async def test_make_form_data():
     assert test_1.instance.dg11XContr.flRate is True
     assert len(test_1.instance.dg15XVoceCalcolata) == 4
     assert test_1.instance.dg15XVoceCalcolata[1].importo == 289.23
-    rec = Record(
-        model="doc_test", rec_name="test",
-        data=test_1.instance.get_dict_copy())
-    assert rec.get('dg15XVoceTe.importo') == 1446.16
-    assert rec.get('dg15XVoceCalcolata.1.importo') == 289.23
 
 
 @pytestmark

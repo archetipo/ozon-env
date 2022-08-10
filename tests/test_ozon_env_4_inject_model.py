@@ -80,22 +80,23 @@ async def test_aggregation_with_product():
     product_model = env.get('prodotti')
     products = await product_model.find(product_model._default_domain)
     products[3].set('label', 'AProduct3')
-    await product_model.update(products[3])
+    products[3] = await product_model.update(products[3])
+    p3 = products[3]
+    p2 = products[2]
+    assert p3.update_datetime > p2.update_datetime
     res = await product_model.search_all_distinct(
         "rec_name", query=product_model._default_domain,
         compute_label="rec_name,label", sort="title:asc",
         skip=3, limit=3
     )
-    # 10
-    # 9
     assert len(res) == 3
-    assert res[0].get('title') == 'prod3 - AProduct3'
+    assert res[0].title == 'prod3 - AProduct3'
     assert res[1].get('title') == 'prod4 - Product4'
     res = await product_model.search_all_distinct(
-        "rec_name", query=product_model._default_domain,
-        compute_label="rec_name,label", sort="title:desc",
-        skip=0, limit=4
+        "rec_name", query=product_model._default_domain, sort="title:desc",
+        compute_label="label", skip=0, limit=4
     )
     assert len(res) == 4
-    assert res[0].get('title') == 'prod9 - Product9'
-    assert res[3].get('title') == 'prod6 - Product6'
+    assert res[0].rec_name == 'prod9'
+    assert res[0].title == 'Product9'
+    assert res[3].get('title') == 'Product6'

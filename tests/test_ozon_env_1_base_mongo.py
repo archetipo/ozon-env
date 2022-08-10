@@ -3,6 +3,7 @@ from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
 from pydantic.main import ModelMetaclass
 from ozonenv.OzonEnv import OzonEnv
+from dateutil.parser import *
 
 pytestmark = pytest.mark.asyncio
 
@@ -37,10 +38,10 @@ async def test_make_app_session():
     assert res.fail is False
     assert len(env.models) == 3
     assert env.orm.user_session.get('uid') == "admin"
-    assert env.orm.user_session.get('create_datetime') == "2022-08-05T05:10:02"
-    assert env.orm.user_session.is_active is True
-    assert env.orm.user_session.is_to_delete is False
-    assert env.orm.user_session.is_error is False
+    assert env.orm.user_session.get('create_datetime') == parse("2022-08-05T05:10:02")
+    assert env.orm.user_session.active is True
+    assert env.orm.user_session.is_to_delete() is False
+    assert env.orm.user_session.is_error() is False
 
 
 @pytestmark

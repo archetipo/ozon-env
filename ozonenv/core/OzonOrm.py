@@ -1,3 +1,4 @@
+import copy
 import json
 from db.mongodb_utils import (
     connect_to_mongo,
@@ -42,6 +43,7 @@ class OzonEnvBase:
         self.settings = DbSettings(**self.config_system)
         self.model = ""
         self.models = {}
+        self.params = {}
         self.session_is_api = False
         self.user_session: CoreModel
         self.session_token = None
@@ -64,10 +66,14 @@ class OzonEnvBase:
         return "{0:.2f}".format(process_time)
 
     @classmethod
-    def exception_response(cls, err, redirect_url="self"):
-        return BasicReturn(
-            fail=True, msg=err, data={"redirect_url": redirect_url}
-        )
+    def fail_response(cls, err, err_details="", data={}):
+        if "err_details" not in data:
+            data["err_details"] = err_details
+        return BasicReturn(fail=True, msg=err, data=data)
+
+    @classmethod
+    def success_response(cls, msg, data={}):
+        return BasicReturn(fail=False, msg=msg, data=data)
 
     @classmethod
     def get_value_for_select_list(cls, list_src, key, label_key="label"):
@@ -96,7 +102,8 @@ class OzonEnvBase:
             return self.get(component.get("data_model"))
 
     async def add_model(self, model_name, virtual=False) -> OzonModelBase:
-        await self.orm.add_model(model_name, virtual=virtual)
+        if model_name not in self.models:
+            await self.orm.add_model(model_name, virtual=virtual)
         return self.get(model_name)
 
     async def add_static_model(
@@ -120,22 +127,23 @@ class OzonEnvBase:
 
     async def make_app_session(self, params: dict) -> BasicReturn:
         try:
+            self.params = copy.deepcopy(params)
             await self.init_env()
-            res = await self.session_app(params)
+            res = await self.session_app()
             await self.close_db()
             return res
         except Exception as e:
             logger.exception(e)
-            return self.exception_response(str(e))
+            return self.fail_response(str(e))
 
-    async def session_app(self, params) -> BasicReturn:
-        self.session_is_api = params.get("session_is_api", False)
-        self.session_token = params.get("current_session_token")
+    async def session_app(self) -> BasicReturn:
+        self.session_is_api = self.params.get("session_is_api", False)
+        self.session_token = self.params.get("current_session_token")
         await self.orm.init_models()
         await self.orm.init_session(self.session_token)
         self.user_session = self.orm.user_session
         if self.user_session.is_error():
-            return self.exception_response(
+            return self.fail_response(
                 _("Token %s not allowed") % self.session_token
             )
         self.ozon_client = OzonClient.create(
@@ -172,7 +180,8 @@ class OzonOrm:
 
     async def init_models(self):
         for main_model in self.orm_models:
-            await self.make_model(main_model)
+            if main_model not in self.env.models:
+                await self.make_model(main_model)
         db_models = await self.get_collections_names()
         for db_model in db_models:
             if db_model not in self.env.models:
@@ -224,18 +233,23 @@ class OzonOrm:
         await self.make_model(model_name, schema=schema, virtual=virtual)
 
     async def make_model(self, model_name, schema={}, virtual=False):
-        session_model = model_name == "session"
+        if (
+            model_name in list(self.orm_static_models_map.keys())
+            or schema
+            or virtual
+        ):
+            session_model = model_name == "session"
 
-        self.env.models[model_name] = OzonModel(
-            model_name,
-            self,
-            static=self.orm_static_models_map.get(model_name, None),
-            virtual=virtual,
-            schema=schema,
-            session_model=session_model,
-        )
-        if not virtual:
-            await self.env.models[model_name].init_unique()
+            self.env.models[model_name] = OzonModel(
+                model_name,
+                self,
+                static=self.orm_static_models_map.get(model_name, None),
+                virtual=virtual,
+                schema=schema,
+                session_model=session_model,
+            )
+            if not virtual:
+                await self.env.models[model_name].init_unique()
 
     async def set_lang(self):
         self.lang = self.env.lang

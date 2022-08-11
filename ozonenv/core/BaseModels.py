@@ -131,6 +131,7 @@ class DbViewModel(BaseModel):
 
 class CoreModel(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    rec_name: str = ""
     app_code: Optional[List] = []
     parent: str = ""
     process_id: str = ""
@@ -265,10 +266,10 @@ class CoreModel(BaseModel):
         return ""
 
     def selection_value_resources(
-        self, key, value, list_src, label_key="label"
+        self, key: str, value: str, resources: list, label_key: str = "label"
     ):
         value_label = self.get_value_for_select_list(
-            list_src, value, label_key=label_key
+            resources, value, label_key=label_key
         )
         self.selction_value(key, value, value_label)
 
@@ -303,7 +304,6 @@ class BasicModel(CoreModel):
 
 
 class AttachmentTrash(BasicModel):
-    rec_name: str = ""
     parent: str = ""
     model: str = ""
     model_rec_name: str = ""

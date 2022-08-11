@@ -15,7 +15,8 @@ async def test_add_user_static_model():
     cfg = await OzonEnv.readfilejson(path)
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     user_model = await env.add_static_model('u SEr', User)
     assert user_model.name == "user"
     ret_model = env.get('user')
@@ -35,7 +36,8 @@ async def test_user_static_model_add_data():
     env = OzonEnv(cfg)
     await env.init_env()
     env.orm.orm_static_models_map['user'] = User
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     user_model = env.get('user')
     assert user_model.name == "user"
     assert user_model.static == User
@@ -56,7 +58,8 @@ async def test_add_component_resource_1_product():
     env = OzonEnv(cfg)
     await env.init_env()
     env.orm.orm_static_models_map['user'] = User
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     product_model = await env.add_schema(schema_dict)
     assert product_model.name == "prodotti"
     for i in range(10):
@@ -69,6 +72,7 @@ async def test_add_component_resource_1_product():
     product = await product_model.load({"rec_name": "prod2"})
     assert product.get('label') == "Product2"
     # add list prduct and test find/ and distinct
+    await env.close_db()
 
 
 async def test_aggregation_with_product():
@@ -76,7 +80,8 @@ async def test_aggregation_with_product():
     env = OzonEnv(cfg)
     await env.init_env()
     env.orm.orm_static_models_map['user'] = User
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     product_model = env.get('prodotti')
     products = await product_model.find(product_model._default_domain)
     products[3].set('label', 'AProduct3')
@@ -100,3 +105,4 @@ async def test_aggregation_with_product():
     assert res[0].rec_name == 'prod9'
     assert res[0].title == 'Product9'
     assert res[3].get('title') == 'Product6'
+    await env.close_db()

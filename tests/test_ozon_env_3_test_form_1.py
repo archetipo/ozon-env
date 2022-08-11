@@ -15,7 +15,8 @@ async def test_component_test_form_1_init():
     cfg = await OzonEnv.readfilejson(path)
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     data = await readfilejson('data', 'test_form_1_formio_schema.json')
     component = await env.get('component').new(data=data)
     assert component.owner_uid == "admin"
@@ -31,7 +32,8 @@ async def test_env_data_file_virtual_model():
     cfg = await OzonEnv.readfilejson(path)
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     data = await get_file_data()
     data['stato'] = ""
     data['document_type'] = ""
@@ -82,7 +84,8 @@ async def test_component_test_form_1_load():
     cfg = await OzonEnv.readfilejson(path)
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     component = await env.get('component').load({"rec_name": 'test_form_1'})
     assert component.owner_uid == "admin"
     assert len(component.components) == 12
@@ -97,7 +100,8 @@ async def test_test_form_1_init_data():
     data = await readfilejson('data', 'test_form_1_formio_data.json')
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     test_form_1_model = await env.add_model('test_form_1')
     assert test_form_1_model.unique_fields == ["rec_name", "firstName"]
     test_form_1 = await test_form_1_model.new(data=data)
@@ -113,7 +117,8 @@ async def test_test_form_1_insert_ok():
     data = await readfilejson('data', 'test_form_1_formio_data.json')
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     test_form_1_model = await env.add_model('test_form_1')
     test_form_1 = await test_form_1_model.new(data=data)
 
@@ -139,7 +144,8 @@ async def test_test_form_1_insert_ko():
     data = await readfilejson('data', 'test_form_1_formio_data.json')
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     test_form_1_model = await env.add_model('test_form_1')
     test_form_1 = await test_form_1_model.new(data=data)
     test_form_1_new = await test_form_1_model.insert(test_form_1)
@@ -173,7 +179,8 @@ async def test_test_form_1_copy_record():
     cfg = await OzonEnv.readfilejson(path)
     env = OzonEnv(cfg)
     await env.init_env()
-    await env.session_app({"current_session_token": "BA6BA930"})
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
     test_form_1_model = await env.add_model('test_form_1')
     test_form_1_copy = await test_form_1_model.copy({'rec_name': 'first_form'})
     assert test_form_1_copy.get("rec_name") == f"first_form_copy"

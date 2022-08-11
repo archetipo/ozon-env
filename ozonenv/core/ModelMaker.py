@@ -823,7 +823,7 @@ class FormioModelMaker(BaseModelMaker):
             self.complete_component_field(comp.copy(), compo_todo)
 
     def add_select(self, comp):
-        if comp["multiple"] is False:
+        if comp.get("multiple", False) is False:
             compo_todo = self.mapper.get("select")[:]
         else:
             compo_todo = self.mapper.get("select_multi")[:]

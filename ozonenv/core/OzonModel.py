@@ -198,13 +198,15 @@ class OzonModelBase:
             if not self.is_session_model:
                 data["rec_name"] = rec_name
 
-        if not self.name_allowed.match(data["rec_name"]):
-            msg = _("Not allowed chars in field name: %s") % data["rec_name"]
-            return self.error_response(msg, data=data)
         if not self.virtual:
             data = self._make_from_dict(copy.deepcopy(data))
         self._load_data(data)
-
+        if not self.name_allowed.match(self.model_record.rec_name):
+            msg = (
+                _("Not allowed chars in field name: %s")
+                % self.model_record.rec_name
+            )
+            return self.error_response(msg, data=data)
         self.model_record.set_active()
         return self.model_record
 
@@ -223,19 +225,30 @@ class OzonModelBase:
         record.owner_function = self.orm.user_session.get("function", "")
         return record
 
-    async def insert(self, record: CoreModel) -> CoreModel:
-        if self.virtual:
+    async def insert(self, record: CoreModel, force_model="") -> CoreModel:
+        if self.virtual and not force_model:
             return self.error_response(
                 _("Cannot save on db a virtual object"),
                 record.get_dict_copy(),
             )
         try:
-            if not self.name_allowed.match(record.get("rec_name")):
+            if not self.name_allowed.match(record.rec_name):
                 msg = _("Not allowed chars in field name: %s") % record.get(
                     "rec_name"
                 )
                 return self.error_response(msg, data=record.get_dict_copy())
-            coll = self.db.engine.get_collection(self.name)
+            if force_model:
+                coll = self.db.engine.get_collection(force_model.name)
+                if coll is None:
+                    msg = (
+                        _("Model (force_model) not exist: %s")
+                        % force_model.name
+                    )
+                    return self.error_response(
+                        msg, data=record.get_dict_copy()
+                    )
+            else:
+                coll = self.db.engine.get_collection(self.name)
             record.list_order = await self.count()
             record.create_datetime = datetime.now()
             record = self.set_user_data(record)
@@ -243,7 +256,8 @@ class OzonModelBase:
             result = None
             if result_save:
                 return await self.load(
-                    {"_id": bson.ObjectId(result_save.inserted_id)}
+                    {"_id": bson.ObjectId(result_save.inserted_id)},
+                    force_model=force_model,
                 )
             return result
         except pymongo.errors.DuplicateKeyError as e:
@@ -286,13 +300,21 @@ class OzonModelBase:
         record.set_active()
         return record
 
-    async def update(self, record: CoreModel) -> CoreModel:
-        if self.virtual:
+    async def update(self, record: CoreModel, force_model=None) -> CoreModel:
+        if self.virtual and not force_model:
             return self.error_response(
                 _("Cannot update a virtual object"), record.get_dict_copy()
             )
         try:
-            coll = self.db.engine.get_collection(self.name)
+            if force_model:
+                coll = self.db.engine.get_collection(force_model.name)
+                if coll is None:
+                    msg = _("Model (force_model) not exist: %s") % force_model
+                    return self.error_response(
+                        msg, data=record.get_dict_copy()
+                    )
+            else:
+                coll = self.db.engine.get_collection(self.name)
             original = await self.load(record.rec_name_domain())
             to_save = original.get_dict_diff(
                 record.get_dict_copy(),
@@ -303,7 +325,6 @@ class OzonModelBase:
                 to_save.pop("rec_name")
             to_save["update_uid"] = self.orm.user_session.get("user.uid")
             to_save["update_datetime"] = datetime.now()
-            print(to_save)
             await coll.update_one(record.rec_name_domain(), {"$set": to_save})
             return await self.load(record.rec_name_domain())
         except pymongo.errors.DuplicateKeyError as e:
@@ -332,13 +353,23 @@ class OzonModelBase:
         num = await coll.delete_many(domain)
         return num
 
-    async def load(self, domain: dict) -> CoreModel:
-        coll = self.db.engine.get_collection(self.name)
+    async def load(self, domain: dict, force_model=None) -> CoreModel:
+        if force_model:
+            coll = self.db.engine.get_collection(force_model.name)
+            if coll is None:
+                msg = _("Model (force_model) not exist: %s") % force_model
+                return self.error_response(msg, data=domain)
+        else:
+            coll = self.db.engine.get_collection(self.name)
         data = await coll.find_one(domain)
         if not data:
             return self.error_response(_("Not found"), domain)
-        self._load_data(data)
-        return self.model_record
+        if force_model:
+            force_model._load_data(data)
+            return force_model.model_record
+        else:
+            self._load_data(data)
+            return self.model_record
 
     async def find(
         self, domain: dict, sort: str = "", limit=0, skip=0

@@ -1,4 +1,4 @@
-from core.OzonOrm import OzonEnvBase, BasicReturn
+from ozonenv.core.OzonOrm import OzonEnvBase, BasicReturn
 import json
 import copy
 

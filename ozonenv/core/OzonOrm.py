@@ -1,16 +1,16 @@
 import copy
 import json
-from db.mongodb_utils import (
+from ozonenv.core.db.mongodb_utils import (
     connect_to_mongo,
     close_mongo_connection,
     DbSettings,
     Mongo,
 )
 import time as time_
-from OzonModel import OzonModelBase
+from ozonenv.core.OzonModel import OzonModelBase
 from pydantic import BaseModel
-from OzonClient import OzonClient
-from BaseModels import (
+from ozonenv.core.OzonClient import OzonClient
+from ozonenv.core.BaseModels import (
     DbViewModel,
     Component,
     Session,
@@ -21,8 +21,8 @@ import logging
 import aiofiles
 from dateutil.parser import parse
 from starlette.concurrency import run_in_threadpool
-from i18n import update_translation
-from i18n import _
+from ozonenv.core.i18n import update_translation
+from ozonenv.core.i18n import _
 
 logger = logging.getLogger("asyncio")
 

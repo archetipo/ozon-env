@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from typing import TypeVar
-from db.BsonTypes import (
+from ozonenv.core.db.BsonTypes import (
     Decimal128,
     DateTime,
     BSON_TYPES_ENCODERS,

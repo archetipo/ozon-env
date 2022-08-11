@@ -4,9 +4,13 @@ from typing import Dict, List
 from pydantic import create_model
 from pydantic.main import ModelMetaclass
 from datetime import datetime
-from BaseModels import BasicModel, BaseModel
-from db.BsonTypes import DateTime, Decimal128
-from utils import fetch_dict_get_value, is_json, decode_resource_template
+from ozonenv.core.BaseModels import BasicModel, BaseModel
+from ozonenv.core.db.BsonTypes import DateTime, Decimal128
+from ozonenv.core.utils import (
+    fetch_dict_get_value,
+    is_json,
+    decode_resource_template,
+)
 import logging
 import re
 import uuid

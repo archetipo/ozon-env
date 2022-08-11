@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
-from ModelMaker import ModelMaker
 from pydantic.main import ModelMetaclass
-from BaseModels import (
+from ozonenv.core.ModelMaker import ModelMaker
+from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
     CoreModel,
     default_list_metadata_fields_update,
 )
+from ozonenv.core.i18n import _
 import re
 import copy
 import bson
@@ -14,7 +15,6 @@ import logging
 
 import pydantic
 import pymongo
-from i18n import _
 
 logger = logging.getLogger("asyncio")
 

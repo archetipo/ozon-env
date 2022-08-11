@@ -18,6 +18,7 @@ async def test_component_test_form_1_init():
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     data = await readfilejson('data', 'test_form_1_formio_schema.json')
+
     component = await env.get('component').new(data=data)
     assert component.owner_uid == "admin"
     component = await env.get('component').insert(component)

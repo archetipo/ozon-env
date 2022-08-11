@@ -15,6 +15,9 @@ import logging
 import copy
 from functools import reduce
 import operator
+from datetime import datetime
+import json
+import re
 
 # from datetime import datetime
 from dateutil.parser import parse
@@ -380,13 +383,13 @@ class DictRecord(BaseModel):
     def __init__(self, **data):
         super().__init__(**data)
         if not self.rec_name:
-            self.data['data_value'] = {}
+            self.data["data_value"] = {}
         else:
-            self.data['rec_name'] = self.rec_name
+            self.data["rec_name"] = self.rec_name
 
     @property
     def data_value(self):
-        return self.data.get('data_value', {})
+        return self.data.get("data_value", {})
 
     def parse_value(self, v):
         type_def = {
@@ -395,15 +398,16 @@ class DictRecord(BaseModel):
             "float": float,
             "dict": dict,
             "list": list,
-            "datetime": datetime
+            "datetime": datetime,
         }
-        type_res = "string"
         s = v
         if not isinstance(v, str):
             s = str(v)
         regex = re.compile(
-            r'(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)|(?P<int>\d+)|(?P<string>[a-zA-Z]+)')
-        regex_dt = re.compile(r'(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})')
+            r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
+            r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
+        )
+        regex_dt = re.compile(r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})")
         dtr = regex_dt.search(s)
         if dtr:
             return parse(dtr.group(0))
@@ -411,9 +415,9 @@ class DictRecord(BaseModel):
             rgx = regex.search(s)
             if not rgx:
                 return s
-            if s in ['false', 'true']:
-                return bool('true' == s)
-            if rgx.lastgroup not in ['list', 'dict']:
+            if s in ["false", "true"]:
+                return bool("true" == s)
+            if rgx.lastgroup not in ["list", "dict"]:
                 types_d = []
                 for match in regex.finditer(s):
                     types_d.append(match.lastgroup)
@@ -431,15 +435,16 @@ class DictRecord(BaseModel):
             "float": float,
             "dict": dict,
             "list": list,
-            "date": datetime
+            "date": datetime,
         }
-        type_res = "string"
         s = v
         if not isinstance(v, str):
             s = str(v)
         regex = re.compile(
-            r'(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)|(?P<int>\d+)|(?P<string>[a-zA-Z]+)')
-        regex_dt = re.compile(r'(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})')
+            r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
+            r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
+        )
+        regex_dt = re.compile(r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})")
         dtr = regex_dt.search(s)
         if dtr:
             return datetime
@@ -447,7 +452,7 @@ class DictRecord(BaseModel):
             rgx = regex.search(s)
             if not rgx:
                 return str
-            if s in ['false', 'true']:
+            if s in ["false", "true"]:
                 return bool
             types_d = []
             for match in regex.finditer(s):
@@ -459,13 +464,13 @@ class DictRecord(BaseModel):
 
     def selction_value(self, key, value, read_value):
         self.data[key] = value
-        self.data['data_value'][key] = read_value
+        self.data["data_value"][key] = read_value
 
     def selction_value_from_record(self, key, src, src_key=""):
         if not src_key:
             src_key = key
         self.data[key] = src.data[src_key]
-        self.data['data_value'][key] = src.data['data_value'][src_key]
+        self.data["data_value"][key] = src.data["data_value"][src_key]
 
     def get_dict(self):
         return json.loads(self.json())
@@ -474,15 +479,15 @@ class DictRecord(BaseModel):
         return {"rec_name": self.rec_name}.copy()
 
     def set_active(self, user_name="admin"):
-        self.data['deleted'] = 0
-        self.data['active'] = True
-        self.data['owner_uid'] = user_name
-        self.data['list_order'] = 0
-        if 'data_value' not in self.data:
-            self.data['data_value'] = {}
+        self.data["deleted"] = 0
+        self.data["active"] = True
+        self.data["owner_uid"] = user_name
+        self.data["list_order"] = 0
+        if "data_value" not in self.data:
+            self.data["data_value"] = {}
 
     def set_list_order(self, val):
-        self.data['list_order'] = val
+        self.data["list_order"] = val
 
     def scan_data(self, key, default=None):
         try:
@@ -495,7 +500,7 @@ class DictRecord(BaseModel):
                     keys.append(v)
             lastplace = reduce(operator.getitem, keys[:-1], self.data)
             return lastplace.get(keys[-1], default)
-        except Exception as e:
+        except Exception:
             return default
 
     def get(self, val, default: Optional = None):
@@ -524,14 +529,16 @@ class DictRecord(BaseModel):
 
     def get_value_for_select_list(self, list_src, key, label_key="label"):
         for item in list_src:
-            if item.get('value') == key:
+            if item.get("value") == key:
                 return item.get(label_key)
         return ""
 
-    def selection_value_resources(self, key, value, list_src,
-                                  label_key="label"):
-        value_label = self.get_value_for_select_list(list_src, value,
-                                                     label_key=label_key)
+    def selection_value_resources(
+            self, key, value, list_src, label_key="label"
+    ):
+        value_label = self.get_value_for_select_list(
+            list_src, value, label_key=label_key
+        )
         self.selction_value(key, value, value_label)
 
     def to_date(self, key):
@@ -542,8 +549,8 @@ class DictRecord(BaseModel):
 
     def clone_data(self):
         dat = copy.deepcopy(self.data)
-        dat.pop('rec_name')
-        dat.pop('list_order')
+        dat.pop("rec_name")
+        dat.pop("list_order")
         return dat.copy()
 
 

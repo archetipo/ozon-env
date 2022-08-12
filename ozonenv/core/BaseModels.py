@@ -378,7 +378,7 @@ class DictRecord(BaseModel):
 
     def __init__(self, **data):
         super().__init__(**data)
-        if not self.rec_name:
+        if not self.data.get("data_value"):
             self.data["data_value"] = {}
         else:
             self.data["rec_name"] = self.rec_name

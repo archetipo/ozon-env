@@ -697,23 +697,28 @@ class BaseModelMaker:
     def parse_make_field(self, v):
         return (self.get_field_type(v), self.get_field_value(v))
 
-    def _make_from_dict(self, dict_data):
+    def _make_from_dict(self, dict_data, from_dict=False):
         for k, v in dict_data.copy().items():
             if isinstance(v, dict):  # For DICT
-                dict_data[k] = self._make_from_dict(v)
+                dict_data[k] = self._make_from_dict(v, from_dict=True)
             elif isinstance(v, list):  # For LIST
                 dict_data[k] = [
-                    self._make_from_dict(i) for i in v if isinstance(i, dict)
+                    self._make_from_dict(i, from_dict=True)
+                    for i in v
+                    if isinstance(i, dict)
                 ]
             else:  # Update Key-Value
-                dict_data[k] = self.parse_make_field(v)
+                if not from_dict:
+                    dict_data[k] = self.parse_make_field(v)
+                else:
+                    dict_data[k] = self.get_field_value(v)
         return dict_data
 
     def _make_models(self, dict_data):
         for k, v in dict_data.copy().items():
             if isinstance(v, dict):  # For DICT
                 model = create_model(k, __base__=BasicModel, **v)
-                dict_data[k] = model(**{})
+                dict_data[k] = v
             elif isinstance(v, list):  # For LIST
                 for idx, i in enumerate(v):
                     if isinstance(i, dict):
@@ -723,8 +728,9 @@ class BaseModelMaker:
         return dict_data
 
     def from_data_dict(self, data):
-        components = self._make_from_dict(data)
-        self.components = self._make_models(components)
+        self.components = self._make_from_dict(data)
+        # TODO reactivate when pydantic is stable
+        # self.components = self._make_models(components)
         self.model = create_model(
             self.model_name, __base__=BasicModel, **self.components
         )

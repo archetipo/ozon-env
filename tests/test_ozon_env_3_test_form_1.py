@@ -49,7 +49,7 @@ async def test_env_data_file_virtual_model():
     doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
     doc.set_from_child('ammImpEuro', 'dg10XComm.ammImpEuro', 0.0)
     assert doc.ammImpEuro == 0.0
-    assert doc.dg15XVoceTe.importo == 1446.16
+    assert doc.dg15XVoceTe.get('importo') == 1446.16
     doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
     assert doc.ammImpEuro == 1446.16
     assert doc.idDg == 99999
@@ -60,7 +60,7 @@ async def test_env_data_file_virtual_model():
     assert doc.dtRegistrazione == '2022-05-24T00:00:00'
     assert doc.get('dg15XVoceCalcolata.1.imponibile') == 1446.16
     assert doc.to_datetime('dtRegistrazione') == parse('2022-05-24T00:00:00')
-    assert doc.dg15XVoceCalcolata[1].aliquota == 20
+    assert doc.dg15XVoceCalcolata[1].get('aliquota') == 20
 
     doc_not_saved = await virtual_doc_model.insert(doc)
     assert doc_not_saved.is_error() is True

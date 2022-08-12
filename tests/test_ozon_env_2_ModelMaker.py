@@ -18,9 +18,9 @@ async def test_make_form_data():
     assert test_1.model_name == "test_base"
     assert isinstance(test_1.instance, BasicModel) is True
     assert test_1.instance.annoRif == 2022
-    assert test_1.instance.dg11XContr.flRate is True
+    assert test_1.instance.dg11XContr.get('flRate') is True
     assert len(test_1.instance.dg15XVoceCalcolata) == 4
-    assert test_1.instance.dg15XVoceCalcolata[1].importo == 289.23
+    assert test_1.instance.dg15XVoceCalcolata[1].get('importo') == 289.23
 
 
 @pytestmark

@@ -179,10 +179,11 @@ class OzonOrm:
         return self.env.models[_model_name]
 
     async def init_models(self):
+        db_models = await self.get_collections_names()
         for main_model in self.orm_models:
             if main_model not in self.env.models:
-                await self.make_model(main_model)
-        db_models = await self.get_collections_names()
+                await self.make_model(main_model, db_models)
+
         for db_model in db_models:
             if db_model not in self.env.models:
                 await self.add_model(db_model)
@@ -232,7 +233,9 @@ class OzonOrm:
                 schema = component.get_dict_copy()
         await self.make_model(model_name, schema=schema, virtual=virtual)
 
-    async def make_model(self, model_name, schema={}, virtual=False):
+    async def make_model(
+        self, model_name, schema={}, virtual=False, db_models=False
+    ):
         if (
             model_name in list(self.orm_static_models_map.keys())
             or schema
@@ -249,7 +252,8 @@ class OzonOrm:
                 session_model=session_model,
             )
             if not virtual:
-                await self.env.models[model_name].init_unique()
+                if not db_models or model_name not in db_models:
+                    await self.env.models[model_name].init_unique()
 
     async def set_lang(self):
         self.lang = self.env.lang

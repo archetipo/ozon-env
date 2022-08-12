@@ -235,7 +235,7 @@ class CoreModel(BaseModel):
         self.list_order = val
 
     def scan_data(self, key, default=None):
-        data = self.get_dict()
+        data = self.dict()
         try:
             _keys = key.split(".")
             keys = []

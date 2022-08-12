@@ -24,7 +24,7 @@ from starlette.concurrency import run_in_threadpool
 from ozonenv.core.i18n import update_translation
 from ozonenv.core.i18n import _
 
-logger = logging.getLogger("asyncio")
+logger = logging.getLogger(__file__)
 
 
 class BasicReturn(BaseModel):
@@ -107,7 +107,7 @@ class OzonEnvBase:
         return self.get(model_name)
 
     async def add_static_model(
-        self, model_name: str, model_class: CoreModel
+            self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         return await self.orm.add_static_model(model_name, model_class)
 
@@ -167,7 +167,7 @@ class OzonOrm:
         self.orm_sys_models = ["component", "session"]
 
     async def add_static_model(
-        self, model_name: str, model_class: CoreModel
+            self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         _model_name = model_name.replace(" ", "").strip().lower()
         self.orm_models.append(_model_name)
@@ -180,7 +180,7 @@ class OzonOrm:
 
     async def init_models(self):
         db_models = await self.get_collections_names()
-        print(db_models)
+        logger.info(db_models)
         for main_model in self.orm_models:
             if main_model not in self.env.models:
                 await self.make_model(main_model, db_models)
@@ -199,8 +199,8 @@ class OzonOrm:
 
     async def create_view(self, dbviewcfg: DbViewModel):
         if (
-            not dbviewcfg.force_recreate
-            and dbviewcfg.name in self.db.engine.collection
+                not dbviewcfg.force_recreate
+                and dbviewcfg.name in self.db.engine.collection
         ):
             return False
         collections = await self.get_collections_names()
@@ -235,12 +235,12 @@ class OzonOrm:
         await self.make_model(model_name, schema=schema, virtual=virtual)
 
     async def make_model(
-        self, model_name, schema={}, virtual=False, db_models=False
+            self, model_name, schema={}, virtual=False, db_models=False
     ):
         if (
-            model_name in list(self.orm_static_models_map.keys())
-            or schema
-            or virtual
+                model_name in list(self.orm_static_models_map.keys())
+                or schema
+                or virtual
         ):
             session_model = model_name == "session"
 
@@ -264,13 +264,13 @@ class OzonOrm:
 
 class OzonModel(OzonModelBase):
     def __init__(
-        self,
-        model_name,
-        orm: OzonOrm,
-        session_model=False,
-        virtual=False,
-        static: CoreModel = None,
-        schema={},
+            self,
+            model_name,
+            orm: OzonOrm,
+            session_model=False,
+            virtual=False,
+            static: CoreModel = None,
+            schema={},
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env

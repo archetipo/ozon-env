@@ -107,7 +107,7 @@ class OzonEnvBase:
         return self.get(model_name)
 
     async def add_static_model(
-            self, model_name: str, model_class: CoreModel
+        self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         return await self.orm.add_static_model(model_name, model_class)
 
@@ -167,7 +167,7 @@ class OzonOrm:
         self.orm_sys_models = ["component", "session"]
 
     async def add_static_model(
-            self, model_name: str, model_class: CoreModel
+        self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         _model_name = model_name.replace(" ", "").strip().lower()
         self.orm_models.append(_model_name)
@@ -179,13 +179,12 @@ class OzonOrm:
         return self.env.models[_model_name]
 
     async def init_models(self):
-        db_models = await self.get_collections_names()
-        logger.info(db_models)
+        self.db_models = await self.get_collections_names()
         for main_model in self.orm_models:
             if main_model not in self.env.models:
-                await self.make_model(main_model, db_models)
+                await self.make_model(main_model)
 
-        for db_model in db_models:
+        for db_model in self.db_models:
             if db_model not in self.env.models:
                 await self.add_model(db_model)
 
@@ -199,8 +198,8 @@ class OzonOrm:
 
     async def create_view(self, dbviewcfg: DbViewModel):
         if (
-                not dbviewcfg.force_recreate
-                and dbviewcfg.name in self.db.engine.collection
+            not dbviewcfg.force_recreate
+            and dbviewcfg.name in self.db.engine.collection
         ):
             return False
         collections = await self.get_collections_names()
@@ -233,14 +232,14 @@ class OzonOrm:
             if not component.is_error():
                 schema = component.get_dict_copy()
         await self.make_model(model_name, schema=schema, virtual=virtual)
+        self.db_models = await self.get_collections_names()
 
-    async def make_model(
-            self, model_name, schema={}, virtual=False, db_models=False
-    ):
+    async def make_model(self, model_name, schema={}, virtual=False):
+
         if (
-                model_name in list(self.orm_static_models_map.keys())
-                or schema
-                or virtual
+            model_name in list(self.orm_static_models_map.keys())
+            or schema
+            or virtual
         ):
             session_model = model_name == "session"
 
@@ -253,7 +252,7 @@ class OzonOrm:
                 session_model=session_model,
             )
             if not virtual:
-                if not db_models or model_name not in db_models:
+                if model_name not in self.db_models:
                     await self.env.models[model_name].init_unique()
 
     async def set_lang(self):
@@ -264,13 +263,13 @@ class OzonOrm:
 
 class OzonModel(OzonModelBase):
     def __init__(
-            self,
-            model_name,
-            orm: OzonOrm,
-            session_model=False,
-            virtual=False,
-            static: CoreModel = None,
-            schema={},
+        self,
+        model_name,
+        orm: OzonOrm,
+        session_model=False,
+        virtual=False,
+        static: CoreModel = None,
+        schema={},
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env

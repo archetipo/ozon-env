@@ -10,7 +10,6 @@ from ozonenv.core.db.BsonTypes import (
     PyObjectId,
     bson,
 )
-import ujson
 import logging
 import copy
 from functools import reduce

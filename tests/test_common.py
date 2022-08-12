@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from test_utils import *
-from ozonenv.core.BaseModels import BasicModel, Decimal128, List, Dict
+from ozonenv.core.BaseModels import BasicModel, List, Dict
 
 pytestmark = pytest.mark.asyncio
 
@@ -108,7 +108,7 @@ class User(BasicModel):
     req_id: str = ""
     parent: str = ""
     full_name: str = ""
-    last_update: Decimal128 = 0
+    last_update: float = 0
     is_admin: bool = False
     is_bot: bool = False
     use_auth: bool = False

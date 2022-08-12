@@ -5,7 +5,6 @@ from pydantic import create_model
 from pydantic.main import ModelMetaclass
 from datetime import datetime
 from ozonenv.core.BaseModels import BasicModel, BaseModel
-from ozonenv.core.db.BsonTypes import DateTime, Decimal128
 from ozonenv.core.utils import (
     fetch_dict_get_value,
     is_json,
@@ -611,7 +610,7 @@ class BaseModelMaker:
             "number": [int, 0],
             "number_f": [float, 0.0],
             "select": [str, ""],
-            "select_multi": [list[str], []],
+            "select_multi": [List[str], []],
             "checkbox": [bool, False],
             "radio": [str, ""],
             "survey": [dict, {}],

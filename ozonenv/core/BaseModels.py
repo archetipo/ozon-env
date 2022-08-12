@@ -4,8 +4,6 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from typing import TypeVar
 from ozonenv.core.db.BsonTypes import (
-    Decimal128,
-    DateTime,
     BSON_TYPES_ENCODERS,
     PyObjectId,
     bson,
@@ -156,8 +154,8 @@ class CoreModel(BaseModel):
     active: bool = True
     demo: bool = False
     childs: List[Any] = []
-    create_datetime: DateTime = Field(default="1970-01-01T00:00:00")
-    update_datetime: DateTime = Field(default="1970-01-01T00:00:00")
+    create_datetime: datetime = Field(default="1970-01-01T00:00:00")
+    update_datetime: datetime = Field(default="1970-01-01T00:00:00")
     status: str = "ok"
     message: str = ""
     res_data: dict = {}
@@ -322,7 +320,7 @@ class Component(BasicModel):
     path: str = ""
     parent: str = ""
     parent_name: str = ""
-    components: List[Dict] = []
+    components: List[dict] = []
     links: Dict = {}
     type: str = "form"
     no_cancel: int = 0
@@ -347,9 +345,9 @@ class Session(CoreModel):
     uid: str
     token: str = ""
     req_id: str = ""
-    childs: List[Any] = []
+    childs: list[Any] = []
     login_complete: bool = False
-    last_update: Decimal128 = 0
+    last_update: float = 0
     is_admin: bool = False
     use_auth: bool = False
     is_api: bool = False

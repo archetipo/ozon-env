@@ -171,7 +171,7 @@ class CoreModel(BaseModel):
         self.id = PyObjectId()
 
     def get_dict(self):
-        dict = ujson.loads(self.json())
+        dict = self.dict()
         dict.pop("status")
         dict.pop("message")
         dict.pop("res_data")
@@ -187,7 +187,7 @@ class CoreModel(BaseModel):
         return {"_id": bson.ObjectId(self.id)}.copy()
 
     def get_dict_diff(
-        self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+            self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
     ):
         original_dict = self.dict().copy()
         if ignore_fields and remove_ignore_fileds:
@@ -235,7 +235,7 @@ class CoreModel(BaseModel):
         self.list_order = val
 
     def scan_data(self, key, default=None):
-        data = self.dict()
+        data = self.get_dict()
         try:
             _keys = key.split(".")
             keys = []
@@ -269,7 +269,8 @@ class CoreModel(BaseModel):
         return ""
 
     def selection_value_resources(
-        self, key: str, value: str, resources: list, label_key: str = "label"
+            self, key: str, value: str, resources: list,
+            label_key: str = "label"
     ):
         value_label = self.get_value_for_select_list(
             resources, value, label_key=label_key
@@ -533,7 +534,7 @@ class DictRecord(BaseModel):
         return ""
 
     def selection_value_resources(
-        self, key, value, list_src, label_key="label"
+            self, key, value, list_src, label_key="label"
     ):
         value_label = self.get_value_for_select_list(
             list_src, value, label_key=label_key
@@ -554,7 +555,7 @@ class DictRecord(BaseModel):
 
 
 def update_model(
-    source, object_o: BasicModel, pop_form_newobject=[], model=None
+        source, object_o: BasicModel, pop_form_newobject=[], model=None
 ):
     new_dict = object_o.get_dict()
     new_dict["id"] = source.dict()["id"]

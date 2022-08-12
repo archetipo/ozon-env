@@ -1,6 +1,9 @@
 from ozonenv.core.OzonOrm import OzonEnvBase, BasicReturn
 import json
 import copy
+import logging
+
+logger = logging.getLogger(__file__)
 
 
 class OzonEnv(OzonEnvBase):

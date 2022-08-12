@@ -16,7 +16,7 @@ import logging
 import pydantic
 import pymongo
 
-logger = logging.getLogger("asyncio")
+logger = logging.getLogger(__file__)
 
 
 class OzonModelBase:

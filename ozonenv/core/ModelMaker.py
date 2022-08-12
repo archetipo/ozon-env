@@ -256,14 +256,14 @@ class Component:
         return logic_data
 
     def apply_action(self, action, logic_res):
-        logger.debug(f"comupte apply_action--> {action}")
+        #logger.debug(f"comupte apply_action--> {action}")
         if action.get("type") == "property":
             item = action.get("property").get("value")
             value = action.get("state")
             if "validate" in item:
                 item = item.split(".")[1]
             self.cfg[item] = value
-            logger.debug(f"{item} --> {self.cfg[item]}")
+            #logger.debug(f"{item} --> {self.cfg[item]}")
         elif action.get("type") == "value":
             if "=" not in action.get("value"):
                 key = action.get("value")
@@ -277,21 +277,21 @@ class Component:
                 self.cfg[key] = self.input_type(res)
             else:
                 self.cfg[key] = res
-            logger.info(f"complete <--> {self.cfg[key]} = {res}")
-            logger.info(f"complete <--> {self.cfg[key]}")
+            #logger.info(f"complete <--> {self.cfg[key]} = {res}")
+            #logger.info(f"complete <--> {self.cfg[key]}")
             if not key == "value":
                 self.properties[key] = self.cfg[key]
 
     def compute_logic(self, json_logic, actions):
         logic_res = jsonLogic(json_logic, self.builder.context_data)
-        logger.info(f"comupte json_logic--> {json_logic}  -> {logic_res}")
+        #logger.info(f"comupte json_logic--> {json_logic}  -> {logic_res}")
         if logic_res:
             for action in actions:
                 if action:
                     self.apply_action(action.copy(), logic_res)
 
     def eval_logic(self):
-        logger.info(f"before_logic {self.raw['key']}")
+        #logger.info(f"before_logic {self.raw['key']}")
         if self.raw.get("logic"):
             for logic in self.raw.get("logic"):
                 if logic.get("trigger") and logic.get("trigger").get("json"):

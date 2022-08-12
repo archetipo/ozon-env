@@ -180,6 +180,7 @@ class OzonOrm:
 
     async def init_models(self):
         db_models = await self.get_collections_names()
+        print(db_models)
         for main_model in self.orm_models:
             if main_model not in self.env.models:
                 await self.make_model(main_model, db_models)

@@ -609,17 +609,17 @@ class BaseModelMaker:
             "content": [str, ""],
             "textarea": [str, ""],
             "number": [int, 0],
-            "number_f": [Decimal128, 0.0],
+            "number_f": [float, 0.0],
             "select": [str, ""],
-            "select_multi": [List[str], []],
+            "select_multi": [list[str], []],
             "checkbox": [bool, False],
             "radio": [str, ""],
-            "survey": [Dict, {}],
-            "jsondata": [Dict, {}],
-            "datetime": [DateTime, "1970-01-01T00:00:00"],
-            "datagrid": [List[Dict], []],
-            "table": [List[Dict], []],
-            "form": [List[Dict], {}],
+            "survey": [dict, {}],
+            "jsondata": [dict, {}],
+            "datetime": [datetime, "1970-01-01T00:00:00"],
+            "datagrid": [list[dict], []],
+            "table": [list[dict], []],
+            "form": [list[dict], {}],
         }
         self.fields_list = []
         self.parent = None
@@ -665,10 +665,10 @@ class BaseModelMaker:
         type_def = {
             "int": int,
             "string": str,
-            "float": Decimal128,
-            "dict": Dict,
-            "list": List,
-            "date": DateTime,
+            "float": float,
+            "dict": dict,
+            "list": list,
+            "date": datetime,
         }
         s = v
         if not isinstance(v, str):

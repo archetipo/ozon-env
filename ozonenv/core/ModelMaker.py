@@ -182,7 +182,11 @@ class Component:
 
     @property
     def properties(self):
+        p = self.raw.get("properties", {})
+        if not isinstance(p, dict):
+            self.raw["properties"] = {}
         return self.raw.get("properties", {})
+
 
     @property
     def validate(self):

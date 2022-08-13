@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from pydantic.main import ModelMetaclass
 from ozonenv.core.ModelMaker import ModelMaker
+from ozonenv.core.BaseModels import default_list_metadata
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
@@ -187,6 +188,13 @@ class OzonModelBase:
             return await self.count_by_filter(domain)
         else:
             return 0
+
+    def get_dict(
+        self,
+        rec: CoreModel,
+    ) -> CoreModel:
+
+        return rec.get_dict(exclude=default_list_metadata)
 
     async def new(
         self,

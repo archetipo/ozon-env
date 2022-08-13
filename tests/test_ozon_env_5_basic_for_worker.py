@@ -22,6 +22,8 @@ class MockWorker1(OzonWorkerEnv):
         self.p_model = await self.add_model(self.params.get("model"))
         self.virtual_doc_model = await self.add_model(
             'virtual_doc', virtual=True)
+        self.virtual_row_doc_model = await self.add_model(
+            'virtual_row_doc', virtual=True)
         try:
             documento = await self.process_document(data)
             if documento.is_error():
@@ -52,7 +54,7 @@ class MockWorker1(OzonWorkerEnv):
                 msg="Done", data=res_data
             )
         except Exception as e:
-            print(traceback.format_exc())
+            print(f"session_app exception {traceback.format_exc()}")
             return self.exception_response(
                 str(e), err_details=str(traceback.format_exc()))
 
@@ -72,11 +74,22 @@ class MockWorker1(OzonWorkerEnv):
             return v_doc
         v_doc.selction_value("stato", "caricato", "Caricato")
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
-        v_doc.set_from_child('ammImpEuro', 'dg10XComm.ammImpEuro', 0.0)
-        assert v_doc.ammImpEuro == 0
-        for row in v_doc.dg81Process:
-            row_dict = row.get_dict()
-            assert row_dict['currentNodeLabel'] != ""
+        v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
+        assert v_doc.ammImpEuro == 1446.16
+        for row in v_doc.dg15XVoceCalcolata:
+            row_dict = self.virtual_row_doc_model.get_dict(row)
+
+            row_dict.update({"prova": "test", "prova1": 0})
+
+            row_o = await self.virtual_row_doc_model.new(
+                rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
+                data=row_dict
+            )
+
+            assert row_o.nrRiga == row.nrRiga
+            assert row_o.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
+            assert row_o.prova == "test"
+            assert row_o.prova1 == 0
 
         documento = await self.virtual_doc_model.insert(
             v_doc, force_model=self.p_model)

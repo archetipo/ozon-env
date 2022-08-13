@@ -700,18 +700,13 @@ class BaseModelMaker:
     def _make_from_dict(self, dict_data, from_dict=False):
         for k, v in dict_data.copy().items():
             if isinstance(v, dict):  # For DICT
-                dict_data[k] = self._make_from_dict(v, from_dict=True)
+                dict_data[k] = self._make_from_dict(v)
             elif isinstance(v, list):  # For LIST
                 dict_data[k] = [
-                    self._make_from_dict(i, from_dict=True)
-                    for i in v
-                    if isinstance(i, dict)
+                    self._make_from_dict(i) for i in v if isinstance(i, dict)
                 ]
             else:  # Update Key-Value
-                if not from_dict:
-                    dict_data[k] = self.parse_make_field(v)
-                else:
-                    dict_data[k] = self.get_field_value(v)
+                dict_data[k] = self.parse_make_field(v)
         return dict_data
 
     def _make_models(self, dict_data):

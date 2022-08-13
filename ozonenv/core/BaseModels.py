@@ -13,8 +13,6 @@ import copy
 from functools import reduce
 import operator
 from datetime import datetime
-import json
-import re
 
 # from datetime import datetime
 from dateutil.parser import parse
@@ -62,6 +60,12 @@ default_list_metadata = [
     "create_datetime",
     "owner_mail",
     "owner_function_type",
+    "childs",
+    "update_uid",
+    "app_code",
+    "parent",
+    "process_id",
+    "data_value",
     "sys",
     "demo",
     "deleted",
@@ -169,7 +173,8 @@ class CoreModel(BaseModel):
 
     def get_dict(self, exclude=[]):
         basic = ["status", "message", "res_data"]
-        return self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        return dict(d)
 
     def get_dict_copy(self):
         return copy.deepcopy(self.get_dict())
@@ -181,7 +186,7 @@ class CoreModel(BaseModel):
         return {"_id": bson.ObjectId(self.id)}.copy()
 
     def get_dict_diff(
-            self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+        self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
     ):
 
         if ignore_fields and remove_ignore_fileds:
@@ -227,7 +232,7 @@ class CoreModel(BaseModel):
         self.list_order = val
 
     def scan_data(self, key, default=None):
-        data = self.get_dict()
+        data = self.get_dict(exclude=["_id", "id"])
         try:
             _keys = key.split(".")
             keys = []
@@ -236,10 +241,10 @@ class CoreModel(BaseModel):
                     keys.append(int(v))
                 else:
                     keys.append(v)
-            lastplace = reduce(operator.getitem, keys[:-1], data)
+            lastplace = reduce(operator.getitem, keys[:-1], dict(data))
             return lastplace.get(keys[-1], default)
         except Exception as e:
-            print(f" error scan_data {e}")
+            print(f" error scan_data {e} field not foud")
             return default
 
     def get(self, val, default: Optional = None):
@@ -261,8 +266,7 @@ class CoreModel(BaseModel):
         return ""
 
     def selection_value_resources(
-            self, key: str, value: str, resources: list,
-            label_key: str = "label"
+        self, key: str, value: str, resources: list, label_key: str = "label"
     ):
         value_label = self.get_value_for_select_list(
             resources, value, label_key=label_key
@@ -368,7 +372,7 @@ class Session(CoreModel):
 
 
 def update_model(
-        source, object_o: BasicModel, pop_form_newobject=[], model=None
+    source, object_o: BasicModel, pop_form_newobject=[], model=None
 ):
     new_dict = object_o.get_dict()
     new_dict["id"] = source.dict()["id"]

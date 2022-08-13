@@ -13,6 +13,8 @@ import copy
 from functools import reduce
 import operator
 from datetime import datetime
+import json
+import re
 
 # from datetime import datetime
 from dateutil.parser import parse
@@ -369,6 +371,185 @@ class Session(CoreModel):
     @classmethod
     def get_unique_fields(cls):
         return ["token"]
+
+
+class DictRecord(BaseModel):
+    model: str
+    rec_name: str = ""
+    data: dict = {}
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if not self.data.get("data_value"):
+            self.data["data_value"] = {}
+        else:
+            self.data["rec_name"] = self.rec_name
+
+    @property
+    def data_value(self):
+        return self.data.get("data_value", {})
+
+    def parse_value(self, v):
+        type_def = {
+            "int": int,
+            "string": str,
+            "float": float,
+            "dict": dict,
+            "list": list,
+            "datetime": datetime,
+        }
+        s = v
+        if not isinstance(v, str):
+            s = str(v)
+        regex = re.compile(
+            r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
+            r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
+        )
+        regex_dt = re.compile(r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})")
+        dtr = regex_dt.search(s)
+        if dtr:
+            return parse(dtr.group(0))
+        else:
+            rgx = regex.search(s)
+            if not rgx:
+                return s
+            if s in ["false", "true"]:
+                return bool("true" == s)
+            if rgx.lastgroup not in ["list", "dict"]:
+                types_d = []
+                for match in regex.finditer(s):
+                    types_d.append(match.lastgroup)
+                if len(types_d) > 1:
+                    return s
+                else:
+                    return type_def.get(rgx.lastgroup)(s)
+            else:
+                return json.load(s)
+
+    def value_type(self, v):
+        type_def = {
+            "int": int,
+            "string": str,
+            "float": float,
+            "dict": dict,
+            "list": list,
+            "date": datetime,
+        }
+        s = v
+        if not isinstance(v, str):
+            s = str(v)
+        regex = re.compile(
+            r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
+            r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
+        )
+        regex_dt = re.compile(r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})")
+        dtr = regex_dt.search(s)
+        if dtr:
+            return datetime
+        else:
+            rgx = regex.search(s)
+            if not rgx:
+                return str
+            if s in ["false", "true"]:
+                return bool
+            types_d = []
+            for match in regex.finditer(s):
+                types_d.append(match.lastgroup)
+            if len(types_d) > 1:
+                return str
+            else:
+                return type_def.get(rgx.lastgroup)
+
+    def selction_value(self, key, value, read_value):
+        self.data[key] = value
+        self.data["data_value"][key] = read_value
+
+    def selction_value_from_record(self, key, src, src_key=""):
+        if not src_key:
+            src_key = key
+        self.data[key] = src.data[src_key]
+        self.data["data_value"][key] = src.data["data_value"][src_key]
+
+    def get_dict(self):
+        return json.loads(self.json())
+
+    def rec_name_domain(self):
+        return {"rec_name": self.rec_name}.copy()
+
+    def set_active(self, user_name="admin"):
+        self.data["deleted"] = 0
+        self.data["active"] = True
+        self.data["owner_uid"] = user_name
+        self.data["list_order"] = 0
+        if "data_value" not in self.data:
+            self.data["data_value"] = {}
+
+    def set_list_order(self, val):
+        self.data["list_order"] = val
+
+    def scan_data(self, key, default=None):
+        try:
+            _keys = key.split(".")
+            keys = []
+            for v in _keys:
+                if str(v).isdigit():
+                    keys.append(int(v))
+                else:
+                    keys.append(v)
+            lastplace = reduce(operator.getitem, keys[:-1], self.data)
+            return lastplace.get(keys[-1], default)
+        except Exception:
+            return default
+
+    def get(self, val, default: Optional = None):
+        if "." in val:
+            return self.scan_data(val, default)
+        if default:
+            return self.data.get(val, default)
+        else:
+            return self.data.get(val)
+
+    def set(self, key, val, pase_data=True):
+        if pase_data:
+            self.data[key] = self.parse_value(val)
+        else:
+            self.data[key] = val
+
+    def set_from_child(self, key, nodes: str, default):
+        self.data[key] = self.get(nodes, default)
+
+    def update_field_type_value(self, key):
+        val = self.data.get(key, "")
+        self.data[key] = self.parse_value(val)
+
+    def set_many(self, data_dict):
+        self.data.update(data_dict)
+
+    def get_value_for_select_list(self, list_src, key, label_key="label"):
+        for item in list_src:
+            if item.get("value") == key:
+                return item.get(label_key)
+        return ""
+
+    def selection_value_resources(
+        self, key, value, list_src, label_key="label"
+    ):
+        value_label = self.get_value_for_select_list(
+            list_src, value, label_key=label_key
+        )
+        self.selction_value(key, value, value_label)
+
+    def to_date(self, key):
+        v = self.get(key)
+        if self.value_type(v) is datetime:
+            return parse(v)
+        return v
+
+    def clone_data(self):
+        dat = copy.deepcopy(self.data)
+        dat.pop("rec_name")
+        dat.pop("list_order")
+        return dat.copy()
 
 
 def update_model(

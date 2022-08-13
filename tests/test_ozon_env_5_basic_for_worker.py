@@ -72,23 +72,29 @@ class MockWorker1(OzonWorkerEnv):
             data_doc, rec_name=f"DOC{data_doc['idDg']}")
         if v_doc.is_error():
             return v_doc
-        v_doc.selction_value("stato", "caricato", "Caricato")
+
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
+        v_doc.selction_value("stato", "caricato", "Caricato")
+
         assert v_doc.ammImpEuro == 1446.16
         for row in v_doc.dg15XVoceCalcolata:
-            row_dict = self.virtual_row_doc_model.get_dict(row)
+            row_dictr = self.virtual_row_doc_model.get_dict_record(
+                row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
 
-            row_dict.update({"prova": "test", "prova1": 0})
+            row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
+            row_dictr.selction_value("stato", "caricato", "Caricato")
 
             row_o = await self.virtual_row_doc_model.new(
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
-                data=row_dict
+                data=row_dictr.data.copy()
             )
 
             assert row_o.nrRiga == row.nrRiga
             assert row_o.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_o.prova == "test"
+            assert row_o.get('data_value.stato') == "Caricato"
+            assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
 
         documento = await self.virtual_doc_model.insert(

@@ -4,6 +4,7 @@ from ozonenv.core.ModelMaker import ModelMaker
 from ozonenv.core.BaseModels import default_list_metadata
 from ozonenv.core.BaseModels import (
     Component,
+    DictRecord,
     BasicModel,
     CoreModel,
     default_list_metadata_fields_update,
@@ -196,6 +197,15 @@ class OzonModelBase:
 
         return rec.get_dict(exclude=default_list_metadata)
 
+    def get_dict_record(self, rec: CoreModel, rec_name="") -> DictRecord:
+
+        dictd = self.get_dict(rec)
+        if "rec_name" not in dictd:
+            dictd["rec_namae"] = rec_name
+        return DictRecord(
+            model="virtual", rec_name=rec_name, data=copy.deepcopy(dictd)
+        )
+
     async def new(
         self,
         data={},
@@ -205,7 +215,9 @@ class OzonModelBase:
         if not data and rec_name or rec_name and self.virtual:
             if not self.is_session_model:
                 data["rec_name"] = rec_name
-
+        data_value = data.get("data_value", {}).copy()
+        if data_value:
+            data.pop("data_value", {})
         if not self.virtual:
             data = self._make_from_dict(copy.deepcopy(data))
         self._load_data(data)
@@ -216,6 +228,8 @@ class OzonModelBase:
             )
             return self.error_response(msg, data=data)
         self.model_record.set_active()
+        if data_value:
+            self.model_record.data_value = data_value.copy()
         return self.model_record
 
     def set_user_data(self, record: CoreModel) -> CoreModel:

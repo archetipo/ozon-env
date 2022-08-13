@@ -569,6 +569,9 @@ class DictRecord(BaseModel):
         else:
             self.data[key] = val
 
+    def set_from_child(self, key, nodes: str, default):
+        self.data[key] = self.get(nodes, default)
+
     def update_field_type_value(self, key):
         val = self.data.get(key, "")
         self.data[key] = self.parse_value(val)

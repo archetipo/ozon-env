@@ -70,6 +70,7 @@ class MockWorker1(OzonWorkerEnv):
 
         v_doc = await self.virtual_doc_model.new(
             data_doc, rec_name=f"DOC{data_doc['idDg']}")
+
         if v_doc.is_error():
             return v_doc
 

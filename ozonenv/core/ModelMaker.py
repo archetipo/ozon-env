@@ -658,7 +658,7 @@ class BaseModelMaker:
                 else:
                     return type_def.get(rgx.lastgroup)(s)
             else:
-                return json.load(s)
+                return json.loads(s)
 
     def get_field_type(self, v):
         type_def = {
@@ -718,7 +718,7 @@ class BaseModelMaker:
         for k, v in dict_data.copy().items():
             if isinstance(v, dict):  # For DICT
                 model = create_model(k, __base__=BasicModel, **v)
-                dict_data[k] = v
+                dict_data[k] = model(**{})
             elif isinstance(v, list):  # For LIST
                 for idx, i in enumerate(v):
                     if isinstance(i, dict):
@@ -728,9 +728,9 @@ class BaseModelMaker:
         return dict_data
 
     def from_data_dict(self, data):
-        self.components = self._make_from_dict(data)
+        components = self._make_from_dict(data)
         # TODO reactivate when pydantic is stable
-        # self.components = self._make_models(components)
+        self.components = self._make_models(components)
         self.model = create_model(
             self.model_name, __base__=BasicModel, **self.components
         )

@@ -244,15 +244,13 @@ class OzonModelBase:
                         _("Model (force_model) not exist: %s")
                         % force_model.name
                     )
-                    return self.error_response(
-                        msg, data=record.get_dict_copy()
-                    )
+                    return self.error_response(msg, data=record.get_dict())
             else:
                 coll = self.db.engine.get_collection(self.name)
             record.list_order = await self.count()
             record.create_datetime = datetime.now()
             record = self.set_user_data(record)
-            result_save = await coll.insert_one(record.get_dict_copy())
+            result_save = await coll.insert_one(record.get_dict())
             result = None
             if result_save:
                 return await self.load(

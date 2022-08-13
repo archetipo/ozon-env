@@ -73,6 +73,11 @@ class MockWorker1(OzonWorkerEnv):
         v_doc.selction_value("stato", "caricato", "Caricato")
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
         v_doc.set_from_child('ammImpEuro', 'dg10XComm.ammImpEuro', 0.0)
+        assert v_doc.ammImpEuro == 0
+        for row in v_doc.dg81Process:
+            row_dict = row.get_dict()
+            assert row_dict['currentNodeLabel'] != ""
+
         documento = await self.virtual_doc_model.insert(
             v_doc, force_model=self.p_model)
         return documento

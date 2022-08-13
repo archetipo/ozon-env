@@ -190,21 +190,17 @@ class OzonModelBase:
         else:
             return 0
 
-    def get_dict(
-        self,
-        rec: CoreModel,
-    ) -> CoreModel:
-
-        return rec.get_dict(exclude=default_list_metadata)
+    def get_dict(self, rec: CoreModel, exclude=[]) -> CoreModel:
+        return rec.get_dict(exclude=exclude)
 
     def get_dict_record(self, rec: CoreModel, rec_name="") -> DictRecord:
-
-        dictd = self.get_dict(rec)
-        if "rec_name" not in dictd:
-            dictd["rec_namae"] = rec_name
-        return DictRecord(
+        dictd = self.get_dict(rec, exclude=default_list_metadata + ["_id"])
+        if rec_name:
+            dictd["rec_name"] = rec_name
+        dat = DictRecord(
             model="virtual", rec_name=rec_name, data=copy.deepcopy(dictd)
         )
+        return dat
 
     async def new(
         self,

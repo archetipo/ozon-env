@@ -3,7 +3,6 @@ from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
 from pydantic.main import ModelMetaclass
 
-
 # from ozonenv.core.i18n import i18nlocaledir
 
 pytestmark = pytest.mark.asyncio

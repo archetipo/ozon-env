@@ -219,7 +219,11 @@
       "cdSogcoll": "000000",
       "voce": "03003",
       "tipoVoce": "00N",
-      "descrVoce": "Netto"
+      "descrVoce": "Netto",
+      "dett": {
+        "test": "a test",
+        "prova": "b"
+      }
     },
     {
       "aliquota": "20",
@@ -238,7 +242,11 @@
       "cdSogcoll": "000000",
       "voce": "00832",
       "tipoVoce": "54N",
-      "descrVoce": "Ritenute fiscali"
+      "descrVoce": "Ritenute fiscali",
+      "dett": {
+        "test": "a test",
+        "prova": "b"
+      }
     },
     {
       "aliquota": "8.5",
@@ -257,7 +265,11 @@
       "cdSogcoll": "A00913",
       "voce": "02970",
       "tipoVoce": "98N",
-      "descrVoce": "IRAP"
+      "descrVoce": "IRAP",
+      "dett": {
+        "test": "a test",
+        "prova": "b"
+      }
     },
     {
       "aliquota": "0",
@@ -276,7 +288,11 @@
       "cdSogcoll": "000000",
       "voce": "09955",
       "tipoVoce": "33C",
-      "descrVoce": "Competenza"
+      "descrVoce": "Competenza",
+      "dett": {
+        "test": "a test",
+        "prova": "b"
+      }
     }
   ],
   "dg16XRichiestaAut": {

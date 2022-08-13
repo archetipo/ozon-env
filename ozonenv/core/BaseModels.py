@@ -1,6 +1,6 @@
 # Copyright INRIM (https://www.inrim.eu)
 # See LICENSE file for full licensing details.
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 from typing import TypeVar
 from ozonenv.core.db.BsonTypes import (
@@ -75,6 +75,30 @@ default_list_metadata = [
     "owner_personal_type",
     "owner_job_title",
 ]
+default_list_metadata_clean = [
+    "id",
+    "rec_name",
+    "owner_uid",
+    "owner_name",
+    "owner_sector",
+    "owner_sector_id",
+    "owner_function",
+    "update_datetime",
+    "create_datetime",
+    "owner_mail",
+    "owner_function_type",
+    "childs",
+    "update_uid",
+    "app_code",
+    "parent",
+    "process_id",
+    "sys",
+    "demo",
+    "deleted",
+    "list_order",
+    "owner_personal_type",
+    "owner_job_title",
+]
 
 default_list_metadata_fields = [
     "id",
@@ -135,14 +159,83 @@ class DbViewModel(BaseModel):
     pipeline: list
 
 
-class CoreModel(BaseModel):
+class MainModel(BaseModel):
+    @classmethod
+    def str_name(cls, *args, **kwargs):
+        return cls.schema(*args, **kwargs).get("title", "").lower()
+
+    def get_dict(self, exclude=[]):
+        basic = ["status", "message", "res_data"]
+        # d = json.loads(self.json(exclude=set().union(basic, exclude)))
+        d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        return d
+
+    def get_dict_copy(self):
+        return copy.deepcopy(self.get_dict())
+
+    def get_dict_diff(
+        self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+    ):
+
+        if ignore_fields and remove_ignore_fileds:
+            original_dict = self.get_dict(exclude=ignore_fields)
+        else:
+            original_dict = self.get_dict()
+        diff = {
+            k: v
+            for k, v in to_compare_dict.items()
+            if k in original_dict and not original_dict[k] == v
+        }
+        return diff.copy()
+
+    def scan_data(self, key, default=None):
+        data = self.get_dict(exclude=["_id", "id"])
+        try:
+            _keys = key.split(".")
+            keys = []
+            for v in _keys:
+                if str(v).isdigit():
+                    keys.append(int(v))
+                else:
+                    keys.append(v)
+            lastplace = reduce(operator.getitem, keys[:-1], dict(data))
+            return lastplace.get(keys[-1], default)
+        except Exception as e:
+            print(f" error scan_data {e} field not foud")
+            return default
+
+    def get(self, val, default: Optional = None):
+        if "." in val:
+            return self.scan_data(val, default)
+        elif default:
+            return getattr(self, val, default)
+        else:
+            return getattr(self, val)
+
+    def set_from_child(self, key, nodes: str, default):
+        setattr(self, key, self.get(nodes, default))
+
+    def set(self, key, value):
+        setattr(self, key, value)
+
+    def set_many(self, data_dict):
+        for k, v in data_dict:
+            setattr(self, k, v)
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = BSON_TYPES_ENCODERS
+
+
+class CoreModel(MainModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     rec_name: str = ""
-    app_code: Optional[List] = []
+    app_code: List = Field(default=[])
     parent: str = ""
     process_id: str = ""
     process_task_id: str = ""
-    data_value: Dict = {}
+    data_value: Dict = Field(default={})
     owner_name: str = ""
     deleted: int = 0
     list_order: int = 0
@@ -159,12 +252,12 @@ class CoreModel(BaseModel):
     default: bool = False
     active: bool = True
     demo: bool = False
-    childs: List[Any] = []
+    childs: List[Dict] = Field(default=[])
     create_datetime: datetime = Field(default="1970-01-01T00:00:00")
     update_datetime: datetime = Field(default="1970-01-01T00:00:00")
     status: str = "ok"
     message: str = ""
-    res_data: dict = {}
+    res_data: dict = Field(default={})
 
     @classmethod
     def str_name(cls, *args, **kwargs):
@@ -176,7 +269,7 @@ class CoreModel(BaseModel):
     def get_dict(self, exclude=[]):
         basic = ["status", "message", "res_data"]
         d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
-        return dict(d)
+        return d
 
     def get_dict_copy(self):
         return copy.deepcopy(self.get_dict())
@@ -233,33 +326,6 @@ class CoreModel(BaseModel):
     def set_list_order(self, val):
         self.list_order = val
 
-    def scan_data(self, key, default=None):
-        data = self.get_dict(exclude=["_id", "id"])
-        try:
-            _keys = key.split(".")
-            keys = []
-            for v in _keys:
-                if str(v).isdigit():
-                    keys.append(int(v))
-                else:
-                    keys.append(v)
-            lastplace = reduce(operator.getitem, keys[:-1], dict(data))
-            return lastplace.get(keys[-1], default)
-        except Exception as e:
-            print(f" error scan_data {e} field not foud")
-            return default
-
-    def get(self, val, default: Optional = None):
-        if "." in val:
-            return self.scan_data(val, default)
-        elif default:
-            return getattr(self, val, default)
-        else:
-            return getattr(self, val)
-
-    def set_from_child(self, key, nodes: str, default):
-        setattr(self, key, self.get(nodes, default))
-
     @classmethod
     def get_value_for_select_list(cls, list_src, key, label_key="label"):
         for item in list_src:
@@ -275,13 +341,6 @@ class CoreModel(BaseModel):
         )
         self.selction_value(key, value, value_label)
 
-    def set(self, key, value):
-        setattr(self, key, value)
-
-    def set_many(self, data_dict):
-        for k, v in data_dict:
-            setattr(self, k, v)
-
     def clone_data(self):
         dat = self.get_dict_copy()
         dat.pop("rec_name")
@@ -294,11 +353,6 @@ class CoreModel(BaseModel):
             return parse(v)
         except Exception:
             return v
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = BSON_TYPES_ENCODERS
 
 
 class BasicModel(CoreModel):
@@ -347,7 +401,7 @@ class Session(CoreModel):
     uid: str
     token: str = ""
     req_id: str = ""
-    childs: list[Any] = []
+    childs: list[Dict] = []
     login_complete: bool = False
     last_update: float = 0
     is_admin: bool = False
@@ -514,9 +568,6 @@ class DictRecord(BaseModel):
             self.data[key] = self.parse_value(val)
         else:
             self.data[key] = val
-
-    def set_from_child(self, key, nodes: str, default):
-        self.data[key] = self.get(nodes, default)
 
     def update_field_type_value(self, key):
         val = self.data.get(key, "")

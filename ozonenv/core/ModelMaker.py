@@ -1,10 +1,10 @@
 # Copyright INRIM (https://www.inrim.eu)
 # See LICENSE file for full licensing details.
-from typing import Dict, List
+from typing import List
 from pydantic import create_model
 from pydantic.main import ModelMetaclass
 from datetime import datetime
-from ozonenv.core.BaseModels import BasicModel, BaseModel
+from ozonenv.core.BaseModels import BasicModel, BaseModel, MainModel
 from ozonenv.core.utils import (
     fetch_dict_get_value,
     is_json,
@@ -166,7 +166,7 @@ class Component:
     def trigger_change(self):
         trig_chage = False
         if self.raw.get("properties") and self.raw.get("properties").get(
-                "trigger_change"
+            "trigger_change"
         ):
             trig_chage = True
         return trig_chage
@@ -325,8 +325,8 @@ class Component:
                         if val not in self.builder.realted_fields_logic:
                             self.builder.realted_fields_logic[val] = []
                         if (
-                                self.key
-                                not in self.builder.realted_fields_logic[val]
+                            self.key
+                            not in self.builder.realted_fields_logic[val]
                         ):
                             self.builder.realted_fields_logic[val].append(
                                 self.key
@@ -353,10 +353,10 @@ class Component:
             if not self.survey and not self.multi_row:
                 self.builder.table_colums[self.key] = self.label
         if (
-                self.key
-                and self.key is not None
-                and self.type not in ["columns", "column", "well", "panel"]
-                and self.key not in self.builder.filter_keys
+            self.key
+            and self.key is not None
+            and self.type not in ["columns", "column", "well", "panel"]
+            and self.key not in self.builder.filter_keys
         ):
             self.builder.filters.append(self)
             self.builder.filter_keys.append(self.key)
@@ -554,7 +554,7 @@ class surveyComponent(Component):
 
                 if self.value.get(question["value"]):
                     value["checked"] = (
-                            self.value[question["value"]] == b_val["value"]
+                        self.value[question["value"]] == b_val["value"]
                     )
 
                 question_dict["values"].append(value)
@@ -603,7 +603,7 @@ class BaseModelMaker:
         self.mapper = {
             "textfield": [str, ""],
             "password": [str, ""],
-            "file": [List[Dict], []],
+            "file": [list[dict], []],
             "email": [str, ""],
             "content": [str, ""],
             "textarea": [str, ""],
@@ -623,6 +623,7 @@ class BaseModelMaker:
         self.fields_list = []
         self.parent = None
         self.parent_builder = None
+        self.virtual = False
 
     def get_field_value(self, v):
         type_def = {
@@ -647,7 +648,7 @@ class BaseModelMaker:
             rgx = regex.search(s)
             if not rgx:
                 return s
-            if s in ["false", "true"]:
+            if s in ["false", "true", "True", "False"]:
                 return bool("true" == s)
             if rgx.lastgroup not in ["list", "dict"]:
                 types_d = []
@@ -694,7 +695,7 @@ class BaseModelMaker:
             else:
                 return type_def.get(rgx.lastgroup)
 
-    def parse_make_field(self, v):
+    def parse_make_field(self, v, k=""):
         return (self.get_field_type(v), self.get_field_value(v))
 
     def _make_from_dict(self, dict_data, from_dict=False):
@@ -705,6 +706,7 @@ class BaseModelMaker:
                 dict_data[k] = [
                     self._make_from_dict(i) for i in v if isinstance(i, dict)
                 ]
+
             else:  # Update Key-Value
                 dict_data[k] = self.parse_make_field(v)
         return dict_data
@@ -712,17 +714,21 @@ class BaseModelMaker:
     def _make_models(self, dict_data):
         for k, v in dict_data.copy().items():
             if isinstance(v, dict):  # For DICT
-                model = create_model(k, __base__=BasicModel, **v)
+                val = self._make_models(v).copy()
+                model = create_model(k, __base__=MainModel, **val)
                 dict_data[k] = model(**{})
             elif isinstance(v, list):  # For LIST
                 for idx, i in enumerate(v):
+                    row = i.copy()
                     if isinstance(i, dict):
-                        model = create_model(k, __base__=BasicModel, **v[idx])
-                        dict_data[k][idx] = model(**{})
+                        row = self._make_models(i).copy()
+                    model = create_model(k, __base__=MainModel, **row)
+                    dict_data[k][idx] = model(**{})
 
         return dict_data
 
     def from_data_dict(self, data):
+        self.virtual = True
         components = self._make_from_dict(data)
         # TODO reactivate when pydantic is stable
         self.components = self._make_models(components)
@@ -746,7 +752,7 @@ class FormioModelMaker(BaseModelMaker):
         self.components_logic = []
 
     def from_formio(
-            self, schema: dict, simple=False, parent="", parent_builder=None
+        self, schema: dict, simple=False, parent="", parent_builder=None
     ):
         self.parent = parent
         self.parent_builder = parent_builder
@@ -944,8 +950,8 @@ class FormioModelMaker(BaseModelMaker):
         for k, v in self.instance.dict().items():
             if k in self.model_form_fields:
                 if (
-                        self.model_form_fields[k].type
-                        not in self.no_create_model_field_key
+                    self.model_form_fields[k].type
+                    not in self.no_create_model_field_key
                 ):
                     component = self.model_form_fields[k]
                     self.form_fields[component.key] = copy.deepcopy(component)

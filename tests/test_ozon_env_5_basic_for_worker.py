@@ -85,6 +85,8 @@ class MockWorker1(OzonWorkerEnv):
             row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
             row_dictr.selction_value("stato", "caricato", "Caricato")
 
+            assert row_dictr.get('data_value.stato').startswith("Car") is True
+
             row_o = await self.virtual_row_doc_model.new(
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
                 data=row_dictr.data.copy()
@@ -93,7 +95,9 @@ class MockWorker1(OzonWorkerEnv):
             assert row_o.nrRiga == row.nrRiga
             assert row_o.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_o.prova == "test"
-            assert row_o.get('data_value.stato') == "Caricato"
+            assert row_o.data_value.get('stato') == "Caricato"
+            assert row_o.get('data_value.stato').startswith("Car") is True
+            assert row_o.get('dett.test').startswith("a") is True
             assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
 

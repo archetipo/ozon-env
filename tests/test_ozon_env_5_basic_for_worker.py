@@ -19,7 +19,6 @@ class MockWorker1(OzonWorkerEnv):
             return self.exception_response(err=res.msg)
 
         data = await get_file_data()
-        riga_doc = await get_file_data()
         self.p_model = await self.add_model(self.params.get("model"))
         self.row_model = await self.add_model("riga_doc")
         self.virtual_doc_model = await self.add_model(

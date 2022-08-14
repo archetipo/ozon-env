@@ -164,6 +164,7 @@ class OzonModelBase:
         if not self.virtual:
             self.mm.new(data)
         else:
+            self.mm = ModelMaker(self.name)
             self.mm.from_data_dict(data)
             self.mm.new()
         self.model_record = self.mm.instance

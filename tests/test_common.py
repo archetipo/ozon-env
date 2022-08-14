@@ -97,6 +97,10 @@ async def get_formio_doc_schema():
     return await readfilejson('data', 'test_form_2_formio_schema_doc.json')
 
 @pytestmark
+async def get_formio_doc_riga_schema():
+    return await readfilejson('data', 'test_form_3_formio_schema_doc_riga.json')
+
+@pytestmark
 async def downlad_file(self, file_url):
     return await readfile(self.upload_folder, file_url)
 

@@ -713,10 +713,12 @@ class BaseModelMaker:
             if isinstance(v, dict):  # For DICT
                 dict_data[k] = self._make_from_dict(v)
             elif isinstance(v, list):  # For LIST
-                dict_data[k] = [
-                    self._make_from_dict(i) for i in v if isinstance(i, dict)
-                ]
-
+                dict_data[k] = []
+                for i in v:
+                    if isinstance(i, dict):
+                        dict_data[k].append(self._make_from_dict(i))
+                    else:
+                        dict_data[k].append(i)
             else:  # Update Key-Value
                 dict_data[k] = self.parse_make_field(v)
         return dict_data
@@ -729,11 +731,12 @@ class BaseModelMaker:
                 dict_data[k] = model(**{})
             elif isinstance(v, list):  # For LIST
                 for idx, i in enumerate(v):
-                    row = i.copy()
                     if isinstance(i, dict):
                         row = self._make_models(i).copy()
-                    model = create_model(k, __base__=MainModel, **row)
-                    dict_data[k][idx] = model(**{})
+                        model = create_model(k, __base__=MainModel, **row)
+                        dict_data[k][idx] = model(**{})
+                    else:
+                        dict_data[k][idx] = i
 
         return dict_data
 

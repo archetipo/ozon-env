@@ -19,7 +19,9 @@ class MockWorker1(OzonWorkerEnv):
             return self.exception_response(err=res.msg)
 
         data = await get_file_data()
+        riga_doc = await get_file_data()
         self.p_model = await self.add_model(self.params.get("model"))
+        self.row_model = await self.add_model("riga_doc")
         self.virtual_doc_model = await self.add_model(
             'virtual_doc', virtual=True)
         self.virtual_row_doc_model = await self.add_model(
@@ -60,6 +62,7 @@ class MockWorker1(OzonWorkerEnv):
 
     async def process_document(self, data_doc):
         data_doc['stato'] = ""
+        data_doc['tipologia'] = []
         data_doc['document_type'] = ""
         data_doc['document_type'] = ""
         data_doc['ammImpEuro'] = 0.0
@@ -75,17 +78,22 @@ class MockWorker1(OzonWorkerEnv):
             return v_doc
 
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
+        v_doc.selction_value('tipologia', ["a", "b"],
+                             ["A", "B"])
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
         v_doc.selction_value("stato", "caricato", "Caricato")
 
         assert v_doc.ammImpEuro == 1446.16
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133
+        assert v_doc.dg18XIndModOrdinat.denominazione == "Mario Rossi"
         for row in v_doc.dg15XVoceCalcolata:
             row_dictr = self.virtual_row_doc_model.get_dict_record(
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
 
             row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
             row_dictr.selction_value("stato", "caricato", "Caricato")
+            row_dictr.selction_value(
+                'tipologia', ["a", "b"], ["A", "B"])
 
             assert row_dictr.get('data_value.stato').startswith("Car") is True
 
@@ -97,11 +105,37 @@ class MockWorker1(OzonWorkerEnv):
             assert row_o.nrRiga == row.nrRiga
             assert row_o.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_o.prova == "test"
+            assert row_o.tipologia == ["a", "b"]
             assert row_o.data_value.get('stato') == "Caricato"
             assert row_o.get('data_value.stato').startswith("Car") is True
             assert row_o.get('dett.test').startswith("a") is True
             assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
+
+            row_db = await self.virtual_row_doc_model.insert(
+                row_o, force_model=self.row_model)
+
+            if row_db.is_error():
+                return row_db
+
+            assert row_db.nrRiga == row.nrRiga
+            assert row_db.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
+            assert row_db.tipologia == ["a", "b"]
+            assert row_db.data_value.get('stato') == "Caricato"
+            assert row_db.get('data_value.stato').startswith("Car") is True
+            assert row_db.stato == "caricato"
+
+            row_db.selction_value("stato", "done", 'Done')
+            row_db.selction_value("tipologia", ["a", "c"], ["A", "C"])
+
+            row_upd = await self.row_model.update(row_db)
+
+            assert row_upd.nrRiga == row.nrRiga
+            assert row_upd.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
+            assert row_upd.tipologia == ["a", "c"]
+            assert row_upd.data_value.get('stato') == "Done"
+            assert row_upd.get('data_value.stato').startswith("Do") is True
+            assert row_upd.stato == "done"
 
         documento = await self.virtual_doc_model.insert(
             v_doc, force_model=self.p_model)
@@ -131,8 +165,12 @@ async def test_base_worker_env():
 
 @pytestmark
 async def test_init_schema_for_woker():
-    "test_form_2_formio_schema_doc.json"
+    """
+    test_form_2_formio_schema_doc.json
+    "test_form_2_formio_schema_doc_riga.json
+    """
     schema_list = await get_formio_doc_schema()
+    schema_list2 = await get_formio_doc_riga_schema()
     cfg = await OzonEnv.readfilejson(get_config_path())
     env = OzonEnv(cfg)
     await env.init_env()
@@ -141,6 +179,9 @@ async def test_init_schema_for_woker():
     doc_schema = await env.get('component').new(data=schema_list[0])
     doc_schema = await env.get('component').insert(doc_schema)
     assert doc_schema.rec_name == "documento"
+    doc_riga_schema = await env.get('component').new(data=schema_list2[0])
+    doc_riga_schema = await env.get('component').insert(doc_riga_schema)
+    assert doc_riga_schema.rec_name == "riga_doc"
 
 
 @pytestmark
@@ -184,7 +225,7 @@ async def test_init_worker_fail():
         }
     )
     assert res.fail is True
-    assert res.msg == "Errore Duplicato rec_name: DOC99999"
+    assert res.msg == "Errore Duplicato rec_name: DOC99999.1"
     assert res.data['test_topic']["error"] is True
     assert res.data['test_topic']["done"] is True
     assert res.data['test_topic']['next_page'] == "self"

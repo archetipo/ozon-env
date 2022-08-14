@@ -33,7 +33,6 @@ class OzonWorkerEnv(OzonEnv):
                     action_next_page = next_page_cg.get('list')
                 elif next_page_cg.get("form"):
                     action_next_page = f"{next_page_cg.get('form')}/{rec_ref}"
-        print(action_next_page)
         return action_next_page
 
     @classmethod

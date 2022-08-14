@@ -166,7 +166,7 @@ class Component:
     def trigger_change(self):
         trig_chage = False
         if self.raw.get("properties") and self.raw.get("properties").get(
-                "trigger_change"
+            "trigger_change"
         ):
             trig_chage = True
         return trig_chage
@@ -325,8 +325,8 @@ class Component:
                         if val not in self.builder.realted_fields_logic:
                             self.builder.realted_fields_logic[val] = []
                         if (
-                                self.key
-                                not in self.builder.realted_fields_logic[val]
+                            self.key
+                            not in self.builder.realted_fields_logic[val]
                         ):
                             self.builder.realted_fields_logic[val].append(
                                 self.key
@@ -353,10 +353,10 @@ class Component:
             if not self.survey and not self.multi_row:
                 self.builder.table_colums[self.key] = self.label
         if (
-                self.key
-                and self.key is not None
-                and self.type not in ["columns", "column", "well", "panel"]
-                and self.key not in self.builder.filter_keys
+            self.key
+            and self.key is not None
+            and self.type not in ["columns", "column", "well", "panel"]
+            and self.key not in self.builder.filter_keys
         ):
             self.builder.filters.append(self)
             self.builder.filter_keys.append(self.key)
@@ -554,7 +554,7 @@ class surveyComponent(Component):
 
                 if self.value.get(question["value"]):
                     value["checked"] = (
-                            self.value[question["value"]] == b_val["value"]
+                        self.value[question["value"]] == b_val["value"]
                     )
 
                 question_dict["values"].append(value)
@@ -638,7 +638,7 @@ class BaseModelMaker:
             s = str(v)
         regex = re.compile(
             r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
-            r"|(?P<int>\d+)|(?P<string>\D\w\W+)"
+            r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
         )
         regex_dt = re.compile(r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})")
         dtr = regex_dt.search(s)
@@ -661,9 +661,12 @@ class BaseModelMaker:
                     # i present the real value matched
                     # take it to return the real value cleaned
                     # from nosisy charter
-                    return type_def.get(rgx.lastgroup)(
-                        rgx.groupdict().get(rgx.lastgroup)
-                    )
+                    if rgx.lastgroup in ["int", "float"]:
+                        return type_def.get(rgx.lastgroup)(
+                            rgx.groupdict().get(rgx.lastgroup)
+                        )
+                    else:
+                        return type_def.get(rgx.lastgroup)(s)
 
             else:
                 return json.loads(s)
@@ -759,7 +762,7 @@ class FormioModelMaker(BaseModelMaker):
         self.components_logic = []
 
     def from_formio(
-            self, schema: dict, simple=False, parent="", parent_builder=None
+        self, schema: dict, simple=False, parent="", parent_builder=None
     ):
         self.parent = parent
         self.parent_builder = parent_builder
@@ -957,8 +960,8 @@ class FormioModelMaker(BaseModelMaker):
         for k, v in self.instance.dict().items():
             if k in self.model_form_fields:
                 if (
-                        self.model_form_fields[k].type
-                        not in self.no_create_model_field_key
+                    self.model_form_fields[k].type
+                    not in self.no_create_model_field_key
                 ):
                     component = self.model_form_fields[k]
                     self.form_fields[component.key] = copy.deepcopy(component)

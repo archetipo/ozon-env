@@ -79,6 +79,7 @@ class MockWorker1(OzonWorkerEnv):
         v_doc.selction_value("stato", "caricato", "Caricato")
 
         assert v_doc.ammImpEuro == 1446.16
+        assert v_doc.dg18XIndModOrdinat.cdCap == 10133
         for row in v_doc.dg15XVoceCalcolata:
             row_dictr = self.virtual_row_doc_model.get_dict_record(
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
@@ -104,6 +105,7 @@ class MockWorker1(OzonWorkerEnv):
 
         documento = await self.virtual_doc_model.insert(
             v_doc, force_model=self.p_model)
+
         return documento
 
 

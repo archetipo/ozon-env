@@ -266,7 +266,10 @@ class OzonModelBase:
                     return self.error_response(msg, data=record.get_dict())
             else:
                 coll = self.db.engine.get_collection(self.name)
-            record.list_order = await self.count()
+            if force_model:
+                record.list_order = await force_model.count()
+            else:
+                record.list_order = await self.count()
             record.create_datetime = datetime.now()
             record = self.set_user_data(record)
             result_save = await coll.insert_one(record.get_dict())

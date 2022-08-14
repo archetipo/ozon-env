@@ -8,5 +8,5 @@ poetry run flake8 ozonenv/**/*.py
 poetry run bandit ozonenv/**/*.py
 echo "run test"
 poetry run pytest --cov --cov-report=html
-#docker-compose down
+docker-compose down
 echo "make project: Done."

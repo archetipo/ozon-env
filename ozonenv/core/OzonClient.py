@@ -65,6 +65,24 @@ class OzonClient:
                 return result
         return result
 
+    async def send_mail(self, model, rec_name, tmp_name):
+        url = f"{self.default_url}/client/send/mail/{model}/{rec_name}/{tmp_name}"
+        data_obj = {}
+        headers = self.get_headers()
+        result = {"status": "ok"}
+        async with httpx.AsyncClient(timeout=None) as client:
+            res = await client.post(url, json=data_obj, headers=headers)
+            if res:
+                res = res.json()
+                if isinstance(res, list) and len(res) > 0:
+                    r = res[0]
+                    if r.get("status") == "error":
+                        result["status"] = "error"
+                        return result
+                return result
+            else:
+                return {"status": "error", "message": res}
+
 
 class LabelPrinter:
     @classmethod

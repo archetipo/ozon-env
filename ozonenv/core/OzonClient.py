@@ -69,7 +69,7 @@ class OzonClient:
 class LabelPrinter:
     @classmethod
     def create(cls, apikey="", is_api=False, url=""):
-        self = Printer()
+        self = LabelPrinter()
         self.default_url = url
         self.is_api = is_api
         self.api_key = apikey

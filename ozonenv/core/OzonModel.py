@@ -37,7 +37,7 @@ class OzonModelBase:
         self.model_meta: ModelMetaclass = None
         self.schema = copy.deepcopy(schema)
         self.schema_object: CoreModel = None
-        self._default_domain = {"active": True, "deleted": 0}
+        self.default_domain = {"active": True, "deleted": 0}
         self.is_session_model = session_model
         self.model_record: CoreModel = None
         self.mm: ModelMaker = None
@@ -54,6 +54,11 @@ class OzonModelBase:
     @property
     def user_session(self):
         return self.orm.user_session
+
+    def get_domain(self, domain={}):
+        _domain = self.default_domain.copy()
+        _domain.update(domain)
+        return _domain
 
     def init_model(self):
         self.mm = ModelMaker(self.name)
@@ -186,7 +191,7 @@ class OzonModelBase:
     async def count(self, domain={}) -> int:
         if not self.virtual:
             if not domain:
-                domain = self._default_domain
+                domain = self.default_domain
             return await self.count_by_filter(domain)
         else:
             return 0

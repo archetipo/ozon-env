@@ -66,7 +66,7 @@ async def test_add_component_resource_1_product():
         prod = await product_model.new(
             {"rec_name": f"prod{i}", "label": f"Product{i}"})
         await product_model.insert(prod)
-    products = await product_model.find(product_model._default_domain)
+    products = await product_model.find(product_model.get_domain())
     assert len(products) == 10
     assert products[3].get('rec_name') == "prod3"
     product = await product_model.load({"rec_name": "prod2"})
@@ -83,14 +83,14 @@ async def test_aggregation_with_product():
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     product_model = env.get('prodotti')
-    products = await product_model.find(product_model._default_domain)
+    products = await product_model.find(product_model.get_domain())
     products[3].set('label', 'AProduct3')
     products[3] = await product_model.update(products[3])
     p3 = products[3]
     p2 = products[2]
     assert p3.update_datetime > p2.update_datetime
     res = await product_model.search_all_distinct(
-        "rec_name", query=product_model._default_domain,
+        "rec_name", query=product_model.get_domain(),
         compute_label="rec_name,label", sort="title:asc",
         skip=3, limit=3
     )
@@ -98,7 +98,8 @@ async def test_aggregation_with_product():
     assert res[0].title == 'prod3 - AProduct3'
     assert res[1].get('title') == 'prod4 - Product4'
     res = await product_model.search_all_distinct(
-        "rec_name", query=product_model._default_domain, sort="title:desc",
+        "rec_name", query=product_model.get_domain(),
+        sort="title:desc",
         compute_label="label", skip=0, limit=4
     )
     assert len(res) == 4

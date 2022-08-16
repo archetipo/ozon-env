@@ -276,7 +276,6 @@ class CoreModel(MainModel):
         d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
         return d
 
-
     def get_dict_copy(self):
         return copy.deepcopy(self.get_dict())
 

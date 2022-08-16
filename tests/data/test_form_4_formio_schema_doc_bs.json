@@ -1,0 +1,1149 @@
+[
+  {
+    "rec_name": "documento_beni_servizi",
+    "data_model": "documento",
+    "title": "Documento Beni",
+    "type": "form",
+    "components": [
+      {
+        "label": "Columns",
+        "columns": [
+          {
+            "components": [
+              {
+                "label": "Codice",
+                "tableView": true,
+                "validate": {
+                  "required": true
+                },
+                "key": "rec_name",
+                "properties": {
+                  "readonly": "y"
+                },
+                "type": "textfield",
+                "input": true
+              }
+            ],
+            "width": 3,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "size": "md",
+            "currentWidth": 3
+          },
+          {
+            "components": [
+              {
+                "label": "stato",
+                "widget": "choicesjs",
+                "tableView": true,
+                "defaultValue": "caricato",
+                "data": {
+                  "values": [
+                    {
+                      "label": "Caricato",
+                      "value": "caricato"
+                    },
+                    {
+                      "label": "In Corso",
+                      "value": "aperto"
+                    },
+                    {
+                      "label": "Parziale",
+                      "value": "parziale"
+                    },
+                    {
+                      "label": "Completato",
+                      "value": "completato"
+                    },
+                    {
+                      "label": "Annullato",
+                      "value": "annullato"
+                    }
+                  ]
+                },
+                "readOnlyValue": true,
+                "key": "stato",
+                "properties": {
+                  "readonly": "si"
+                },
+                "type": "select",
+                "input": true
+              }
+            ],
+            "width": 3,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "size": "md",
+            "currentWidth": 3
+          },
+          {
+            "components": [
+              {
+                "label": "Tipi Dettaglio",
+                "widget": "choicesjs",
+                "disabled": true,
+                "tableView": true,
+                "multiple": true,
+                "data": {
+                  "values": [
+                    {
+                      "label": "Bene",
+                      "value": "bene"
+                    },
+                    {
+                      "label": "Consumabile",
+                      "value": "consumabile"
+                    },
+                    {
+                      "label": "Servizio",
+                      "value": "servizio"
+                    }
+                  ]
+                },
+                "key": "tipi_dettaglio",
+                "properties": {
+                  "readonly": "y"
+                },
+                "type": "select",
+                "input": true
+              }
+            ],
+            "size": "md",
+            "width": 2,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "currentWidth": 2
+          },
+          {
+            "components": [],
+            "size": "md",
+            "width": 2,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "currentWidth": 2
+          },
+          {
+            "components": [
+              {
+                "label": "Criticita'",
+                "hidden": true,
+                "tableView": false,
+                "defaultValue": false,
+                "clearOnHide": false,
+                "key": "anomalia",
+                "properties": {
+                  "readonly": "y"
+                },
+                "type": "checkbox",
+                "input": true
+              },
+              {
+                "label": "Criticita' Gestita",
+                "hidden": true,
+                "tableView": false,
+                "defaultValue": false,
+                "clearOnHide": false,
+                "key": "anomalia_gestita",
+                "properties": {
+                  "readonly": "y"
+                },
+                "type": "checkbox",
+                "input": true
+              },
+              {
+                "label": "Attivo",
+                "hidden": true,
+                "tableView": false,
+                "defaultValue": false,
+                "clearOnHide": false,
+                "key": "active",
+                "properties": {
+                  "readonly": "y"
+                },
+                "logic": [
+                  {
+                    "name": "chk user",
+                    "trigger": {
+                      "type": "json",
+                      "json": {
+                        "var": "form.is_admin"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "name": "display field",
+                        "type": "property",
+                        "property": {
+                          "label": "Hidden",
+                          "value": "hidden",
+                          "type": "boolean"
+                        },
+                        "state": false
+                      }
+                    ]
+                  }
+                ],
+                "type": "checkbox",
+                "input": true
+              }
+            ],
+            "size": "md",
+            "width": 2,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "currentWidth": 2
+          }
+        ],
+        "key": "columns5",
+        "type": "columns",
+        "input": false,
+        "tableView": false
+      },
+      {
+        "label": "Columns",
+        "columns": [
+          {
+            "components": [
+              {
+                "label": "Ugov Agg.",
+                "format": "d/m/Y H:i:S",
+                "tableView": false,
+                "enableMinDateInput": false,
+                "datePicker": {
+                  "disableWeekends": false,
+                  "disableWeekdays": false
+                },
+                "enableMaxDateInput": false,
+                "key": "dtMod",
+                "type": "datetime",
+                "input": true,
+                "widget": {
+                  "type": "calendar",
+                  "displayInTimezone": "viewer",
+                  "locale": "en",
+                  "useLocaleSettings": false,
+                  "allowInput": true,
+                  "mode": "single",
+                  "enableTime": true,
+                  "noCalendar": false,
+                  "format": "d/m/Y H:i:S",
+                  "hourIncrement": 1,
+                  "minuteIncrement": 1,
+                  "time_24hr": false,
+                  "minDate": null,
+                  "disableWeekends": false,
+                  "disableWeekdays": false,
+                  "maxDate": null
+                }
+              }
+            ],
+            "width": 3,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "size": "md",
+            "currentWidth": 3
+          },
+          {
+            "components": [
+              {
+                "label": "idDg",
+                "tableView": false,
+                "key": "idDg",
+                "type": "textfield",
+                "input": true
+              }
+            ],
+            "width": 3,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "size": "md",
+            "currentWidth": 3
+          },
+          {
+            "components": [
+              {
+                "label": "Tipo Documento",
+                "widget": "choicesjs",
+                "tableView": true,
+                "data": {
+                  "values": [
+                    {
+                      "label": "Ordine",
+                      "value": "ordine"
+                    },
+                    {
+                      "label": "Fattura",
+                      "value": "fattura"
+                    },
+                    {
+                      "label": "Commessa",
+                      "value": "commessa"
+                    },
+                    {
+                      "label": "Rda",
+                      "value": "rda"
+                    },
+                    {
+                      "label": "Rda fondo economale",
+                      "value": "rda_fondo_economale"
+                    },
+                    {
+                      "label": "Reso",
+                      "value": "reso"
+                    }
+                  ]
+                },
+                "key": "document_type",
+                "type": "select",
+                "input": true
+              }
+            ],
+            "size": "md",
+            "width": 3,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "currentWidth": 3
+          },
+          {
+            "components": [],
+            "size": "md",
+            "width": 3,
+            "offset": 0,
+            "push": 0,
+            "pull": 0,
+            "currentWidth": 3
+          }
+        ],
+        "hidden": true,
+        "key": "columns4",
+        "type": "columns",
+        "input": false,
+        "tableView": false
+      },
+      {
+        "title": "Ordine",
+        "collapsible": false,
+        "disabled": true,
+        "key": "ordine_container",
+        "logic": [
+          {
+            "name": "check",
+            "trigger": {
+              "type": "json",
+              "json": {
+                "!==": [
+                  {
+                    "var": "form.document_type"
+                  },
+                  "ordine"
+                ]
+              }
+            },
+            "actions": [
+              {
+                "name": "hide",
+                "type": "property",
+                "property": {
+                  "label": "Hidden",
+                  "value": "hidden",
+                  "type": "boolean"
+                },
+                "state": true
+              }
+            ]
+          }
+        ],
+        "type": "panel",
+        "label": "Ordine",
+        "input": false,
+        "tableView": false,
+        "components": [
+          {
+            "html": "<p style=\"text-align:center;\"><span class=\"text-big\"><strong>Documento</strong></span></p><p style=\"text-align:center;\"><strong>{{ form.data_value.document_type }}</strong>: {{ form.numeroRegistrazione }} / &nbsp;{{ form.annoRif }} &nbsp;del {{ form.data_value.dtRegistrazione }} &nbsp; &nbsp;<strong>RdA</strong>: {{ form.rda_num }} / &nbsp;{{ form.rda_anno }}&nbsp;</p><p style=\"text-align:center;\"><strong>Fornitore:</strong> &nbsp;{{ form.data_value.partner }}&nbsp;</p><p style=\"text-align:center;\"><strong>DEC:</strong> {{ form.dec_nome }}. - <strong>RUP: </strong>{{ form.rup_nome }}&nbsp;</p><p><strong>Descrizione:</strong>&nbsp;<span class=\"text-big\"> </span>{{ form.dsDg }}</p><p><strong>Note: </strong>{{ form.note }}</p><p style=\"text-align:center;\">{% if form.anomalia %}&nbsp;</p><p style=\"text-align:center;\"><strong>Messaggi Anomalie</strong></p><p style=\"text-align:center;\">{{ form.anomalia_msg }}</p><p style=\"text-align:center;\">{% endif %}</p>",
+            "label": "Editor",
+            "refreshOnChange": false,
+            "key": "editor",
+            "properties": {
+              "eval_tmp": "yes"
+            },
+            "type": "content",
+            "input": false,
+            "tableView": false
+          },
+          {
+            "label": "Columns",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "Gestisci Ordine",
+                    "tag": "a",
+                    "attrs": [
+                      {
+                        "attr": "target",
+                        "value": "_self"
+                      },
+                      {
+                        "attr": "icon",
+                        "value": "it-card"
+                      }
+                    ],
+                    "content": "https://...",
+                    "refreshOnChange": false,
+                    "customClass": "mx-auto col-md-8 mt-1 mb-1",
+                    "key": "gestisciOrdine",
+                    "logic": [
+                      {
+                        "name": "if caricato",
+                        "trigger": {
+                          "type": "json",
+                          "json": {
+                            "==": [
+                              {
+                                "var": "form.stato"
+                              },
+                              "caricato"
+                            ]
+                          }
+                        },
+                        "actions": [
+                          {
+                            "name": "link",
+                            "type": "property",
+                            "property": {
+                              "label": "Hidden",
+                              "value": "hidden",
+                              "type": "boolean"
+                            },
+                            "state": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "in progress or complete",
+                        "trigger": {
+                          "type": "json",
+                          "json": {
+                            "!==": [
+                              {
+                                "var": "form.stato"
+                              },
+                              "caricato"
+                            ]
+                          }
+                        },
+                        "actions": [
+                          {
+                            "name": "link",
+                            "type": "value",
+                            "value": "content={\n  \"cat\": [\n    \"/action/form_form_gestione_ordine/GEST\",\n    {\n      \"var\": \"form.rec_name\"\n    }\n  ]\n}"
+                          }
+                        ]
+                      }
+                    ],
+                    "type": "htmlelement",
+                    "input": false,
+                    "tableView": false
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Aggiungi DDT",
+                    "showValidations": false,
+                    "theme": "warning",
+                    "block": true,
+                    "customClass": "btn-outline-primary",
+                    "tableView": false,
+                    "key": "aggiungiDdt",
+                    "properties": {
+                      "btn_action_type": "post",
+                      "url_action": "/process/start/camunda_process/crea_doc_gestione_ordine"
+                    },
+                    "logic": [
+                      {
+                        "name": "check",
+                        "trigger": {
+                          "type": "json",
+                          "json": {
+                            "or": [
+                              {
+                                "var": "form.anomalia"
+                              },
+                              {
+                                "var": "form.ddt_non_gestibile"
+                              }
+                            ]
+                          }
+                        },
+                        "actions": [
+                          {
+                            "name": "hide",
+                            "type": "property",
+                            "property": {
+                              "label": "Hidden",
+                              "value": "hidden",
+                              "type": "boolean"
+                            },
+                            "state": true
+                          },
+                          {
+                            "name": "disabled",
+                            "type": "property",
+                            "property": {
+                              "label": "Disabled",
+                              "value": "disabled",
+                              "type": "boolean"
+                            },
+                            "state": true
+                          }
+                        ]
+                      }
+                    ],
+                    "type": "button",
+                    "saveOnEnter": false,
+                    "input": true,
+                    "hideOnChildrenHidden": false
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              }
+            ],
+            "key": "columns7",
+            "type": "columns",
+            "input": false,
+            "tableView": false
+          },
+          {
+            "label": "Columns",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "Partner",
+                    "widget": "choicesjs",
+                    "hidden": true,
+                    "hideLabel": true,
+                    "tableView": true,
+                    "dataSrc": "url",
+                    "data": {
+                      "url": "/models/distinct",
+                      "headers": [
+                        {
+                          "key": "",
+                          "value": ""
+                        }
+                      ]
+                    },
+                    "key": "partner",
+                    "properties": {
+                      "id": "rec_name",
+                      "label": "title",
+                      "domain": "{}",
+                      "model": "posizione"
+                    },
+                    "type": "select",
+                    "input": true,
+                    "hideOnChildrenHidden": false,
+                    "disableLimit": false
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Messaggio Anomalie",
+                    "autoExpand": false,
+                    "hidden": true,
+                    "spellcheck": false,
+                    "tableView": false,
+                    "clearOnHide": false,
+                    "key": "anomalia_msg",
+                    "properties": {
+                      "readonly": "y"
+                    },
+                    "type": "textarea",
+                    "input": true
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Descrizione Ordine",
+                    "autoExpand": false,
+                    "hidden": true,
+                    "tableView": false,
+                    "key": "dsDg",
+                    "type": "textarea",
+                    "input": true
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Note",
+                    "autoExpand": false,
+                    "hidden": true,
+                    "tableView": false,
+                    "key": "note",
+                    "type": "textarea",
+                    "input": true
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              }
+            ],
+            "hidden": true,
+            "key": "columns8",
+            "type": "columns",
+            "input": false,
+            "tableView": false
+          },
+          {
+            "label": "Columns",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "Search Area",
+                    "customClass": "col-12",
+                    "hidden": true,
+                    "key": "search_area",
+                    "properties": {
+                      "type": "search_area",
+                      "query": "{}",
+                      "model": "riga_ordine",
+                      "object": "table",
+                      "object_id": "righe_ordine"
+                    },
+                    "logic": [
+                      {
+                        "name": "all",
+                        "trigger": {
+                          "type": "json",
+                          "json": {
+                            "var": "form.rec_name"
+                          }
+                        },
+                        "actions": [
+                          {
+                            "name": "eval query",
+                            "type": "value",
+                            "value": "query={\"cat\":[\n    \"{'$and':[{'parent':'\",\n    {\"var\":\"form.rec_name\"},\n    \"'}]}\"\n    ]}"
+                          }
+                        ]
+                      }
+                    ],
+                    "type": "well",
+                    "input": false,
+                    "tableView": false,
+                    "components": []
+                  }
+                ],
+                "width": 6,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 6
+              },
+              {
+                "components": [],
+                "width": 6,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 6
+              }
+            ],
+            "key": "columns",
+            "type": "columns",
+            "input": false,
+            "tableView": false
+          },
+          {
+            "label": "Table",
+            "cellAlignment": "left",
+            "customClass": "table table-sm table-borderless table-striped table-hover p2",
+            "key": "righe_ordine",
+            "properties": {
+              "action_url": "/action/list_riga_ordine",
+              "model": "riga_ordine",
+              "show_owner": "no",
+              "hide_select_chk": "no",
+              "list_metadata_show": "list_order,",
+              "dom": "iptilp",
+              "action_name": "list_riga_ordine",
+              "modal": "y"
+            },
+            "type": "table",
+            "numRows": 1,
+            "input": false,
+            "tableView": false,
+            "rows": [
+              [
+                {
+                  "components": []
+                },
+                {
+                  "components": []
+                },
+                {
+                  "components": []
+                }
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Common",
+        "collapsible": false,
+        "hidden": true,
+        "key": "common",
+        "type": "panel",
+        "label": "Panel",
+        "input": false,
+        "tableView": false,
+        "components": [
+          {
+            "label": "Columns",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "v_part",
+                    "spellcheck": false,
+                    "tableView": false,
+                    "key": "data_value.partner",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "_r_desc",
+                    "spellcheck": false,
+                    "tableView": false,
+                    "key": "dg02DgDett.dsDgDett",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3,
+                "width": 3
+              },
+              {
+                "components": [],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              },
+              {
+                "components": [],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              }
+            ],
+            "hidden": true,
+            "key": "columns6",
+            "type": "columns",
+            "input": false,
+            "tableView": false
+          },
+          {
+            "label": "Dati RDA ",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "Rda Num",
+                    "tableView": true,
+                    "key": "rda_num",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Rda Anno",
+                    "tableView": true,
+                    "key": "rda_anno",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Rda IdDg",
+                    "tableView": true,
+                    "key": "rda_idDg",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              },
+              {
+                "components": [],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              }
+            ],
+            "customClass": "text-center py-2",
+            "hidden": true,
+            "key": "columns2",
+            "type": "columns",
+            "input": false,
+            "tableView": false
+          },
+          {
+            "label": "Columns",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "uid Rup da Rda",
+                    "hidden": true,
+                    "spellcheck": false,
+                    "tableView": false,
+                    "key": "rup",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Mail Rup",
+                    "hidden": true,
+                    "spellcheck": false,
+                    "tableView": false,
+                    "key": "rup_email",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "uid Dec Ugov",
+                    "hidden": true,
+                    "spellcheck": false,
+                    "tableView": false,
+                    "key": "dec",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Dec Mail",
+                    "hidden": true,
+                    "spellcheck": false,
+                    "tableView": false,
+                    "key": "dec_email",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              }
+            ],
+            "hidden": true,
+            "key": "columns3",
+            "type": "columns",
+            "input": false,
+            "tableView": false
+          },
+          {
+            "label": "Columns",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "Numero",
+                    "tableView": true,
+                    "key": "numeroRegistrazione",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "width": 2,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 2
+              },
+              {
+                "components": [
+                  {
+                    "label": "Anno",
+                    "tableView": true,
+                    "key": "annoRif",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "width": 2,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "size": "md",
+                "currentWidth": 2
+              },
+              {
+                "components": [
+                  {
+                    "label": "Del",
+                    "format": "d/m/Y",
+                    "tableView": true,
+                    "enableMinDateInput": false,
+                    "datePicker": {
+                      "disableWeekends": false,
+                      "disableWeekdays": false
+                    },
+                    "enableMaxDateInput": false,
+                    "enableTime": false,
+                    "key": "dtRegistrazione",
+                    "type": "datetime",
+                    "input": true,
+                    "widget": {
+                      "type": "calendar",
+                      "displayInTimezone": "viewer",
+                      "locale": "en",
+                      "useLocaleSettings": false,
+                      "allowInput": true,
+                      "mode": "single",
+                      "enableTime": false,
+                      "noCalendar": false,
+                      "format": "d/m/Y",
+                      "hourIncrement": 1,
+                      "minuteIncrement": 1,
+                      "time_24hr": false,
+                      "minDate": null,
+                      "disableWeekends": false,
+                      "disableWeekdays": false,
+                      "maxDate": null
+                    }
+                  }
+                ],
+                "size": "md",
+                "width": 2,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 2
+              },
+              {
+                "components": [
+                  {
+                    "label": "Rup Nome",
+                    "description": "dati dg11XTrasparenza -> idAbRespProc",
+                    "tableView": true,
+                    "key": "rup_nome",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              },
+              {
+                "components": [
+                  {
+                    "label": "Dec Nome",
+                    "description": "dati RDA dg02DgAttori -> tipo: RICHIEDENTE",
+                    "tableView": true,
+                    "key": "dec_nome",
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "size": "md",
+                "width": 3,
+                "offset": 0,
+                "push": 0,
+                "pull": 0,
+                "currentWidth": 3
+              }
+            ],
+            "hidden": true,
+            "key": "columns1",
+            "type": "columns",
+            "input": false,
+            "tableView": false
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "label": "Submit",
+        "key": "submit",
+        "disableOnInvalid": true,
+        "input": true,
+        "tableView": false
+      }
+    ],
+    "links": {},
+    "no_cancel": 0,
+    "display": "form",
+    "action": "",
+    "tags": [],
+    "settings": {},
+    "properties": {
+      "rheader": "1",
+      "rfooter": "1",
+      "send_mail_create": "0",
+      "send_mail_update": "0",
+      "form_disabled": "0",
+      "no_submit": "0",
+      "sort": "list_order:asc,rec_name:desc",
+      "queryformeditable": "{}"
+    },
+    "handle_global_change": 1,
+    "process_tenant": "",
+    "make_virtual_model": false,
+    "projectId": "documento, sync_ordine"
+  }
+]

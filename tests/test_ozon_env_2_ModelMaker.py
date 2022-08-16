@@ -58,7 +58,7 @@ async def test_make_form_cond_schema():
     assert test_2.realted_fields_logic == {'username': ['secret'],
                                            'password': ['secret']}
     d = test_2.instance.get_dict()
-    assert d == {'id': d.get('id'), 'app_code': [], 'parent': '',
+    assert d == {'id': d.get('id'), 'app_code': [],'data_model': '', 'parent': '',
                  'process_id': '',
                  'process_task_id': '', 'data_value': {}, 'owner_name': '',
                  'deleted': 0, 'list_order': 0,

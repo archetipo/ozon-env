@@ -26,6 +26,7 @@ class OzonModelBase:
     def __init__(
         self,
         model_name,
+        data_model="",
         session_model=False,
         virtual=False,
         static: BasicModel = None,
@@ -34,6 +35,7 @@ class OzonModelBase:
         self.name = model_name
         self.virtual = virtual
         self.static: BasicModel = static
+        self.data_model = data_model or model_name
         self.model_meta: ModelMetaclass = None
         self.schema = copy.deepcopy(schema)
         self.schema_object: CoreModel = None
@@ -106,7 +108,7 @@ class OzonModelBase:
             await self.set_unique(field)
 
     async def set_unique(self, field_name):
-        component_coll = self.db.engine.get_collection(self.name)
+        component_coll = self.db.engine.get_collection(self.data_model)
         await component_coll.create_index([(field_name, 1)], unique=True)
 
     @classmethod
@@ -169,12 +171,14 @@ class OzonModelBase:
         if not self.virtual:
             self.mm.new(data)
         else:
-            self.mm = ModelMaker(self.name)
+            self.mm = ModelMaker(self.data_model)
             self.mm.from_data_dict(data)
             self.mm.new()
         self.model_record = self.mm.instance
         if not self.is_session_model and not self.model_record.rec_name:
-            self.model_record.rec_name = f"{self.name}.{self.model_record.id}"
+            self.model_record.rec_name = (
+                f"{self.data_model}.{self.model_record.id}"
+            )
 
     def error_response(self, msg, data) -> CoreModel:
         return CoreModel(
@@ -182,7 +186,7 @@ class OzonModelBase:
         )
 
     async def count_by_filter(self, domain: dict) -> int:
-        coll = self.db.engine.get_collection(self.name)
+        coll = self.db.engine.get_collection(self.data_model)
         val = await coll.count_documents(domain)
         if not val:
             val = 0
@@ -262,7 +266,7 @@ class OzonModelBase:
                 )
                 return self.error_response(msg, data=record.get_dict_copy())
             if force_model:
-                coll = self.db.engine.get_collection(force_model.name)
+                coll = self.db.engine.get_collection(force_model.data_model)
                 if coll is None:
                     msg = (
                         _("Model (force_model) not exist: %s")
@@ -270,7 +274,7 @@ class OzonModelBase:
                     )
                     return self.error_response(msg, data=record.get_dict())
             else:
-                coll = self.db.engine.get_collection(self.name)
+                coll = self.db.engine.get_collection(self.data_model)
             if force_model:
                 record.list_order = await force_model.count()
             else:
@@ -313,7 +317,9 @@ class OzonModelBase:
         ):
             self.model_record.rec_name = f"{self.model_record.rec_name}_copy"
         else:
-            self.model_record.rec_name = f"{self.name}.{self.model_record.id}"
+            self.model_record.rec_name = (
+                f"{self.data_model}.{self.model_record.id}"
+            )
         self.model_record.list_order = await self.count()
         self.model_record.create_datetime = datetime.now()
         self.model_record.update_datetime = datetime.now()
@@ -332,14 +338,14 @@ class OzonModelBase:
             )
         try:
             if force_model:
-                coll = self.db.engine.get_collection(force_model.name)
+                coll = self.db.engine.get_collection(force_model.data_model)
                 if coll is None:
                     msg = _("Model (force_model) not exist: %s") % force_model
                     return self.error_response(
                         msg, data=record.get_dict_copy()
                     )
             else:
-                coll = self.db.engine.get_collection(self.name)
+                coll = self.db.engine.get_collection(self.data_model)
             original = await self.load(record.rec_name_domain())
             to_save = original.get_dict_diff(
                 record.get_dict_copy(),
@@ -369,23 +375,23 @@ class OzonModelBase:
             )
 
     async def remove(self, record: CoreModel):
-        coll = self.db.engine.get_collection(self.name)
+        coll = self.db.engine.get_collection(self.data_model)
         await coll.delete_one(record.rec_name_domain())
         return True
 
     async def remove_all(self, domain) -> int:
-        coll = self.db.engine.get_collection(self.name)
+        coll = self.db.engine.get_collection(self.data_model)
         num = await coll.delete_many(domain)
         return num
 
     async def load(self, domain: dict, force_model=None) -> CoreModel:
         if force_model:
-            coll = self.db.engine.get_collection(force_model.name)
+            coll = self.db.engine.get_collection(force_model.data_model)
             if coll is None:
                 msg = _("Model (force_model) not exist: %s") % force_model
                 return self.error_response(msg, data=domain)
         else:
-            coll = self.db.engine.get_collection(self.name)
+            coll = self.db.engine.get_collection(self.data_model)
         data = await coll.find_one(domain)
         if not data:
             return self.error_response(_("Not found"), domain)
@@ -400,7 +406,7 @@ class OzonModelBase:
         self, domain: dict, sort: str = "", limit=0, skip=0
     ) -> list[CoreModel]:
         _sort = self.eval_sort_str(sort)
-        coll = self.db.engine.get_collection(self.name)
+        coll = self.db.engine.get_collection(self.data_model)
         res = []
         if limit > 0:
             datas = coll.find(domain).sort(_sort).skip(skip).limit(limit)
@@ -419,7 +425,7 @@ class OzonModelBase:
         self, pipeline: list, sort: str, limit=0, skip=0
     ) -> list[CoreModel]:
         _sort = self.eval_sort_str(sort)
-        coll = self.db.engine.get_collection(self.name)
+        coll = self.db.engine.get_collection(self.data_model)
         if _sort:
             s = {"$sort": {}}
             for item in _sort:
@@ -433,7 +439,7 @@ class OzonModelBase:
         datas = await coll.aggregate(pipeline).to_list(None)
         res = []
 
-        agg_mm = ModelMaker(f"{self.name}.agg")
+        agg_mm = ModelMaker(f"{self.data_model}.agg")
         for rec_data in datas:
             if "_id" in rec_data:
                 rec_data.pop("_id")

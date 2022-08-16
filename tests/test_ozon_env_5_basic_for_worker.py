@@ -21,6 +21,8 @@ class MockWorker1(OzonWorkerEnv):
         data = await get_file_data()
         self.p_model = await self.add_model(self.params.get("model"))
         self.row_model = await self.add_model("riga_doc")
+        assert self.p_model.name == "documento_beni_servizi"
+        assert self.p_model.data_model == "documento"
         self.virtual_doc_model = await self.add_model(
             'virtual_doc', virtual=True)
         self.virtual_row_doc_model = await self.add_model(
@@ -139,6 +141,7 @@ class MockWorker1(OzonWorkerEnv):
         documento = await self.virtual_doc_model.insert(
             v_doc, force_model=self.p_model)
 
+        assert documento.dec_nome == "Test Dec"
         return documento
 
 
@@ -170,6 +173,7 @@ async def test_init_schema_for_woker():
     """
     schema_list = await get_formio_doc_schema()
     schema_list2 = await get_formio_doc_riga_schema()
+    schema_list3 = await get_formio_doc_schema2()
     cfg = await OzonEnv.readfilejson(get_config_path())
     env = OzonEnv(cfg)
     await env.init_env()
@@ -178,6 +182,9 @@ async def test_init_schema_for_woker():
     doc_schema = await env.get('component').new(data=schema_list[0])
     doc_schema = await env.get('component').insert(doc_schema)
     assert doc_schema.rec_name == "documento"
+    doc_schema3 = await env.get('component').new(data=schema_list3[0])
+    doc_schema3 = await env.get('component').insert(doc_schema3)
+    assert doc_schema3.rec_name == "documento_beni_servizi"
     doc_riga_schema = await env.get('component').new(data=schema_list2[0])
     doc_riga_schema = await env.get('component').insert(doc_riga_schema)
     assert doc_riga_schema.rec_name == "riga_doc"
@@ -192,7 +199,7 @@ async def test_init_worker_ok():
             "current_session_token": "BA6BA930",
             "topic_name": "test_topic",
             "document_type": "standard",
-            "model": "documento",
+            "model": "documento_beni_servizi",
             "session_is_api": False,
             "action_next_page": {
                 "success": {"form": "/open/doc"},
@@ -203,8 +210,8 @@ async def test_init_worker_ok():
     assert res.data['test_topic']["error"] is False
     assert res.data['test_topic']["done"] is True
     assert res.data['test_topic']['next_page'] == "/open/doc/DOC99999"
-    assert res.data['test_topic']['model'] == "documento"
-    assert res.data['documento']['stato'] == "caricato"
+    assert res.data['test_topic']['model'] == "documento_beni_servizi"
+    assert res.data['documento_beni_servizi']['stato'] == "caricato"
 
 
 @pytestmark
@@ -216,7 +223,7 @@ async def test_init_worker_fail():
             "current_session_token": "BA6BA930",
             "topic_name": "test_topic",
             "document_type": "standard",
-            "model": "documento",
+            "model": "documento_beni_servizi",
             "session_is_api": False,
             "action_next_page": {
                 "success": {"form": "/open/doc"},
@@ -228,4 +235,4 @@ async def test_init_worker_fail():
     assert res.data['test_topic']["error"] is True
     assert res.data['test_topic']["done"] is True
     assert res.data['test_topic']['next_page'] == "self"
-    assert res.data['test_topic']['model'] == "documento"
+    assert res.data['test_topic']['model'] == "documento_beni_servizi"

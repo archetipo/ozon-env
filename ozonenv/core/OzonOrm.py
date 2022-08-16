@@ -95,11 +95,11 @@ class OzonEnvBase:
         component_model = self.models.get("component")
         component = await component_model.new(schema)
         component = await component_model.insert(component)
-        if not component.get("data_model"):
+        if not component.data_model:
             await self.orm.add_model(component.rec_name, virtual=False)
             return self.get(component.rec_name)
         else:
-            return self.get(component.get("data_model"))
+            return self.get(component.data_model)
 
     async def add_model(self, model_name, virtual=False) -> OzonModelBase:
         if model_name not in self.models:
@@ -173,7 +173,9 @@ class OzonOrm:
         self.orm_models.append(_model_name)
         self.orm_static_models_map[model_name] = model_class
         self.env.models[_model_name] = OzonModel(
-            _model_name, self, static=model_class
+            _model_name,
+            self,
+            static=model_class,
         )
         await self.env.models[_model_name].init_unique()
         return self.env.models[_model_name]
@@ -246,6 +248,7 @@ class OzonOrm:
             self.env.models[model_name] = OzonModel(
                 model_name,
                 self,
+                data_model=schema.get("data_model", ""),
                 static=self.orm_static_models_map.get(model_name, None),
                 virtual=virtual,
                 schema=schema,
@@ -266,6 +269,7 @@ class OzonModel(OzonModelBase):
         self,
         model_name,
         orm: OzonOrm,
+        data_model="",
         session_model=False,
         virtual=False,
         static: CoreModel = None,
@@ -276,6 +280,7 @@ class OzonModel(OzonModelBase):
         self.db: Mongo = orm.env.db
         super(OzonModel, self).__init__(
             model_name,
+            data_model=data_model,
             session_model=session_model,
             virtual=virtual,
             static=static,

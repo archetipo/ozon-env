@@ -230,6 +230,7 @@ class MainModel(BaseModel):
 
 class CoreModel(MainModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    data_model: str = ""
     rec_name: str = ""
     app_code: List = Field(default=[])
     parent: str = ""
@@ -372,7 +373,6 @@ class AttachmentTrash(BasicModel):
 
 class Component(BasicModel):
     title: str = ""
-    data_model: str = ""
     path: str = ""
     parent: str = ""
     parent_name: str = ""

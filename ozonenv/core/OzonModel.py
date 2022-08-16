@@ -156,9 +156,6 @@ class OzonModelBase:
                     self._make_from_dict(i) for i in v if isinstance(i, dict)
                 ]
             else:
-                # Update Key-Value fields
-                # TODO handle all key-value fields and resources
-                # TODO check if resource only for non virtual
                 if self._value_type(v) is datetime:
                     if "data_value" not in res_dict:
                         res_dict["data_value"] = {}
@@ -235,7 +232,7 @@ class OzonModelBase:
             return self.error_response(msg, data=data)
         self.model_record.set_active()
         if data_value:
-            self.model_record.data_value = data_value.copy()
+            self.model_record.data_value.update(data_value.copy())
         return self.model_record
 
     def set_user_data(self, record: CoreModel) -> CoreModel:

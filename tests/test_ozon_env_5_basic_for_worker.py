@@ -50,7 +50,7 @@ class MockWorker1(OzonWorkerEnv):
             }
             res_data = {
                 self.topic_name: result,
-                self.p_model.name: documento.get_dict_copy()
+                self.p_model.name: documento.get_dict_json()
             }
 
             return self.success_response(

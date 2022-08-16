@@ -170,6 +170,10 @@ class MainModel(BaseModel):
         d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
         return d
 
+    def get_dict_json(self, exclude=[]):
+        basic = ["status", "message", "res_data"]
+        return json.loads(self.json(exclude=set().union(basic, exclude)))
+
     def get_dict_copy(self):
         return copy.deepcopy(self.get_dict())
 
@@ -268,6 +272,11 @@ class CoreModel(MainModel):
         self.id = PyObjectId()
 
     def get_dict(self, exclude=[]):
+        basic = ["status", "message", "res_data"]
+        d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        return d
+
+    def get_dict_json(self, exclude=[]):
         basic = ["status", "message", "res_data"]
         d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
         return d

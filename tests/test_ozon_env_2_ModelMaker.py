@@ -34,8 +34,10 @@ async def test_make_form_schema():
     assert test_2.required_fields == ["rec_name", "firstName"]
     assert test_2.components_logic == []
     assert "rec_name" in list(test_2.no_clone_field_keys.keys())
-    test_2.new()
+    test_2.new({"rec_name": "test"})
     assert isinstance(test_2.instance, BasicModel) is True
+    assert test_2.instance.rec_name == "test"
+    assert test_2.instance.process_id == ""
     test_2.new(formio_data_json)
     assert test_2.instance.textFieldTab1 == "text in tab 1"
     assert test_2.instance.email == 'name@company.it'
@@ -58,7 +60,8 @@ async def test_make_form_cond_schema():
     assert test_2.realted_fields_logic == {'username': ['secret'],
                                            'password': ['secret']}
     d = test_2.instance.get_dict()
-    assert d == {'id': d.get('id'), 'app_code': [],'data_model': '', 'parent': '',
+    assert d == {'id': d.get('id'), 'app_code': [], 'data_model': '',
+                 'parent': '',
                  'process_id': '',
                  'process_task_id': '', 'data_value': {}, 'owner_name': '',
                  'deleted': 0, 'list_order': 0,

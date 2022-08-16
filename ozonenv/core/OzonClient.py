@@ -66,7 +66,7 @@ class OzonClient:
         return result
 
 
-class Printer:
+class LabelPrinter:
     @classmethod
     def create(cls, apikey="", is_api=False, url=""):
         self = Printer()
@@ -96,6 +96,20 @@ class Printer:
         try:
             async with httpx.AsyncClient(timeout=1) as client:
                 res = await client.get(url, headers=headers)
+                if res:
+                    return res.json()
+        except Exception as e:
+            logger.error(e)
+            return {"status": "error", "message": e}
+
+    async def print_label(self, payload):
+        url = f"{self.default_url}/print_label"
+        logger.info(url)
+        headers = self.get_headers()
+
+        try:
+            async with httpx.AsyncClient(timeout=1) as client:
+                res = await client.post(url, json=payload, headers=headers)
                 if res:
                     return res.json()
         except Exception as e:

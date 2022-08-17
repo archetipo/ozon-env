@@ -8,7 +8,7 @@ from ozonenv.core.BaseModels import (
     BasicModel,
     CoreModel,
     BasicReturn,
-    default_list_metadata_fields_update,
+    default_list_metadata_clean,
 )
 from ozonenv.core.i18n import _
 import re
@@ -355,11 +355,14 @@ class OzonModelBase:
         try:
             coll = self.db.engine.get_collection(self.data_model)
             original = await self.load(record.rec_name_domain())
-            to_save = original.get_dict_diff(
-                record.get_dict_copy(),
-                default_list_metadata_fields_update,
-                True,
-            )
+            if not self.virtual:
+                to_save = original.get_dict_diff(
+                    record.get_dict_copy(),
+                    default_list_metadata_clean,
+                    True,
+                )
+            else:
+                to_save = record.get_dict(default_list_metadata_clean)
             if "rec_name" in to_save:
                 to_save.pop("rec_name")
             to_save["update_uid"] = self.orm.user_session.get("user.uid")

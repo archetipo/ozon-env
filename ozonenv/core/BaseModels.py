@@ -122,6 +122,7 @@ default_list_metadata_fields = [
 
 default_list_metadata_fields_update = [
     "id",
+    "rec_name",
     "owner_uid",
     "owner_name",
     "owner_sector",

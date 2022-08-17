@@ -178,7 +178,7 @@ class MainModel(BaseModel):
         return copy.deepcopy(self.get_dict())
 
     def get_dict_diff(
-            self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+        self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
     ):
 
         if ignore_fields and remove_ignore_fileds:
@@ -287,7 +287,7 @@ class CoreModel(MainModel):
         return {"_id": bson.ObjectId(self.id)}.copy()
 
     def get_dict_diff(
-            self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+        self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
     ):
 
         if ignore_fields and remove_ignore_fileds:
@@ -340,8 +340,7 @@ class CoreModel(MainModel):
         return ""
 
     def selection_value_resources(
-            self, key: str, value: str, resources: list,
-            label_key: str = "label"
+        self, key: str, value: str, resources: list, label_key: str = "label"
     ):
         value_label = self.get_value_for_select_list(
             resources, value, label_key=label_key
@@ -592,7 +591,7 @@ class DictRecord(BaseModel):
         return ""
 
     def selection_value_resources(
-            self, key, value, list_src, label_key="label"
+        self, key, value, list_src, label_key="label"
     ):
         value_label = self.get_value_for_select_list(
             list_src, value, label_key=label_key

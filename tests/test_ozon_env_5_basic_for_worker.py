@@ -73,6 +73,7 @@ class MockWorker1(OzonWorkerEnv):
         data_doc['ammImpScontatoEuro'] = 00
         data_doc['ammIvaEuro'] = 0.0
         data_doc['ammScontoEuro'] = 0.0
+        data_doc['anomalia_gestita'] = False
 
         v_doc = await self.virtual_doc_model.new(
             data_doc, rec_name=f"DOC{data_doc['idDg']}")
@@ -143,6 +144,7 @@ class MockWorker1(OzonWorkerEnv):
         documento = await self.virtual_doc_model.insert(v_doc)
 
         assert documento.dec_nome == "Test Dec"
+        assert documento.anomalia_gestita is False
         return documento
 
 

@@ -365,6 +365,8 @@ class OzonModelBase:
                 to_save = record.get_dict(default_list_metadata_clean)
             if "rec_name" in to_save:
                 to_save.pop("rec_name")
+            to_save["active"] = True
+            to_save["deleted"] = 0
             to_save["update_uid"] = self.orm.user_session.get("user.uid")
             to_save["update_datetime"] = datetime.now()
             await coll.update_one(record.rec_name_domain(), {"$set": to_save})

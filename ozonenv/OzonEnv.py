@@ -1,4 +1,5 @@
 from ozonenv.core.OzonOrm import OzonEnvBase, BasicReturn
+from ozonenv.core.BaseModels import BasicReturn
 import json
 import copy
 import logging

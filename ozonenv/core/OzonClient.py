@@ -66,8 +66,10 @@ class OzonClient:
         return result
 
     async def send_mail(self, model, rec_name, tmp_name):
-        url = f"{self.default_url}/client/send/" \
-              f"mail/{model}/{rec_name}/{tmp_name}"
+        url = (
+            f"{self.default_url}/client/send/"
+            f"mail/{model}/{rec_name}/{tmp_name}"
+        )
         data_obj = {}
         headers = self.get_headers()
         result = {"status": "ok"}
@@ -106,7 +108,7 @@ class LabelPrinter:
         return header.copy()
 
     async def status(
-            self,
+        self,
     ):
         url = f"{self.default_url}/status"
         logger.info(url)

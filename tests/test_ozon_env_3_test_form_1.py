@@ -63,16 +63,16 @@ async def test_env_data_file_virtual_model():
     assert doc.dg15XVoceCalcolata[1].get('aliquota') == 20
 
     doc_not_saved = await virtual_doc_model.insert(doc)
-    assert doc_not_saved.is_error() is True
+    assert doc_not_saved is None
     assert (
-            doc_not_saved.message ==
-            "Non è consetito salvare un oggetto virtuale"
+            virtual_doc_model.message ==
+            "Impostare un data model per un model virtuale per operare sul db"
     )
 
     doc_not_saved = await virtual_doc_model.update(doc)
-    assert doc_not_saved.is_error() is True
+    assert doc_not_saved is None
     assert (
-            doc_not_saved.message ==
+            virtual_doc_model.message ==
             "Non e' consentito aggiornare un oggetto virtuale"
     )
 
@@ -150,26 +150,26 @@ async def test_test_form_1_insert_ko():
     test_form_1_model = await env.add_model('test_form_1')
     test_form_1 = await test_form_1_model.new(data=data)
     test_form_1_new = await test_form_1_model.insert(test_form_1)
-    assert test_form_1_new.is_error() is True
-    assert test_form_1_new.message == "Errore Duplicato rec_name: first_form"
+    assert test_form_1_new is None
+    assert test_form_1_model.message == "Errore Duplicato rec_name: first_form"
 
     await env.set_lang("en")
     test_form_en = await test_form_1_model.insert(test_form_1)
-    assert test_form_en.is_error() is True
-    assert test_form_en.message == "Duplicate key error rec_name: first_form"
+    assert test_form_en is None
+    assert test_form_1_model.message == "Duplicate key error rec_name: first_form"
 
     await env.set_lang("it")
 
     test_form_1.set('rec_name', "first form")
     test_form_e1 = await test_form_1_model.insert(test_form_1)
-    assert test_form_e1.is_error() is True
-    assert test_form_e1.message == "Caratteri non consetiti nel campo name: first form"
+    assert test_form_e1 is None
+    assert test_form_1_model.message == "Caratteri non consetiti nel campo name: first form"
 
     data_err = data.copy()
     data_err['rec_name'] = "first/form"
     test_form_e2 = await test_form_1_model.new(data=data_err)
-    assert test_form_e2.is_error() is True
-    assert test_form_e2.message == "Caratteri non consetiti nel campo name: first/form"
+    assert test_form_e2 is None
+    assert test_form_1_model.message == "Caratteri non consetiti nel campo name: first/form"
 
     await env.close_db()
 

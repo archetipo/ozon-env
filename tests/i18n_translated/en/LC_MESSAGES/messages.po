@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-08-08 17:29+0200\n"
-"PO-Revision-Date: 2022-08-08 17:29+0200\n"
+"POT-Creation-Date: 2022-08-17 09:41+0200\n"
+"PO-Revision-Date: 2022-08-17 09:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
 "Language-Team: en <LL@li.org>\n"
@@ -18,41 +18,57 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.10.3\n"
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:202
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:242
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:249
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:284
 #, python-format
 msgid "Not allowed chars in field name: %s"
 msgstr ""
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:237
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:278
 msgid "Cannot save on db a virtual object"
 msgstr ""
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:262
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:323
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:307
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:378
 #, python-format
 msgid "Duplicate key error %s: %s"
 msgstr ""
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:269
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:330
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:314
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:385
 #, python-format
 msgid "Validation Error  %s "
 msgstr ""
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:277
-msgid "Duplicate session instance is not allowed"
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:322
+msgid "Duplicate session instance or virtual model is not allowed"
 msgstr ""
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:303
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:355
 msgid "Cannot update a virtual object"
 msgstr ""
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:350
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:393
+msgid "Cannot delete a virtual object"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:402
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:414
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:432
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:459
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:499
+msgid "Data Model is required for virtual model to get data from db"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:422
 msgid "Not found"
 msgstr ""
 
-#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonOrm.py:119
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:549
+msgid "Unable to set to deleta a virtual model"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonOrm.py:142
 #, python-format
 msgid "Token %s not allowed"
 msgstr ""

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-08-08 15:07+0200\n"
-"PO-Revision-Date: 2022-08-08 15:07+0200\n"
+"POT-Creation-Date: 2022-08-17 09:35+0200\n"
+"PO-Revision-Date: 2022-08-17 09:35+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
 "Language-Team: it <LL@li.org>\n"
@@ -17,7 +17,6 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.10.3\n"
-
 #: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:202
 #: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:242
 #, python-format
@@ -48,9 +47,30 @@ msgstr "Non è consentito duplicare un record sessione"
 msgid "Cannot update a virtual object"
 msgstr "Non e' consentito aggiornare un oggetto virtuale"
 
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:362
+#, python-format
+msgid "Model (force_model) not exist: %s"
+msgstr ""
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:400
+msgid "Cannot delete a virtual object"
+msgstr "Non è consetito eliminare un oggetto virtuale"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:409
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:421
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:439
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:466
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:506
+msgid "Data Model is required for virtual model to get data from db"
+msgstr "Impostare un data model per un model virtuale per operare sul db"
+
 #: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:343
 msgid "Not found"
 msgstr "Non Trovato"
+
+#: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonModel.py:549
+msgid "Unable to set to deleta a virtual model"
+msgstr "Non si puo' impostare da eliminare un record virtuale"
 
 #: /Users/archetipo/devel/microservices/dev_libs/ozon-env/ozonenv/core/OzonOrm.py:115
 #, python-format

@@ -610,13 +610,7 @@ class DictRecord(BaseModel):
         return dat.copy()
 
 
-def update_model(
-    source, object_o: BasicModel, pop_form_newobject=[], model=None
-):
-    new_dict = object_o.get_dict()
-    new_dict["id"] = source.dict()["id"]
-    if model is not None:
-        object_o = model(**new_dict)
-    else:
-        object_o = type(source)(**new_dict)
-    return object_o
+class BasicReturn(BaseModel):
+    fail: bool = False
+    msg: str = ""
+    data: dict = {}

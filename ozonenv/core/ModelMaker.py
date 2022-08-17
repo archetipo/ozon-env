@@ -667,9 +667,11 @@ class BaseModelMaker:
                         )
                     else:
                         return type_def.get(rgx.lastgroup)(s)
-
             else:
-                return json.loads(s)
+                if type(s) is str:
+                    return json.loads(s)
+                else:
+                    return s
 
     def get_field_type(self, v):
         type_def = {
@@ -710,34 +712,36 @@ class BaseModelMaker:
 
     def _make_from_dict(self, dict_data, from_dict=False):
         for k, v in dict_data.copy().items():
-            if isinstance(v, dict):  # For DICT
+            if isinstance(v, dict) and k != "data_value":  # For DICT
                 dict_data[k] = self._make_from_dict(v)
+            elif isinstance(v, dict) and k == "data_value":
+                default = dict_data[k].copy()
+                dict_data[k] = (dict, default.copy())
             elif isinstance(v, list):  # For LIST
+                default = dict_data[k]
                 dict_data[k] = []
                 for i in v:
                     if isinstance(i, dict):
                         dict_data[k].append(self._make_from_dict(i))
-                    else:
-                        dict_data[k].append(i)
+                if not dict_data[k]:
+                    dict_data[k] = (List[self.get_field_type(v)], default)
             else:  # Update Key-Value
-                dict_data[k] = self.parse_make_field(v)
+                if k != "_id":
+                    dict_data[k] = self.parse_make_field(v)
         return dict_data
 
     def _make_models(self, dict_data):
         for k, v in dict_data.copy().items():
-            if isinstance(v, dict):  # For DICT
+            if isinstance(v, dict) and k != "data_value":  # For DICT
                 val = self._make_models(v).copy()
                 model = create_model(k, __base__=MainModel, **val)
                 dict_data[k] = model(**{})
             elif isinstance(v, list):  # For LIST
                 for idx, i in enumerate(v):
-                    if isinstance(i, dict):
+                    if isinstance(i, dict) and k != "data_value":
                         row = self._make_models(i).copy()
                         model = create_model(k, __base__=MainModel, **row)
                         dict_data[k][idx] = model(**{})
-                    else:
-                        dict_data[k][idx] = i
-
         return dict_data
 
     def from_data_dict(self, data):

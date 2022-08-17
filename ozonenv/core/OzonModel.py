@@ -7,6 +7,7 @@ from ozonenv.core.BaseModels import (
     DictRecord,
     BasicModel,
     CoreModel,
+    BasicReturn,
     default_list_metadata_fields_update,
 )
 from ozonenv.core.i18n import _
@@ -22,7 +23,6 @@ logger = logging.getLogger(__file__)
 
 
 class OzonModelBase:
-    #
     def __init__(
         self,
         model_name,
@@ -47,6 +47,9 @@ class OzonModelBase:
         self.sort_dir = {"asc": 1, "desc": -1}
         self.default_sort_str = "list_order:desc,"
         self.sort_rule = []
+        self.status: BasicReturn = BasicReturn(
+            **{"fail": False, "msg": "", "data": {}}
+        )
         self.init_model()
 
     @property
@@ -57,12 +60,20 @@ class OzonModelBase:
     def user_session(self):
         return self.orm.user_session
 
+    @property
+    def message(self):
+        return self.status.msg
+
+    def is_error(self):
+        return self.status.fail
+
     def get_domain(self, domain={}):
         _domain = self.default_domain.copy()
         _domain.update(domain)
         return _domain
 
     def init_model(self):
+        self.init_status()
         self.mm = ModelMaker(self.name)
         if self.static:
             self.mm.model = self.static
@@ -108,6 +119,7 @@ class OzonModelBase:
             await self.set_unique(field)
 
     async def set_unique(self, field_name):
+        self.init_status()
         component_coll = self.db.engine.get_collection(self.data_model)
         await component_coll.create_index([(field_name, 1)], unique=True)
 
@@ -169,6 +181,8 @@ class OzonModelBase:
             self.mm.new(data)
         else:
             self.mm = ModelMaker(self.data_model)
+            if data.get("_id"):
+                data.pop("_id")
             self.mm.from_data_dict(data)
             self.mm.new()
         self.model_record = self.mm.instance
@@ -177,12 +191,18 @@ class OzonModelBase:
                 f"{self.data_model}.{self.model_record.id}"
             )
 
-    def error_response(self, msg, data) -> CoreModel:
-        return CoreModel(
-            **{"status": "error", "message": msg, "res_data": data}
-        )
+    def error_status(self, msg, data):
+        self.status.fail = True
+        self.status.msg = msg
+        self.status.data = data
+
+    def init_status(self):
+        self.status.fail = False
+        self.status.msg = ""
+        self.status.data = {}
 
     async def count_by_filter(self, domain: dict) -> int:
+        self.init_status()
         coll = self.db.engine.get_collection(self.data_model)
         val = await coll.count_documents(domain)
         if not val:
@@ -190,6 +210,7 @@ class OzonModelBase:
         return int(val)
 
     async def count(self, domain={}) -> int:
+        self.init_status()
         if not self.virtual:
             if not domain:
                 domain = self.default_domain
@@ -214,13 +235,10 @@ class OzonModelBase:
         data={},
         rec_name="",
     ) -> CoreModel:
-
+        self.init_status()
         if not data and rec_name or rec_name and self.virtual:
             if not self.is_session_model:
                 data["rec_name"] = rec_name
-        data_value = data.get("data_value", {}).copy()
-        if data_value:
-            data.pop("data_value", {})
         if not self.virtual:
             data = self._make_from_dict(copy.deepcopy(data))
         self._load_data(data)
@@ -229,10 +247,10 @@ class OzonModelBase:
                 _("Not allowed chars in field name: %s")
                 % self.model_record.rec_name
             )
-            return self.error_response(msg, data=data)
+            self.error_status(msg, data=data)
+            return None
         self.model_record.set_active()
-        if data_value:
-            self.model_record.data_value.update(data_value.copy())
+
         return self.model_record
 
     def set_user_data(self, record: CoreModel) -> CoreModel:
@@ -250,40 +268,31 @@ class OzonModelBase:
         record.owner_function = self.orm.user_session.get("function", "")
         return record
 
-    async def insert(self, record: CoreModel, force_model="") -> CoreModel:
-        if self.virtual and not force_model:
-            return self.error_response(
+    async def insert(self, record: CoreModel) -> CoreModel:
+        self.init_status()
+        if self.virtual and not self.data_model:
+            self.error_status(
                 _("Cannot save on db a virtual object"),
                 record.get_dict_copy(),
             )
+            return None
         try:
             if not self.name_allowed.match(record.rec_name):
                 msg = _("Not allowed chars in field name: %s") % record.get(
                     "rec_name"
                 )
-                return self.error_response(msg, data=record.get_dict_copy())
-            if force_model:
-                coll = self.db.engine.get_collection(force_model.data_model)
-                if coll is None:
-                    msg = (
-                        _("Model (force_model) not exist: %s")
-                        % force_model.name
-                    )
-                    return self.error_response(msg, data=record.get_dict())
-            else:
-                coll = self.db.engine.get_collection(self.data_model)
-            if force_model:
-                record.list_order = await force_model.count()
-            else:
-                record.list_order = await self.count()
+                self.error_status(msg, data=record.get_dict_json())
+                return None
+
+            coll = self.db.engine.get_collection(self.data_model)
+            record.list_order = await self.count()
             record.create_datetime = datetime.now()
             record = self.set_user_data(record)
             result_save = await coll.insert_one(record.get_dict())
             result = None
             if result_save:
                 return await self.load(
-                    {"_id": bson.ObjectId(result_save.inserted_id)},
-                    force_model=force_model,
+                    {"_id": bson.ObjectId(result_save.inserted_id)}
                 )
             return result
         except pymongo.errors.DuplicateKeyError as e:
@@ -291,21 +300,29 @@ class OzonModelBase:
             field = e.details["keyValue"]
             key = list(field.keys())[0]
             val = field[key]
-            return self.error_response(
+            self.error_status(
                 _("Duplicate key error %s: %s") % (str(key), str(val)),
                 record.get_dict_copy(),
             )
+            return None
         except pydantic.error_wrappers.ValidationError as e:
             logger.error(f" Validation {e}")
-            return self.error_response(
+            self.error_status(
                 _("Validation Error  %s ") % str(e), record.get_dict_copy()
             )
+            return None
 
     async def copy(self, domain) -> CoreModel:
-        if self.is_session_model:
-            return self.error_response(
-                _("Duplicate session instance is not allowed"), domain
+        self.init_status()
+        if self.is_session_model or self.virtual:
+            self.error_status(
+                _(
+                    "Duplicate session instance "
+                    "or virtual model is not allowed"
+                ),
+                domain,
             )
+            return None
         record_to_copy = await self.load(domain)
         self.model_record.renew_id()
         if (
@@ -328,21 +345,15 @@ class OzonModelBase:
         record.set_active()
         return record
 
-    async def update(self, record: CoreModel, force_model=None) -> CoreModel:
-        if self.virtual and not force_model:
-            return self.error_response(
+    async def update(self, record: CoreModel) -> CoreModel:
+        self.init_status()
+        if self.virtual and self.name == self.data_model:
+            self.error_status(
                 _("Cannot update a virtual object"), record.get_dict_copy()
             )
+            return None
         try:
-            if force_model:
-                coll = self.db.engine.get_collection(force_model.data_model)
-                if coll is None:
-                    msg = _("Model (force_model) not exist: %s") % force_model
-                    return self.error_response(
-                        msg, data=record.get_dict_copy()
-                    )
-            else:
-                coll = self.db.engine.get_collection(self.data_model)
+            coll = self.db.engine.get_collection(self.data_model)
             original = await self.load(record.rec_name_domain())
             to_save = original.get_dict_diff(
                 record.get_dict_copy(),
@@ -360,48 +371,68 @@ class OzonModelBase:
             field = e.details["keyValue"]
             key = list(field.keys())[0]
             val = field[key]
-            return self.error_response(
+            self.error_status(
                 _("Duplicate key error %s: %s") % (str(key), str(val)),
                 record.get_dict_copy(),
             )
+            return None
         except pydantic.error_wrappers.ValidationError as e:
             logger.error(f" Validation {e}")
-            return self.error_response(
+            self.error_status(
                 _("Validation Error  %s ") % str(e),
                 record.get_dict_copy(),
             )
+            return None
 
-    async def remove(self, record: CoreModel):
+    async def remove(self, record: CoreModel) -> bool:
+        if self.virtual and self.name == self.data_model:
+            self.error_status(
+                _("Cannot delete a virtual object"), record.get_dict_copy()
+            )
+            return False
         coll = self.db.engine.get_collection(self.data_model)
         await coll.delete_one(record.rec_name_domain())
         return True
 
     async def remove_all(self, domain) -> int:
+        if self.virtual and self.name == self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, domain)
+            return 0
         coll = self.db.engine.get_collection(self.data_model)
         num = await coll.delete_many(domain)
         return num
 
-    async def load(self, domain: dict, force_model=None) -> CoreModel:
-        if force_model:
-            coll = self.db.engine.get_collection(force_model.data_model)
-            if coll is None:
-                msg = _("Model (force_model) not exist: %s") % force_model
-                return self.error_response(msg, data=domain)
-        else:
-            coll = self.db.engine.get_collection(self.data_model)
+    async def load(self, domain: dict) -> CoreModel:
+        self.init_status()
+        if self.virtual and self.name == self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, data=domain)
+            return None
+        coll = self.db.engine.get_collection(self.data_model)
         data = await coll.find_one(domain)
         if not data:
-            return self.error_response(_("Not found"), domain)
-        if force_model:
-            force_model._load_data(data)
-            return force_model.model_record
-        else:
-            self._load_data(data)
-            return self.model_record
+            self.error_status(_("Not found"), domain)
+            return None
+
+        self._load_data(data)
+
+        return self.model_record
 
     async def find(
         self, domain: dict, sort: str = "", limit=0, skip=0
     ) -> list[CoreModel]:
+        self.init_status()
+        if self.virtual and self.name == self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, domain)
+            return []
         _sort = self.eval_sort_str(sort)
         coll = self.db.engine.get_collection(self.data_model)
         res = []
@@ -421,6 +452,14 @@ class OzonModelBase:
     async def aggregate(
         self, pipeline: list, sort: str, limit=0, skip=0
     ) -> list[CoreModel]:
+
+        self.init_status()
+        if self.virtual and self.name == self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, pipeline)
+            return []
         _sort = self.eval_sort_str(sort)
         coll = self.db.engine.get_collection(self.data_model)
         if _sort:
@@ -454,6 +493,13 @@ class OzonModelBase:
         limit=0,
         skip=0,
     ) -> list[CoreModel]:
+        self.init_status()
+        if self.virtual and self.name == self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, query)
+            return []
         if not query:
             query = {"deleted": 0}
         label = {"$first": "$title"}
@@ -496,9 +542,15 @@ class OzonModelBase:
             pipeline, sort=sort, limit=limit, skip=skip
         )
 
-    async def set_to_delete(self, record: CoreModel) -> CoreModel:
+    async def set_to_delete(self, record: CoreModel) -> bool:
+        self.init_status()
+        if self.virtual:
+            msg = _("Unable to set to delete a virtual model")
+            self.error_status(msg, record.get_dict_copy())
+            return False
         delete_at_datetime = datetime.now() + timedelta(
             days=self.env.config_system["delete_record_after_days"]
         )
         record.set_to_delete(delete_at_datetime.timestamp())
-        return record
+        await self.update(record)
+        return True

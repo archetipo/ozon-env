@@ -7,8 +7,7 @@ from ozonenv.core.db.mongodb_utils import (
     Mongo,
 )
 import time as time_
-from ozonenv.core.OzonModel import OzonModelBase
-from pydantic import BaseModel
+from ozonenv.core.OzonModel import OzonModelBase, BasicReturn
 from ozonenv.core.OzonClient import OzonClient
 from ozonenv.core.BaseModels import (
     DbViewModel,
@@ -25,12 +24,6 @@ from ozonenv.core.i18n import update_translation
 from ozonenv.core.i18n import _
 
 logger = logging.getLogger(__file__)
-
-
-class BasicReturn(BaseModel):
-    fail: bool = False
-    msg: str = ""
-    data: dict = {}
 
 
 class OzonEnvBase:
@@ -101,9 +94,13 @@ class OzonEnvBase:
         else:
             return self.get(component.data_model)
 
-    async def add_model(self, model_name, virtual=False) -> OzonModelBase:
+    async def add_model(
+        self, model_name, virtual=False, data_model=""
+    ) -> OzonModelBase:
         if model_name not in self.models:
-            await self.orm.add_model(model_name, virtual=virtual)
+            await self.orm.add_model(
+                model_name, virtual=virtual, data_model=data_model
+            )
         return self.get(model_name)
 
     async def add_static_model(
@@ -142,7 +139,7 @@ class OzonEnvBase:
         await self.orm.init_models()
         await self.orm.init_session(self.session_token)
         self.user_session = self.orm.user_session
-        if self.user_session.is_error():
+        if not self.user_session:
             return self.fail_response(
                 _("Token %s not allowed") % self.session_token
             )
@@ -225,18 +222,22 @@ class OzonOrm:
             {"token": token}
         )
 
-    async def add_model(self, model_name, virtual=False):
+    async def add_model(self, model_name, virtual=False, data_model=""):
         schema = {}
         if not virtual:
             component = await self.env.get("component").load(
                 {"rec_name": model_name}
             )
-            if not component.is_error():
+            if component:
                 schema = component.get_dict_copy()
-        await self.make_model(model_name, schema=schema, virtual=virtual)
+        await self.make_model(
+            model_name, schema=schema, virtual=virtual, data_model=data_model
+        )
         self.db_models = await self.get_collections_names()
 
-    async def make_model(self, model_name, schema={}, virtual=False):
+    async def make_model(
+        self, model_name, schema={}, virtual=False, data_model=""
+    ):
 
         if (
             model_name in list(self.orm_static_models_map.keys())
@@ -244,11 +245,12 @@ class OzonOrm:
             or virtual
         ):
             session_model = model_name == "session"
-
+            if not data_model and schema:
+                data_model = schema.get("data_model", "")
             self.env.models[model_name] = OzonModel(
                 model_name,
                 self,
-                data_model=schema.get("data_model", ""),
+                data_model=data_model,
                 static=self.orm_static_models_map.get(model_name, None),
                 virtual=virtual,
                 schema=schema,

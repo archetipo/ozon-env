@@ -1,9 +1,9 @@
 import pytest
 from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
+from ozonenv.core.BaseModels import CoreModel
 from pydantic.main import ModelMetaclass
-from ozonenv.OzonEnv import OzonWorkerEnv, OzonEnv
-from ozonenv.core.OzonOrm import BasicReturn
+from ozonenv.OzonEnv import OzonWorkerEnv, OzonEnv, BasicReturn
 from datetime import *
 from dateutil.parser import *
 import traceback
@@ -23,14 +23,16 @@ class MockWorker1(OzonWorkerEnv):
         self.row_model = await self.add_model("riga_doc")
         assert self.p_model.name == "documento_beni_servizi"
         assert self.p_model.data_model == "documento"
+
         self.virtual_doc_model = await self.add_model(
-            'virtual_doc', virtual=True)
+            'virtual_doc', virtual=True, data_model="documento_beni_servizi")
+
         self.virtual_row_doc_model = await self.add_model(
-            'virtual_row_doc', virtual=True)
+            'virtual_row_doc', virtual=True, data_model='riga_doc')
         try:
             documento = await self.process_document(data)
-            if documento.is_error():
-                return self.exception_response(documento.message)
+            if not documento:
+                return self.exception_response(self.virtual_row_doc_model.message)
 
             action_next_page = f"/action/doc/{documento.rec_name}"
             action_next_page = self.next_client_url(
@@ -61,7 +63,7 @@ class MockWorker1(OzonWorkerEnv):
             return self.exception_response(
                 str(e), err_details=str(traceback.format_exc()))
 
-    async def process_document(self, data_doc):
+    async def process_document(self, data_doc) -> CoreModel:
         data_doc['stato'] = ""
         data_doc['tipologia'] = []
         data_doc['document_type'] = ""
@@ -75,7 +77,7 @@ class MockWorker1(OzonWorkerEnv):
         v_doc = await self.virtual_doc_model.new(
             data_doc, rec_name=f"DOC{data_doc['idDg']}")
 
-        if v_doc.is_error():
+        if self.virtual_doc_model.is_error():
             return v_doc
 
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
@@ -113,10 +115,9 @@ class MockWorker1(OzonWorkerEnv):
             assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
 
-            row_db = await self.virtual_row_doc_model.insert(
-                row_o, force_model=self.row_model)
+            row_db = await self.virtual_row_doc_model.insert(row_o)
 
-            if row_db.is_error():
+            if not row_db:
                 return row_db
 
             assert row_db.nrRiga == row.nrRiga
@@ -135,11 +136,11 @@ class MockWorker1(OzonWorkerEnv):
             assert row_upd.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_upd.tipologia == ["a", "c"]
             assert row_upd.data_value.get('stato') == "Done"
+            assert row_upd.data_value.get('tipologia') == ["A", "C"]
             assert row_upd.get('data_value.stato').startswith("Do") is True
             assert row_upd.stato == "done"
 
-        documento = await self.virtual_doc_model.insert(
-            v_doc, force_model=self.p_model)
+        documento = await self.virtual_doc_model.insert(v_doc)
 
         assert documento.dec_nome == "Test Dec"
         return documento

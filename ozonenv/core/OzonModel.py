@@ -24,18 +24,21 @@ logger = logging.getLogger(__file__)
 
 class OzonModelBase:
     def __init__(
-        self,
-        model_name,
-        data_model="",
-        session_model=False,
-        virtual=False,
-        static: BasicModel = None,
-        schema={},
+            self,
+            model_name,
+            data_model="",
+            session_model=False,
+            virtual=False,
+            static: BasicModel = None,
+            schema={},
     ):
         self.name = model_name
         self.virtual = virtual
         self.static: BasicModel = static
-        self.data_model = data_model or model_name
+        if self.virtual:
+            self.data_model = data_model
+        else:
+            self.data_model = data_model or model_name
         self.model_meta: ModelMetaclass = None
         self.schema = copy.deepcopy(schema)
         self.schema_object: CoreModel = None
@@ -211,7 +214,7 @@ class OzonModelBase:
 
     async def count(self, domain={}) -> int:
         self.init_status()
-        if not self.virtual:
+        if not self.virtual or self.data_model:
             if not domain:
                 domain = self.default_domain
             return await self.count_by_filter(domain)
@@ -231,9 +234,9 @@ class OzonModelBase:
         return dat
 
     async def new(
-        self,
-        data={},
-        rec_name="",
+            self,
+            data={},
+            rec_name="",
     ) -> CoreModel:
         self.init_status()
         if not data and rec_name or rec_name and self.virtual:
@@ -244,8 +247,8 @@ class OzonModelBase:
         self._load_data(data)
         if not self.name_allowed.match(self.model_record.rec_name):
             msg = (
-                _("Not allowed chars in field name: %s")
-                % self.model_record.rec_name
+                    _("Not allowed chars in field name: %s")
+                    % self.model_record.rec_name
             )
             self.error_status(msg, data=data)
             return None
@@ -326,8 +329,8 @@ class OzonModelBase:
         record_to_copy = await self.load(domain)
         self.model_record.renew_id()
         if (
-            hasattr(record_to_copy, "rec_name")
-            and self.name not in record_to_copy.rec_name
+                hasattr(record_to_copy, "rec_name")
+                and self.name not in record_to_copy.rec_name
         ):
             self.model_record.rec_name = f"{self.model_record.rec_name}_copy"
         else:
@@ -429,7 +432,7 @@ class OzonModelBase:
         return self.model_record
 
     async def find(
-        self, domain: dict, sort: str = "", limit=0, skip=0
+            self, domain: dict, sort: str = "", limit=0, skip=0
     ) -> list[CoreModel]:
         self.init_status()
         if self.virtual and self.name == self.data_model:
@@ -455,7 +458,7 @@ class OzonModelBase:
         return res
 
     async def aggregate(
-        self, pipeline: list, sort: str, limit=0, skip=0
+            self, pipeline: list, sort: str, limit=0, skip=0
     ) -> list[CoreModel]:
 
         self.init_status()
@@ -490,13 +493,13 @@ class OzonModelBase:
         return res
 
     async def search_all_distinct(
-        self,
-        distinct="",
-        query={},
-        compute_label="",
-        sort: str = "",
-        limit=0,
-        skip=0,
+            self,
+            distinct="",
+            query={},
+            compute_label="",
+            sort: str = "",
+            limit=0,
+            skip=0,
     ) -> list[CoreModel]:
         self.init_status()
         if self.virtual and self.name == self.data_model:

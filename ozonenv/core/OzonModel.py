@@ -24,13 +24,13 @@ logger = logging.getLogger(__file__)
 
 class OzonModelBase:
     def __init__(
-            self,
-            model_name,
-            data_model="",
-            session_model=False,
-            virtual=False,
-            static: BasicModel = None,
-            schema={},
+        self,
+        model_name,
+        data_model="",
+        session_model=False,
+        virtual=False,
+        static: BasicModel = None,
+        schema={},
     ):
         self.name = model_name
         self.virtual = virtual
@@ -234,9 +234,9 @@ class OzonModelBase:
         return dat
 
     async def new(
-            self,
-            data={},
-            rec_name="",
+        self,
+        data={},
+        rec_name="",
     ) -> CoreModel:
         self.init_status()
         if not data and rec_name or rec_name and self.virtual:
@@ -247,8 +247,8 @@ class OzonModelBase:
         self._load_data(data)
         if not self.name_allowed.match(self.model_record.rec_name):
             msg = (
-                    _("Not allowed chars in field name: %s")
-                    % self.model_record.rec_name
+                _("Not allowed chars in field name: %s")
+                % self.model_record.rec_name
             )
             self.error_status(msg, data=data)
             return None
@@ -329,8 +329,8 @@ class OzonModelBase:
         record_to_copy = await self.load(domain)
         self.model_record.renew_id()
         if (
-                hasattr(record_to_copy, "rec_name")
-                and self.name not in record_to_copy.rec_name
+            hasattr(record_to_copy, "rec_name")
+            and self.name not in record_to_copy.rec_name
         ):
             self.model_record.rec_name = f"{self.model_record.rec_name}_copy"
         else:
@@ -350,7 +350,7 @@ class OzonModelBase:
 
     async def update(self, record: CoreModel) -> CoreModel:
         self.init_status()
-        if self.virtual and self.name == self.data_model:
+        if self.virtual and not self.data_model:
             self.error_status(
                 _("Cannot update a virtual object"), record.get_dict_copy()
             )
@@ -393,7 +393,7 @@ class OzonModelBase:
             return None
 
     async def remove(self, record: CoreModel) -> bool:
-        if self.virtual and self.name == self.data_model:
+        if self.virtual and not self.data_model:
             self.error_status(
                 _("Cannot delete a virtual object"), record.get_dict_copy()
             )
@@ -403,7 +403,7 @@ class OzonModelBase:
         return True
 
     async def remove_all(self, domain) -> int:
-        if self.virtual and self.name == self.data_model:
+        if self.virtual and not self.data_model:
             msg = _(
                 "Data Model is required for virtual model to get data from db"
             )
@@ -415,7 +415,7 @@ class OzonModelBase:
 
     async def load(self, domain: dict) -> CoreModel:
         self.init_status()
-        if self.virtual and self.name == self.data_model:
+        if self.virtual and not self.data_model:
             msg = _(
                 "Data Model is required for virtual model to get data from db"
             )
@@ -432,10 +432,10 @@ class OzonModelBase:
         return self.model_record
 
     async def find(
-            self, domain: dict, sort: str = "", limit=0, skip=0
+        self, domain: dict, sort: str = "", limit=0, skip=0
     ) -> list[CoreModel]:
         self.init_status()
-        if self.virtual and self.name == self.data_model:
+        if self.virtual and not self.data_model:
             msg = _(
                 "Data Model is required for virtual model to get data from db"
             )
@@ -458,11 +458,11 @@ class OzonModelBase:
         return res
 
     async def aggregate(
-            self, pipeline: list, sort: str, limit=0, skip=0
+        self, pipeline: list, sort: str, limit=0, skip=0
     ) -> list[CoreModel]:
 
         self.init_status()
-        if self.virtual and self.name == self.data_model:
+        if self.virtual and not self.data_model:
             msg = _(
                 "Data Model is required for virtual model to get data from db"
             )
@@ -493,16 +493,16 @@ class OzonModelBase:
         return res
 
     async def search_all_distinct(
-            self,
-            distinct="",
-            query={},
-            compute_label="",
-            sort: str = "",
-            limit=0,
-            skip=0,
+        self,
+        distinct="",
+        query={},
+        compute_label="",
+        sort: str = "",
+        limit=0,
+        skip=0,
     ) -> list[CoreModel]:
         self.init_status()
-        if self.virtual and self.name == self.data_model:
+        if self.virtual and not self.data_model:
             msg = _(
                 "Data Model is required for virtual model to get data from db"
             )

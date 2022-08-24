@@ -308,11 +308,11 @@ class CoreModel(MainModel):
     def is_to_delete(self):
         return self.deleted > 0
 
-    def selction_value(self, key, value, read_value):
+    def selection_value(self, key, value, read_value):
         setattr(self, key, value)
         self.data_value[key] = read_value
 
-    def selction_value_from_record(self, key, src, src_key=""):
+    def selection_value_from_record(self, key, src, src_key=""):
         if not src_key:
             src_key = key
         setattr(self, key, getattr(src, src_key))
@@ -346,7 +346,7 @@ class CoreModel(MainModel):
         value_label = self.get_value_for_select_list(
             resources, value, label_key=label_key
         )
-        self.selction_value(key, value, value_label)
+        self.selection_value(key, value, value_label)
 
     def clone_data(self):
         dat = self.get_dict_copy()
@@ -520,11 +520,11 @@ class DictRecord(BaseModel):
             else:
                 return type_def.get(rgx.lastgroup)
 
-    def selction_value(self, key, value, read_value):
+    def selection_value(self, key, value, read_value):
         self.data[key] = value
         self.data["data_value"][key] = read_value
 
-    def selction_value_from_record(self, key, src, src_key=""):
+    def selection_value_from_record(self, key, src, src_key=""):
         if not src_key:
             src_key = key
         self.data[key] = src.data[src_key]
@@ -597,7 +597,7 @@ class DictRecord(BaseModel):
         value_label = self.get_value_for_select_list(
             list_src, value, label_key=label_key
         )
-        self.selction_value(key, value, value_label)
+        self.selection_value(key, value, value_label)
 
     def to_date(self, key):
         v = self.get(key)

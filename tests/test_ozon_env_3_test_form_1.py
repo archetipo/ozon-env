@@ -45,7 +45,7 @@ async def test_env_data_file_virtual_model():
     doc = await virtual_doc_model.new(data=data, rec_name="virtual_data.test")
     assert doc.get('rec_name') == 'virtual_data.test'
     assert doc.active is True
-    doc.selction_value("stato", "caricato", "Caricato")
+    doc.selection_value("stato", "caricato", "Caricato")
     doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
     doc.set_from_child('ammImpEuro', 'dg10XComm.ammImpEuro', 0.0)
     assert doc.ammImpEuro == 0.0

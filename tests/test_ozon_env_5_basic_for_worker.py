@@ -82,10 +82,10 @@ class MockWorker1(OzonWorkerEnv):
             return v_doc
 
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
-        v_doc.selction_value('tipologia', ["a", "b"],
+        v_doc.selection_value('tipologia', ["a", "b"],
                              ["A", "B"])
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
-        v_doc.selction_value("stato", "caricato", "Caricato")
+        v_doc.selection_value("stato", "caricato", "Caricato")
 
         assert v_doc.ammImpEuro == 1446.16
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133
@@ -95,8 +95,8 @@ class MockWorker1(OzonWorkerEnv):
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
 
             row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
-            row_dictr.selction_value("stato", "caricato", "Caricato")
-            row_dictr.selction_value(
+            row_dictr.selection_value("stato", "caricato", "Caricato")
+            row_dictr.selection_value(
                 'tipologia', ["a", "b"], ["A", "B"])
 
             assert row_dictr.get('data_value.stato').startswith("Car") is True
@@ -128,8 +128,8 @@ class MockWorker1(OzonWorkerEnv):
             assert row_db.get('data_value.stato').startswith("Car") is True
             assert row_db.stato == "caricato"
 
-            row_db.selction_value("stato", "done", 'Done')
-            row_db.selction_value("tipologia", ["a", "c"], ["A", "C"])
+            row_db.selection_value("stato", "done", 'Done')
+            row_db.selection_value("tipologia", ["a", "c"], ["A", "C"])
 
             row_upd = await self.row_model.update(row_db)
 

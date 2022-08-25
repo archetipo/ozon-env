@@ -115,7 +115,7 @@ class LabelPrinter:
         headers = self.get_headers()
 
         try:
-            async with httpx.AsyncClient(timeout=1) as client:
+            async with httpx.AsyncClient(timeout=None) as client:
                 res = await client.get(url, headers=headers)
                 if res:
                     return res.json()
@@ -129,7 +129,7 @@ class LabelPrinter:
         headers = self.get_headers()
 
         try:
-            async with httpx.AsyncClient(timeout=1) as client:
+            async with httpx.AsyncClient(timeout=None) as client:
                 res = await client.post(url, json=payload, headers=headers)
                 if res:
                     return res.json()

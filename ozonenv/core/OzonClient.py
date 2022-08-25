@@ -1,5 +1,6 @@
 import httpx
 import logging
+import aiohttp
 
 logger = logging.getLogger("asyncio")
 
@@ -115,10 +116,9 @@ class LabelPrinter:
         headers = self.get_headers()
 
         try:
-            async with httpx.AsyncClient() as client:
-                res = await client.get(url, headers=headers)
-                if res:
-                    return res.json()
+            async with aiohttp.ClientSession() as client:
+                async with client.get(url, headers=headers) as resp:
+                    return resp.json()
         except Exception as e:
             logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}
@@ -129,10 +129,11 @@ class LabelPrinter:
         headers = self.get_headers()
 
         try:
-            async with httpx.AsyncClient() as client:
-                res = await client.post(url, json=payload, headers=headers)
-                if res:
-                    return res.json()
+            async with aiohttp.ClientSession() as client:
+                async with client.post(
+                    url, json=payload, headers=headers
+                ) as resp:
+                    return resp.json()
         except Exception as e:
             logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}

@@ -118,7 +118,7 @@ class LabelPrinter:
         try:
             async with aiohttp.ClientSession() as client:
                 async with client.get(url, headers=headers) as resp:
-                    return resp.json()
+                    return await resp.json()
         except Exception as e:
             logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}
@@ -133,7 +133,7 @@ class LabelPrinter:
                 async with client.post(
                     url, json=payload, headers=headers
                 ) as resp:
-                    return resp.json()
+                    return await resp.json()
         except Exception as e:
             logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}

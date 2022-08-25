@@ -120,7 +120,7 @@ class LabelPrinter:
                 if res:
                     return res.json()
         except Exception as e:
-            logger.error(e)
+            logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}
 
     async def print_label(self, payload):
@@ -134,5 +134,5 @@ class LabelPrinter:
                 if res:
                     return res.json()
         except Exception as e:
-            logger.error(e)
+            logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}

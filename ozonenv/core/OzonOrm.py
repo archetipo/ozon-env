@@ -117,6 +117,9 @@ class OzonEnvBase:
     def readable_datetime(self, val):
         return parse(val).strftime(self.config_system["ui_datetime_mask"])
 
+    def readable_date(self, val):
+        return parse(val).strftime(self.config_system["ui_date_mask"])
+
     async def init_env(self):
         await self.connect_db()
         await self.set_lang()

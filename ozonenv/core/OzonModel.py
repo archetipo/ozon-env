@@ -167,14 +167,19 @@ class OzonModelBase:
             if isinstance(v, dict):  # For DICT
                 res_dict[k] = self._make_from_dict(v)
             elif isinstance(v, list):  # For LIST
-                res_dict[k] = [
-                    self._make_from_dict(i) for i in v if isinstance(i, dict)
-                ]
+                res_dict[k] = []
+                for i in v:
+                    if isinstance(i, dict):
+                        res_dict[k].append(self._make_from_dict(i))
+                    else:
+                        res_dict[k].append(i)
             else:
-                if self._value_type(v) is datetime:
-                    if "data_value" not in res_dict:
-                        res_dict["data_value"] = {}
+                if "data_value" not in res_dict:
+                    res_dict["data_value"] = {}
+                if self._value_type(v) is datetime or isinstance(v, datetime):
                     res_dict["data_value"][k] = self.env.readable_datetime(v)
+                if self._value_type(v) is float or isinstance(v, float):
+                    res_dict["data_value"][k] = self.env.readable_float(v)
                 res_dict[k] = v
 
         return res_dict.copy()
@@ -291,7 +296,8 @@ class OzonModelBase:
             record.list_order = await self.count()
             record.create_datetime = datetime.now()
             record = self.set_user_data(record)
-            result_save = await coll.insert_one(record.get_dict())
+            to_save = self._make_from_dict(copy.deepcopy(record.get_dict()))
+            result_save = await coll.insert_one(to_save)
             result = None
             if result_save:
                 return await self.load(

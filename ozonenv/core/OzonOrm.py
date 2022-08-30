@@ -22,6 +22,7 @@ from dateutil.parser import parse
 from starlette.concurrency import run_in_threadpool
 from ozonenv.core.i18n import update_translation
 from ozonenv.core.i18n import _
+import locale
 
 logger = logging.getLogger(__file__)
 
@@ -115,10 +116,22 @@ class OzonEnvBase:
         await close_mongo_connection()
 
     def readable_datetime(self, val):
-        return parse(val).strftime(self.config_system["ui_datetime_mask"])
+        if isinstance(val, str):
+            return parse(val).strftime(self.config_system["ui_datetime_mask"])
+        else:
+            return val.strftime(self.config_system["ui_datetime_mask"])
 
     def readable_date(self, val):
-        return parse(val).strftime(self.config_system["ui_date_mask"])
+        if isinstance(val, str):
+            return parse(val).strftime(self.config_system["ui_date_mask"])
+        else:
+            return val.strftime(self.config_system["ui_date_mask"])
+
+    def readable_float(self, val, dp=2, g=True):
+        if isinstance(val, float):
+            return locale.format_string(f"%.{dp}f", val, g)
+        else:
+            return "0,0"
 
     async def init_env(self):
         await self.connect_db()

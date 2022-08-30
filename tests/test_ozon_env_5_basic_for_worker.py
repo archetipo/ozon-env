@@ -7,6 +7,7 @@ from ozonenv.OzonEnv import OzonWorkerEnv, OzonEnv, BasicReturn
 from datetime import *
 from dateutil.parser import *
 import traceback
+import locale
 
 pytestmark = pytest.mark.asyncio
 
@@ -32,7 +33,8 @@ class MockWorker1(OzonWorkerEnv):
         try:
             documento = await self.process_document(data)
             if not documento:
-                return self.exception_response(self.virtual_row_doc_model.message)
+                return self.exception_response(
+                    self.virtual_row_doc_model.message)
 
             action_next_page = f"/action/doc/{documento.rec_name}"
             action_next_page = self.next_client_url(
@@ -83,7 +85,7 @@ class MockWorker1(OzonWorkerEnv):
 
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
         v_doc.selection_value('tipologia', ["a", "b"],
-                             ["A", "B"])
+                              ["A", "B"])
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
         v_doc.selection_value("stato", "caricato", "Caricato")
 
@@ -144,6 +146,8 @@ class MockWorker1(OzonWorkerEnv):
         documento = await self.virtual_doc_model.insert(v_doc)
 
         assert documento.dec_nome == "Test Dec"
+        assert documento.data_value['ammImpEuro'] == locale.format_string(
+            '%.2f', 1446.16, True)
         assert documento.anomalia_gestita is False
         return documento
 

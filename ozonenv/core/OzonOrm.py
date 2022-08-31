@@ -98,7 +98,7 @@ class OzonEnvBase:
             return self.get(component.data_model)
 
     async def add_model(
-            self, model_name, virtual=False, data_model=""
+        self, model_name, virtual=False, data_model=""
     ) -> OzonModelBase:
         if model_name not in self.models:
             await self.orm.add_model(
@@ -107,7 +107,7 @@ class OzonEnvBase:
         return self.get(model_name)
 
     async def add_static_model(
-            self, model_name: str, model_class: CoreModel
+        self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         return await self.orm.add_static_model(model_name, model_class)
 
@@ -192,7 +192,7 @@ class OzonOrm:
         self.orm_sys_models = ["component", "session"]
 
     async def add_static_model(
-            self, model_name: str, model_class: CoreModel
+        self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         _model_name = model_name.replace(" ", "").strip().lower()
         self.orm_models.append(_model_name)
@@ -225,8 +225,8 @@ class OzonOrm:
 
     async def create_view(self, dbviewcfg: DbViewModel):
         if (
-                not dbviewcfg.force_recreate
-                and dbviewcfg.name in self.db.engine.collection
+            not dbviewcfg.force_recreate
+            and dbviewcfg.name in self.db.engine.collection
         ):
             return False
         collections = await self.get_collections_names()
@@ -264,13 +264,13 @@ class OzonOrm:
         self.db_models = await self.get_collections_names()
 
     async def make_model(
-            self, model_name, schema={}, virtual=False, data_model=""
+        self, model_name, schema={}, virtual=False, data_model=""
     ):
 
         if (
-                model_name in list(self.orm_static_models_map.keys())
-                or schema
-                or virtual
+            model_name in list(self.orm_static_models_map.keys())
+            or schema
+            or virtual
         ):
             session_model = model_name == "session"
             if not data_model and schema:
@@ -296,14 +296,14 @@ class OzonOrm:
 
 class OzonModel(OzonModelBase):
     def __init__(
-            self,
-            model_name,
-            orm: OzonOrm,
-            data_model="",
-            session_model=False,
-            virtual=False,
-            static: CoreModel = None,
-            schema={},
+        self,
+        model_name,
+        orm: OzonOrm,
+        data_model="",
+        session_model=False,
+        virtual=False,
+        static: CoreModel = None,
+        schema={},
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env

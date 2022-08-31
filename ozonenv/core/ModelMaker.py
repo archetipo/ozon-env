@@ -269,8 +269,8 @@ class Component:
             self.cfg["mask"] = self.raw.get("displayMask", "decimal")
             self.cfg["min"] = self.validate.get("min")
             self.cfg["max"] = self.validate.get("max")
-            self.cfg["delimiter"] = self.get("delimiter", ",")
-            self.cfg["dp"] = self.get("decimalLimit", 2)
+            self.cfg["delimiter"] = self.raw.get("delimiter", ",")
+            self.cfg["dp"] = self.raw.get("decimalLimit", 2)
             self.cfg["transform"] = {
                 "type": float,
                 "dp": self.cfg["dp"],

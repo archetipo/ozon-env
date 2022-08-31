@@ -165,7 +165,10 @@ class OzonModelBase:
         res_dict = {}
         for k, v in dict_data.items():
             if isinstance(v, dict):  # For DICT
-                res_dict[k] = self._make_from_dict(v)
+                if not k == "data_value":
+                    res_dict[k] = self._make_from_dict(v)
+                else:
+                    res_dict[k] = v
             elif isinstance(v, list):  # For LIST
                 res_dict[k] = []
                 for i in v:
@@ -176,10 +179,7 @@ class OzonModelBase:
             else:
                 if "data_value" not in res_dict:
                     res_dict["data_value"] = {}
-                if (
-                    k in self.mm.tranform_data_value
-                    and k not in res_dict["data_value"]
-                ):
+                if k in self.mm.tranform_data_value:
                     res_dict["data_value"][k] = self.env.make_data_value(
                         v, self.mm.tranform_data_value[k]
                     )

@@ -668,6 +668,7 @@ class BaseModelMaker:
             "float": float,
             "dict": dict,
             "list": list,
+            "date": datetime,
         }
         s = v
         if not isinstance(v, str):

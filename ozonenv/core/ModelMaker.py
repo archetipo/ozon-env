@@ -255,9 +255,9 @@ class Component:
         self.cfg["datetime"] = False
         self.cfg["min"] = False
         self.cfg["max"] = False
-        self.cfg["date"] = self.raw.get("enableDate", False)
-        self.cfg["time"] = self.raw.get("enableTime", False)
-        if self.cfg["date"] is True or self.cfg["time"] is True:
+        if self.type == "datetime":
+            self.cfg["date"] = self.raw.get("enableDate", False)
+            self.cfg["time"] = self.raw.get("enableTime", False)
             if self.cfg["date"] is True:
                 self.cfg["transform"] = {"type": date}
             if self.cfg["date"] is True and self.cfg["time"] is True:

@@ -256,8 +256,8 @@ class Component:
         self.cfg["min"] = False
         self.cfg["max"] = False
         if self.type == "datetime":
-            self.cfg["date"] = self.raw.get("enableDate", False)
-            self.cfg["time"] = self.raw.get("enableTime", False)
+            self.cfg["date"] = self.raw.get("enableDate", True)
+            self.cfg["time"] = self.raw.get("enableTime", True)
             if self.cfg["date"] is True:
                 self.cfg["transform"] = {"type": date}
             if self.cfg["date"] is True and self.cfg["time"] is True:
@@ -845,7 +845,7 @@ class FormioModelMaker(BaseModelMaker):
         try:
             field.eval_components()
         except Exception as e:
-            logger.error(f"Error eval_components {e}")
+            logger.error(f"Error eval_components {field.key} {e}")
 
     def complete_component_field(self, comp, compo_todo):
         builder = self

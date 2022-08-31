@@ -257,7 +257,7 @@ class Component:
         self.cfg["max"] = False
         self.cfg["date"] = self.raw.get("enableDate", False)
         self.cfg["time"] = self.raw.get("enableTime", False)
-        if self.cfg["date"] or self.cfg["time"]:
+        if self.cfg["date"] is True or self.cfg["time"] is True:
             if self.cfg["date"] is True:
                 self.cfg["transform"] = {"type": date}
             if self.cfg["date"] is True and self.cfg["time"] is True:
@@ -265,7 +265,7 @@ class Component:
                 self.cfg["transform"] = {"type": datetime}
             self.cfg["min"] = self.raw["widget"]["minDate"]
             self.cfg["max"] = self.raw["widget"]["maxDate"]
-        if self.raw.get("requireDecimal"):
+        if self.raw.get("requireDecimal") is True:
             self.cfg["mask"] = self.raw.get("displayMask", "decimal")
             self.cfg["min"] = self.validate.get("min")
             self.cfg["max"] = self.validate.get("max")

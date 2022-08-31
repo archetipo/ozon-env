@@ -305,7 +305,7 @@ class OzonModelBase:
 
             coll = self.db.engine.get_collection(self.data_model)
             record.list_order = await self.count()
-            record.create_datetime = datetime.now()
+            record.create_datetime = datetime.now().isoformat()
             record = self.set_user_data(record)
             to_save = self._make_from_dict(copy.deepcopy(record.get_dict()))
             result_save = await coll.insert_one(to_save)
@@ -355,8 +355,8 @@ class OzonModelBase:
                 f"{self.data_model}.{self.model_record.id}"
             )
         self.model_record.list_order = await self.count()
-        self.model_record.create_datetime = datetime.now()
-        self.model_record.update_datetime = datetime.now()
+        self.model_record.create_datetime = datetime.now().isoformat()
+        self.model_record.update_datetime = datetime.now().isoformat()
         record = await self.new(data=self.model_record.get_dict())
         record = self.set_user_data(record)
         for k in self.mm.unique_fields:
@@ -388,7 +388,7 @@ class OzonModelBase:
             to_save["active"] = True
             to_save["deleted"] = 0
             to_save["update_uid"] = self.orm.user_session.get("user.uid")
-            to_save["update_datetime"] = datetime.now()
+            to_save["update_datetime"] = datetime.now().isoformat()
             await coll.update_one(record.rec_name_domain(), {"$set": to_save})
             return await self.load(record.rec_name_domain())
         except pymongo.errors.DuplicateKeyError as e:

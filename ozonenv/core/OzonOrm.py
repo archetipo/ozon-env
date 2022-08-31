@@ -22,6 +22,8 @@ from dateutil.parser import parse
 from starlette.concurrency import run_in_threadpool
 from ozonenv.core.i18n import update_translation
 from ozonenv.core.i18n import _
+from datetime import datetime, date
+import datetime as dt
 import locale
 
 logger = logging.getLogger(__file__)
@@ -115,23 +117,33 @@ class OzonEnvBase:
     async def close_db(self):
         await close_mongo_connection()
 
-    def readable_datetime(self, val):
+    def make_data_value(self, val, cfg):
+        if cfg["type"] is datetime or cfg["type"] is dt.datetime:
+            res = self._readable_datetime(val)
+        elif cfg["type"] is date or cfg["type"] is dt.date:
+            res = self._readable_date(val)
+        elif cfg["type"] is float:
+            res = self.readable_float(val, dp=cfg["dp"])
+        else:
+            res = val
+        return res
+
+    def _readable_datetime(self, val):
         if isinstance(val, str):
             return parse(val).strftime(self.config_system["ui_datetime_mask"])
         else:
             return val.strftime(self.config_system["ui_datetime_mask"])
 
-    def readable_date(self, val):
+    def _readable_date(self, val):
         if isinstance(val, str):
             return parse(val).strftime(self.config_system["ui_date_mask"])
         else:
             return val.strftime(self.config_system["ui_date_mask"])
 
     def readable_float(self, val, dp=2, g=True):
-        if isinstance(val, float):
-            return locale.format_string(f"%.{dp}f", val, g)
-        elif isinstance(val, str):
-            return locale.format_string(f"%.{dp}f", float(val), g)
+        if isinstance(val, str):
+            val = float(val)
+        return locale.format_string(f"%.{dp}f", val, g)
 
     async def init_env(self):
         await self.connect_db()

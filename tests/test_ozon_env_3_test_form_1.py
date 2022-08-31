@@ -127,7 +127,7 @@ async def test_test_form_1_insert_ok():
     assert test_form_1.get("owner_uid") == ""
     assert test_form_1.get("rec_name") == "first_form"
     assert test_form_1.get('birthdate') == parse("1987-12-17T12:00:00")
-    assert test_form_1.get('data_value.birthdate') == "17/12/1987 12:00:00"
+    assert test_form_1.get('data_value.birthdate') == "17/12/1987"
 
     test_form_1 = await test_form_1_model.insert(test_form_1)
     assert test_form_1.is_error() is False

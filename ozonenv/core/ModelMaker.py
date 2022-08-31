@@ -3,7 +3,7 @@
 from typing import List
 from pydantic import create_model
 from pydantic.main import ModelMetaclass
-from datetime import datetime
+from datetime import datetime, date
 from ozonenv.core.BaseModels import BasicModel, BaseModel, MainModel
 from ozonenv.core.utils import (
     fetch_dict_get_value,
@@ -191,6 +191,16 @@ class Component:
         return self.raw.get("validate", {})
 
     @property
+    def transform(self):
+        return self.cfg.get("transform", False)
+
+    @property
+    def limit_values(self):
+        if self.cfg.get("min") or self.cfg.get("max"):
+            return {"min": self.cfg.get("min"), "max": self.cfg.get("max")}
+        return False
+
+    @property
     def childs(self):
         return self.nested
 
@@ -241,6 +251,32 @@ class Component:
         self.cfg["calculateServer"] = calc_server
         self.cfg["action_type"] = self.properties.get("action_type", False)
         self.cfg["no_clone"] = self.properties.get("no_clone", False)
+        self.cfg["transform"] = {}
+        self.cfg["datetime"] = False
+        self.cfg["min"] = False
+        self.cfg["max"] = False
+        self.cfg["date"] = self.raw.get("enableDate", False)
+        self.cfg["time"] = self.raw.get("enableTime", False)
+        if self.cfg["date"] or self.cfg["time"]:
+            if self.cfg["date"] is True:
+                self.cfg["transform"] = {"type": date}
+            if self.cfg["date"] is True and self.cfg["time"] is True:
+                self.cfg["datetime"] = True
+                self.cfg["transform"] = {"type": datetime}
+            self.cfg["min"] = self.raw["widget"]["minDate"]
+            self.cfg["max"] = self.raw["widget"]["maxDate"]
+        if self.raw.get("requireDecimal"):
+            self.cfg["mask"] = self.raw.get("displayMask", "decimal")
+            self.cfg["min"] = self.validate.get("min")
+            self.cfg["max"] = self.validate.get("max")
+            self.cfg["delimiter"] = self.get("delimiter", ",")
+            self.cfg["dp"] = self.get("decimalLimit", 2)
+            self.cfg["transform"] = {
+                "type": float,
+                "dp": self.cfg["dp"],
+                "mask": self.cfg["mask"],
+                "dps": self.cfg["delimiter"],
+            }
 
     def aval_conditional(self):
         if self.raw.get("conditional").get("json"):
@@ -767,6 +803,8 @@ class FormioModelMaker(BaseModelMaker):
         self.filters = []
         self.filter_keys = []
         self.components_logic = []
+        self.tranform_data_value = {}
+        self.fields_limit_value = {}
 
     def from_formio(
         self, schema: dict, simple=False, parent="", parent_builder=None
@@ -831,6 +869,10 @@ class FormioModelMaker(BaseModelMaker):
             self.computed_fields[field.key] = field.calculateServer
         if field.no_clone or field.key in self.unique_fields:
             self.no_clone_field_keys.update({field.key: compo_todo[1]})
+        if field.transform:
+            self.tranform_data_value[field.key] = field.transform.copy()
+        if field.limit_values:
+            self.fields_limit_value = field.limit_values.copy()
         self.complete_component(field)
 
     def add_textfield(self, comp):

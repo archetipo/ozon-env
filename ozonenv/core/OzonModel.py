@@ -176,10 +176,18 @@ class OzonModelBase:
             else:
                 if "data_value" not in res_dict:
                     res_dict["data_value"] = {}
-                if self._value_type(v) is datetime or isinstance(v, datetime):
-                    res_dict["data_value"][k] = self.env.readable_datetime(v)
-                if self._value_type(v) is float or isinstance(v, float):
-                    res_dict["data_value"][k] = self.env.readable_float(v)
+                if k in self.mm.tranform_data_value:
+                    res_dict["data_value"][k] = self.env.make_data_value(
+                        v, self.mm.tranform_data_value[k]
+                    )
+                elif self._value_type(v) is datetime:
+                    res_dict["data_value"][k] = self.env.make_data_value(
+                        v, {"type": datetime}
+                    )
+                elif self._value_type(v) is float:
+                    res_dict["data_value"][k] = self.env.make_data_value(
+                        v, {"type": float, "dp": 2}
+                    )
                 res_dict[k] = v
 
         return res_dict.copy()

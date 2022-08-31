@@ -176,7 +176,10 @@ class OzonModelBase:
             else:
                 if "data_value" not in res_dict:
                     res_dict["data_value"] = {}
-                if k in self.mm.tranform_data_value:
+                if (
+                    k in self.mm.tranform_data_value
+                    and k not in res_dict["data_value"]
+                ):
                     res_dict["data_value"][k] = self.env.make_data_value(
                         v, self.mm.tranform_data_value[k]
                     )

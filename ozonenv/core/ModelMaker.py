@@ -660,6 +660,15 @@ class BaseModelMaker:
         self.parent = None
         self.parent_builder = None
         self.virtual = False
+        self.filter_keys = []
+        self.realted_fields_logic = {}
+        self.search_areas = []
+        self.table_colums = {}
+        self.filters = []
+        self.filter_keys = []
+        self.components_logic = []
+        self.tranform_data_value = {}
+        self.fields_limit_value = {}
 
     def get_field_value(self, v):
         type_def = {
@@ -797,15 +806,6 @@ class BaseModelMaker:
 class FormioModelMaker(BaseModelMaker):
     def __init__(self, model_name: str):
         super(FormioModelMaker, self).__init__(model_name=model_name)
-        self.filter_keys = []
-        self.realted_fields_logic = {}
-        self.search_areas = []
-        self.table_colums = {}
-        self.filters = []
-        self.filter_keys = []
-        self.components_logic = []
-        self.tranform_data_value = {}
-        self.fields_limit_value = {}
 
     def from_formio(
         self, schema: dict, simple=False, parent="", parent_builder=None

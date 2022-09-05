@@ -249,11 +249,7 @@ class OzonModelBase:
         )
         return dat
 
-    async def new(
-        self,
-        data={},
-        rec_name="",
-    ) -> CoreModel:
+    async def new(self, data={}, rec_name="", trnf_config={}) -> CoreModel:
         self.init_status()
         if not data and rec_name or rec_name and self.virtual:
             if not self.is_session_model:
@@ -261,6 +257,8 @@ class OzonModelBase:
         if not self.virtual:
             data = self._make_from_dict(copy.deepcopy(data))
         self._load_data(data)
+        if self.virtual and trnf_config:
+            self.mm.tranform_data_value = trnf_config
         if not self.name_allowed.match(self.model_record.rec_name):
             msg = (
                 _("Not allowed chars in field name: %s")
@@ -272,19 +270,15 @@ class OzonModelBase:
 
         return self.model_record
 
-    def set_user_data(self, record: CoreModel) -> CoreModel:
-        record.owner_uid = self.orm.user_session.get("user.uid")
-        record.owner_name = self.orm.user_session.get("user.full_name", "")
-        record.owner_mail = self.orm.user_session.get("user.mail", "")
-        record.owner_sector = self.orm.user_session.get("sector", "")
-        record.owner_sector_id = self.orm.user_session.get("sector_id", "")
-        record.owner_personal_type = self.orm.user_session.get(
-            "user.tipo_personale", ""
-        )
-        record.owner_job_title = self.orm.user_session.get(
-            "user.qualifica", ""
-        )
-        record.owner_function = self.orm.user_session.get("function", "")
+    def set_user_data(self, record: CoreModel, user={}) -> CoreModel:
+        record.owner_uid = user.get("user.uid")
+        record.owner_name = user.get("user.full_name", "")
+        record.owner_mail = user.get("user.mail", "")
+        record.owner_sector = user.get("sector", "")
+        record.owner_sector_id = user.get("sector_id", "")
+        record.owner_personal_type = user.get("user.tipo_personale", "")
+        record.owner_job_title = user.get("user.qualifica", "")
+        record.owner_function = user.get("function", "")
         return record
 
     async def insert(self, record: CoreModel) -> CoreModel:
@@ -306,7 +300,7 @@ class OzonModelBase:
             coll = self.db.engine.get_collection(self.data_model)
             record.list_order = await self.count()
             record.create_datetime = datetime.now().isoformat()
-            record = self.set_user_data(record)
+            record = self.set_user_data(record, self.user_session)
             to_save = self._make_from_dict(copy.deepcopy(record.get_dict()))
             result_save = await coll.insert_one(to_save)
             result = None
@@ -358,7 +352,7 @@ class OzonModelBase:
         self.model_record.create_datetime = datetime.now().isoformat()
         self.model_record.update_datetime = datetime.now().isoformat()
         record = await self.new(data=self.model_record.get_dict())
-        record = self.set_user_data(record)
+        record = self.set_user_data(record, self.user_session)
         for k in self.mm.unique_fields:
             if k not in ["rec_name"]:
                 record.set(k, f"{record.get(k)}_copy")

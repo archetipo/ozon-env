@@ -78,7 +78,11 @@ class MockWorker1(OzonWorkerEnv):
         data_doc['anomalia_gestita'] = False
 
         v_doc = await self.virtual_doc_model.new(
-            data_doc, rec_name=f"DOC{data_doc['idDg']}")
+            data_doc,
+            rec_name=f"DOC{data_doc['idDg']}",
+            trnf_config={
+                "dtRegistrazione": {"type": date}
+            })
 
         if self.virtual_doc_model.is_error():
             return v_doc
@@ -149,6 +153,7 @@ class MockWorker1(OzonWorkerEnv):
         assert documento.data_value['ammImpEuro'] == locale.format_string(
             '%.2f', 1446.16, True)
         assert documento.anomalia_gestita is False
+        assert documento.data_value['dtRegistrazione'] == "24/05/2022"
         return documento
 
 

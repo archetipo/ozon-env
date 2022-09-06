@@ -378,6 +378,7 @@ class OzonModelBase:
                     True,
                 )
             else:
+                record.list_order = await self.count()
                 to_save = self._make_from_dict(
                     copy.deepcopy(record.get_dict())
                 )

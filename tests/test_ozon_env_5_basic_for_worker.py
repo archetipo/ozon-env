@@ -96,7 +96,7 @@ class MockWorker1(OzonWorkerEnv):
         assert v_doc.ammImpEuro == 1446.16
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133
         assert v_doc.dg18XIndModOrdinat.denominazione == "Mario Rossi"
-        for row in v_doc.dg15XVoceCalcolata:
+        for id, row in enumerate(v_doc.dg15XVoceCalcolata):
             row_dictr = self.virtual_row_doc_model.get_dict_record(
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
 
@@ -133,6 +133,7 @@ class MockWorker1(OzonWorkerEnv):
             assert row_db.data_value.get('stato') == "Caricato"
             assert row_db.get('data_value.stato').startswith("Car") is True
             assert row_db.stato == "caricato"
+            assert row_db.list_order == id
 
             row_db.selection_value("stato", "done", 'Done')
             row_db.selection_value("tipologia", ["a", "c"], ["A", "C"])
@@ -146,6 +147,7 @@ class MockWorker1(OzonWorkerEnv):
             assert row_upd.data_value.get('tipologia') == ["A", "C"]
             assert row_upd.get('data_value.stato').startswith("Do") is True
             assert row_upd.stato == "done"
+            assert row_db.list_order == id
 
         documento = await self.virtual_doc_model.insert(v_doc)
 

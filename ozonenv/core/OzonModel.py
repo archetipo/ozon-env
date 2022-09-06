@@ -53,6 +53,7 @@ class OzonModelBase:
         self.status: BasicReturn = BasicReturn(
             **{"fail": False, "msg": "", "data": {}}
         )
+        self.transform_config = {}
         self.init_model()
 
     @property
@@ -200,6 +201,8 @@ class OzonModelBase:
             self.mm.new(data)
         else:
             self.mm = ModelMaker(self.data_model)
+            if self.transform_config:
+                self.mm.tranform_data_value = self.transform_config.copy()
             if data.get("_id"):
                 data.pop("_id")
             self.mm.from_data_dict(data)
@@ -256,9 +259,8 @@ class OzonModelBase:
                 data["rec_name"] = rec_name
         if not self.virtual:
             data = self._make_from_dict(copy.deepcopy(data))
+        self.transform_config = trnf_config.copy()
         self._load_data(data)
-        if self.virtual and trnf_config:
-            self.mm.tranform_data_value = trnf_config
         if not self.name_allowed.match(self.model_record.rec_name):
             msg = (
                 _("Not allowed chars in field name: %s")

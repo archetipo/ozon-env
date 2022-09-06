@@ -376,7 +376,9 @@ class OzonModelBase:
                     True,
                 )
             else:
-                to_save = record.get_dict(default_list_metadata_clean)
+                to_save = self._make_from_dict(
+                    copy.deepcopy(record.get_dict())
+                )
             if "rec_name" in to_save:
                 to_save.pop("rec_name")
             to_save["active"] = True

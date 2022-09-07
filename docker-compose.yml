@@ -22,3 +22,9 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://servicetest:servicetest@database:27017
+
+  redis_cache:
+    image: redis:latest
+    command: redis-server --maxmemory 100mb  --maxmemory-policy allkeys-lfu --appendonly no --stop-writes-on-bgsave-error no --lfu-log-factor 10 --lfu-decay-time 1
+    ports:
+      - "10001:6379"

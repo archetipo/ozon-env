@@ -25,6 +25,8 @@ from ozonenv.core.i18n import _
 from datetime import datetime, date
 import datetime as dt
 import locale
+from ozonenv.core.cache.cache_utils import init_cache, stop_cache
+from ozonenv.core.cache.cache import get_cache
 
 logger = logging.getLogger(__file__)
 
@@ -43,6 +45,10 @@ class OzonEnvBase:
         self.session_is_api = False
         self.user_session: CoreModel
         self.session_token = None
+        self.use_cache = False
+        self.cache_index = "ozon_env"
+        self.redis_url = ""
+        self.orm_from_cache = False
         self.upload_folder = upload_folder
         if not upload_folder:
             self.upload_folder = cfg["upload_folder"]
@@ -149,13 +155,34 @@ class OzonEnvBase:
         await self.connect_db()
         await self.set_lang()
         self.orm = OzonOrm(self)
+        if self.use_cache:
+            await init_cache(url=self.redis_url)
+            cache = await get_cache()
+            self.orm.db_models = await cache.get(self.cache_index, "orm")
+            self.orm_from_cache = self.orm is not False
+            if self.orm_from_cache:
+                logger.info(f"Use Orm in cache for {self.cache_index}.orm ")
 
-    async def make_app_session(self, params: dict) -> BasicReturn:
+    async def close_env(self):
+        await self.close_db()
+        if self.use_cache:
+            await stop_cache()
+
+    async def make_app_session(
+        self,
+        params: dict,
+        use_cache=True,
+        cache_idx="ozon_env",
+        redis_url="redis://redis_cache",
+    ) -> BasicReturn:
         try:
             self.params = copy.deepcopy(params)
+            self.use_cache = use_cache
+            self.cache_index = cache_idx
+            self.redis_url = redis_url
             await self.init_env()
             res = await self.session_app()
-            await self.close_db()
+            await self.close_env()
             return res
         except Exception as e:
             logger.exception(e)
@@ -164,7 +191,16 @@ class OzonEnvBase:
     async def session_app(self) -> BasicReturn:
         self.session_is_api = self.params.get("session_is_api", False)
         self.session_token = self.params.get("current_session_token")
-        await self.orm.init_models()
+        if self.use_cache and not self.orm_from_cache:
+            logger.info("set orm in  cache")
+            await self.orm.init_models()
+            cache = await get_cache()
+            await cache.clear(self.cache_index, "orm")
+            await cache.set(
+                self.cache_index, "orm", self.orm.db_models, expire=800
+            )  # 8 hours
+        else:
+            await self.orm.init_models()
         await self.orm.init_session(self.session_token)
         self.user_session = self.orm.user_session
         if not self.user_session:

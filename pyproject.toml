@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ozon-env"
-version = "0.4.20"
+version = "0.4.21"
 homepage = "https://github.com/archetipo/ozon-env"
 description = "Ozon Env API"
 readme = "README.md"
@@ -25,6 +25,8 @@ Babel = { version = ">=2.10.3" }
 anyio = ">=0.21"
 starlette = ">=0.20.4"
 aiohttp = ">=3.8.1"
+aioredis = ">=2.0.1"
+pytest-benchmark = ">=3.4.1"
 
 [tool.poetry.extras]
 json_logic = ["json_logic_qubit"]

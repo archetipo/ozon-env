@@ -218,7 +218,8 @@ async def test_init_worker_ok():
             "action_next_page": {
                 "success": {"form": "/open/doc"},
             }
-        }
+        },
+        redis_url="redis://localhost:10001"
     )
     assert res.fail is False
     assert res.data['test_topic']["error"] is False
@@ -242,7 +243,8 @@ async def test_init_worker_fail():
             "action_next_page": {
                 "success": {"form": "/open/doc"},
             }
-        }
+        },
+        redis_url="redis://localhost:10001"
     )
     assert res.fail is True
     assert res.msg == "Errore Duplicato rec_name: DOC99999.1"

@@ -95,9 +95,17 @@ class OzonWorkerEnv(OzonEnv):
                 params=self.params, default_url=redirect_url, rec_ref=rec_ref)
         )
 
-    async def make_app_session(self, params: dict) -> BasicReturn:
+    async def make_app_session(
+            self,
+            params: dict,
+            use_cache=True,
+            cache_idx="ozon_env",
+            redis_url="redis://redis_cache",
+    ) -> BasicReturn:
         self.topic_name = params.get('topic_name', "")
-        res = await super(OzonWorkerEnv, self).make_app_session(params)
+        res = await super(OzonWorkerEnv, self).make_app_session(
+            params, use_cache=use_cache, cache_idx=cache_idx,
+            redis_url=redis_url)
         if res.fail:
             return self.exception_response(res.msg)
         return res

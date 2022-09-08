@@ -669,6 +669,7 @@ class BaseModelMaker:
         self.components_logic = []
         self.tranform_data_value = {}
         self.fields_limit_value = {}
+        self.schema_object = None
 
     def get_field_value(self, v):
         type_def = {

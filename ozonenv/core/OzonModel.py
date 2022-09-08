@@ -41,7 +41,6 @@ class OzonModelBase:
             self.data_model = data_model or model_name
         self.model_meta: ModelMetaclass = None
         self.schema = copy.deepcopy(schema)
-        self.schema_object: CoreModel = None
         self.default_domain = {"active": True, "deleted": 0}
         self.is_session_model = session_model
         self.model_record: CoreModel = None
@@ -54,7 +53,7 @@ class OzonModelBase:
             **{"fail": False, "msg": "", "data": {}}
         )
         self.transform_config = {}
-        self.init_model()
+        # self.init_model()
 
     @property
     def unique_fields(self):
@@ -76,12 +75,20 @@ class OzonModelBase:
         _domain.update(domain)
         return _domain
 
-    def init_model(self):
+    def set_model_meta_defualt(self):
+        if not self.virtual:
+            self.model_meta = self.mm.model
+        if not self.static and not self.virtual:
+            if self.mm.schema_object.properties.get("sort", False):
+                self.default_sort_str = self.mm.schema_object.properties.get(
+                    "sort"
+                )
+
+    async def init_model(self):
         self.init_status()
         self.mm = ModelMaker(self.name)
         if self.static:
             self.mm.model = self.static
-            self.model_meta = self.static
             for field in self.static.get_unique_fields():
                 if field not in self.mm.unique_fields:
                     self.mm.unique_fields.append(field)
@@ -90,12 +97,9 @@ class OzonModelBase:
             c_maker = ModelMaker("component")
             c_maker.model = Component
             c_maker.new()
-            self.schema_object = c_maker.instance
-            self.model_meta = self.mm.from_formio(self.schema)
-            if self.schema_object.properties.get("sort", False):
-                self.default_sort_str = self.schema_object.properties.get(
-                    "sort"
-                )
+            self.mm.from_formio(self.schema)
+            self.mm.schema_object = c_maker.instance
+        self.set_model_meta_defualt()
 
     def eval_sort_str(self, sortstr="") -> list[tuple]:
         """

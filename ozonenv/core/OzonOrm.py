@@ -30,6 +30,8 @@ from ozonenv.core.cache.cache import get_cache
 
 logger = logging.getLogger(__file__)
 
+MAIN_CACHE_TIME = 800
+
 
 class OzonEnvBase:
     def __init__(self, cfg, upload_folder=""):
@@ -155,13 +157,6 @@ class OzonEnvBase:
         await self.connect_db()
         await self.set_lang()
         self.orm = OzonOrm(self)
-        if self.use_cache:
-            await init_cache(url=self.redis_url)
-            cache = await get_cache()
-            self.orm.db_models = await cache.get(self.cache_index, "orm")
-            self.orm_from_cache = self.orm is not False
-            if self.orm_from_cache:
-                logger.info(f"Use Orm in cache for {self.cache_index}.orm ")
 
     async def close_env(self):
         await self.close_db()
@@ -191,16 +186,7 @@ class OzonEnvBase:
     async def session_app(self) -> BasicReturn:
         self.session_is_api = self.params.get("session_is_api", False)
         self.session_token = self.params.get("current_session_token")
-        if self.use_cache and not self.orm_from_cache:
-            logger.info("set orm in  cache")
-            await self.orm.init_models()
-            cache = await get_cache()
-            await cache.clear(self.cache_index, "orm")
-            await cache.set(
-                self.cache_index, "orm", self.orm.db_models, expire=800
-            )  # 8 hours
-        else:
-            await self.orm.init_models()
+        await self.orm.init_models()
         await self.orm.init_session(self.session_token)
         self.user_session = self.orm.user_session
         if not self.user_session:
@@ -225,6 +211,7 @@ class OzonOrm:
             "session": Session,
             "attachmenttrash": AttachmentTrash,
         }
+        self.db_models = []
         self.orm_sys_models = ["component", "session"]
 
     async def add_static_model(
@@ -238,11 +225,15 @@ class OzonOrm:
             self,
             static=model_class,
         )
+        await self.env.models[_model_name].init_model()
         await self.env.models[_model_name].init_unique()
         return self.env.models[_model_name]
 
-    async def init_models(self):
+    async def init_db_models(self):
         self.db_models = await self.get_collections_names()
+
+    async def init_models(self):
+        await self.init_db_models()
         for main_model in self.orm_models:
             if main_model not in self.env.models:
                 await self.make_model(main_model)
@@ -320,6 +311,7 @@ class OzonOrm:
                 schema=schema,
                 session_model=session_model,
             )
+            await self.env.models[model_name].init_model()
             if not virtual:
                 if model_name not in self.db_models:
                     await self.env.models[model_name].init_unique()
@@ -344,6 +336,8 @@ class OzonModel(OzonModelBase):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env
         self.db: Mongo = orm.env.db
+        self.mm_from_cache = False
+        self.use_cache = False
         super(OzonModel, self).__init__(
             model_name,
             data_model=data_model,
@@ -353,5 +347,38 @@ class OzonModel(OzonModelBase):
             schema=schema,
         )
 
-    def init_model(self):
-        super(OzonModel, self).init_model()
+    async def get_cache_object(self):
+        if self.orm.env.use_cache:
+            await init_cache(url=self.orm.env.redis_url)
+            cache = await get_cache()
+            mm_candidate = await cache.get(self.orm.env.cache_index, self.name)
+            self.mm_from_cache = mm_candidate is not False
+            print(mm_candidate, type(mm_candidate), self.mm_from_cache)
+            if self.mm_from_cache:
+                self.mm = mm_candidate
+                logger.info(
+                    f"Use Model Object in cache for "
+                    f"{self.orm.env.cache_index}.{self.name} "
+                )
+
+    async def mm_or_cache(self):
+        if not self.mm_from_cache:
+            await super(OzonModel, self).init_model()
+            print(f"add {self.name}")
+            cache = await get_cache()
+            await cache.clear(self.orm.env.cache_index, self.name)
+            await cache.set(
+                self.orm.env.cache_index,
+                self.name,
+                self.mm,
+                expire=MAIN_CACHE_TIME,
+            )  # 8 hours
+        else:
+            self.set_model_meta_defualt()
+
+    async def init_model(self):
+        if not self.orm.env.use_cache:
+            await super(OzonModel, self).init_model()
+        else:
+            await self.get_cache_object()
+            await self.mm_or_cache()

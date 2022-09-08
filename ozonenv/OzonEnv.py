@@ -98,7 +98,7 @@ class OzonWorkerEnv(OzonEnv):
     async def make_app_session(
             self,
             params: dict,
-            use_cache=True,
+            use_cache=False,
             cache_idx="ozon_env",
             redis_url="redis://redis_cache",
     ) -> BasicReturn:

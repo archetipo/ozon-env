@@ -15,6 +15,7 @@ import operator
 from datetime import datetime
 import json
 import re
+import ozonenv
 
 # from datetime import datetime
 from dateutil.parser import parse
@@ -235,7 +236,9 @@ class MainModel(BaseModel):
 
 
 class CoreModel(MainModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    id: PyObjectId = Field(
+        default_factory=ozonenv.core.db.BsonTypes.PyObjectId, alias="_id"
+    )
     data_model: str = ""
     rec_name: str = ""
     app_code: List = Field(default=[])

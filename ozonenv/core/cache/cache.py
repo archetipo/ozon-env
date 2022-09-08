@@ -24,7 +24,7 @@ class RedisBackend:
 
     async def set(self, app_code: str, key: str, value: Any, expire: int = 60):
         return await self.redis.set(
-            f"{app_code}:{key}", PickleCoder.encode(value), ex=expire)
+            f"{app_code}:{key}", self.coder.encode(value), ex=expire)
 
     async def clear(self, app_code: str = None, key: str = None) -> int:
         if app_code:

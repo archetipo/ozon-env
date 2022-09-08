@@ -20,19 +20,20 @@ from pydantic.validators import (
     int_validator,
     pattern_validator,
 )
+from bson.objectid import ObjectId as BsonObjectId
 
 
-class PyObjectId(bson.ObjectId):
+class PyObjectId(BsonObjectId):
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
 
     @classmethod
     def validate(cls, v):
-        if isinstance(v, (bson.ObjectId, cls)):
+        if isinstance(v, (BsonObjectId, cls)):
             return v
-        if isinstance(v, str) and bson.ObjectId.is_valid(v):
-            return bson.ObjectId(v)
+        if isinstance(v, str) and BsonObjectId.is_valid(v):
+            return BsonObjectId(v)
         raise TypeError("invalid ObjectId specified")
 
     @classmethod
@@ -67,7 +68,8 @@ class Decimal128(bson.decimal128.Decimal128):
 
     @classmethod
     def __modify_schema__(cls, field_schema: Dict) -> None:
-        field_schema.update(examples=[214.7483649], example=214.7483649, type="number")
+        field_schema.update(examples=[214.7483649], example=214.7483649,
+                            type="number")
 
     @classmethod
     def validate(cls, v: Any) -> bson.decimal128.Decimal128:
@@ -143,7 +145,8 @@ class DateTime(datetime):
         # MongoDB does not store timezone info
         # https://docs.python.org/3/library/datetime.html#determining-if-an-object-is-aware-or-naive
         if d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None:
-            raise ValueError("datetime objects must be naive (no timezone info)")
+            raise ValueError(
+                "datetime objects must be naive (no timezone info)")
         # Truncate microseconds to milliseconds to comply with Mongo behavior
         microsecs = d.microsecond - d.microsecond % 1000
         return d.replace(microsecond=microsecs)
@@ -179,9 +182,11 @@ class _decimalDecimal(decimal.Decimal):
 
 
 BSON_TYPES_ENCODERS = {
-    bson.ObjectId: str,
-    bson.decimal128.Decimal128: lambda x: float(x.to_decimal()),  # Convert to regular decimal
-    bson.regex.Regex: lambda x: x.pattern,  # TODO: document no serialization of flags
+    PyObjectId: str,
+    bson.decimal128.Decimal128: lambda x: float(x.to_decimal()),
+    # Convert to regular decimal
+    bson.regex.Regex: lambda x: x.pattern,
+    # TODO: document no serialization of flags
     # DateTime: str
 }
 

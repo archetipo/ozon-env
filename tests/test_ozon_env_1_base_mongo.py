@@ -55,6 +55,7 @@ async def test_make_app_session_error():
     env = OzonEnv(cfg)
     res = await env.make_app_session(
         {"current_session_token": "BA6B----"},
+        use_cache=True,
         redis_url="redis://localhost:10001")
     assert res.fail is True
     assert res.msg == "Token BA6B---- non abilitato"

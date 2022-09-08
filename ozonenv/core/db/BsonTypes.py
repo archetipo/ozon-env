@@ -182,7 +182,7 @@ class _decimalDecimal(decimal.Decimal):
 
 
 BSON_TYPES_ENCODERS = {
-    PyObjectId: str,
+    bson.ObjectId: str,
     bson.decimal128.Decimal128: lambda x: float(x.to_decimal()),
     # Convert to regular decimal
     bson.regex.Regex: lambda x: x.pattern,

@@ -19,7 +19,7 @@ import logging
 import pydantic
 import pymongo
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class OzonModelBase:

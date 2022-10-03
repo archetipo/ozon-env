@@ -719,8 +719,7 @@ class BaseModelMaker:
                     try:
                         return json.loads(s)
                     except Exception as e:
-                        logger.error(f" in decode {s}")
-                        logger.error(e, exc_info=True)
+                        logger.warning(f" in decode {s}")
                         return s
                 else:
                     return s

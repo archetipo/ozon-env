@@ -716,7 +716,12 @@ class BaseModelMaker:
                         return type_def.get(rgx.lastgroup)(s)
             else:
                 if type(s) is str and rgx.lastgroup in ["list", "dict"]:
-                    return json.loads(s)
+                    try:
+                        return json.loads(s)
+                    except Exception as e:
+                        logger.error(f" in decode {s}")
+                        logger.error(e, exc_info=True)
+                        return s
                 else:
                     return s
 

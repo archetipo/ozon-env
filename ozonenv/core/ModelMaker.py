@@ -715,7 +715,7 @@ class BaseModelMaker:
                     else:
                         return type_def.get(rgx.lastgroup)(s)
             else:
-                if type(s) is str:
+                if type(s) is str and rgx.lastgroup in ["list", "dict"]:
                     return json.loads(s)
                 else:
                     return s

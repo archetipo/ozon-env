@@ -1,4 +1,4 @@
-import aioredis
+from redis import asyncio as aioredis
 import logging
 from .cache import ioredis, get_redis, RedisBackend
 

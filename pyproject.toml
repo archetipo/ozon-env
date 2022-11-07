@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ozon-env"
-version = "0.5.0"
+version = "0.6.0"
 homepage = "https://github.com/archetipo/ozon-env"
 description = "Ozon Env API"
 readme = "README.md"
@@ -10,22 +10,22 @@ packages = [{ include = "ozonenv/**/*.py" }]
 exclude = ["tests/*"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4.0"
+python = ">=3.11,<4.0"
 pydantic = { version = ">=1.9.2" }
-httpx = { version = "^0.23.0" }
-pytz = { version = "2022.1" }
-motor = { version = "3.0.0" }
-ujson = { version = "5.3.0" }
-python-dateutil = { version = "2.8.2" }
-json_logic_qubit = { version = "^0.9.1" }
-aiofiles = { version = "^0.8.0" }
-aiopath = { version = "^0.6.10" }
+httpx = { version = ">=0.23.0" }
+pytz = { version = ">=2022.1" }
+motor = { version = ">=3.1.1" }
+ujson = { version = ">=5.3.0" }
+python-dateutil = { version = ">=2.8.2" }
+json_logic_qubit = { version = ">=0.9.1" }
+aiofiles = { version = ">=0.8.0" }
+aiopath = { version = ">=0.6.10" }
 jinja2 = { version = ">=3.1.2" }
 Babel = { version = ">=2.10.3" }
 anyio = ">=0.21"
 starlette = ">=0.20.4"
 aiohttp = ">=3.8.1"
-aioredis = ">=2.0.1"
+redis = ">=4.2.0rc1"
 pytest-benchmark = ">=3.4.1"
 
 [tool.poetry.extras]
@@ -58,6 +58,7 @@ force_single_line = true
 filterwarnings = [
     "error",
     "ignore::UserWarning",
+    "ignore::DeprecationWarning",
     # note the use of single quote below to denote "raw" strings in TOML
     'ignore:function ham\(\) is deprecated:DeprecationWarning'
 ]

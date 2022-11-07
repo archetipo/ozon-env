@@ -107,7 +107,7 @@ async def test_test_form_1_init_data():
     assert test_form_1_model.unique_fields == ["rec_name", "firstName"]
     test_form_1 = await test_form_1_model.new(data=data)
     assert test_form_1.is_error() is False
-    assert test_form_1.get('birthdate') == parse("1987-12-17T12:00:00")
+    assert test_form_1.birthdate == parse("1987-12-17T12:00:00")
     await env.close_db()
 
 

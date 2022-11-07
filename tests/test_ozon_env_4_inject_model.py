@@ -1,6 +1,7 @@
 import pytest
 from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
+from ozonenv.core.BaseModels import CoreModel
 from pydantic.main import ModelMetaclass
 from ozonenv.OzonEnv import OzonEnv
 from datetime import *
@@ -68,8 +69,30 @@ async def test_add_component_resource_1_product():
         await product_model.insert(prod)
     products = await product_model.find(product_model.get_domain())
     assert len(products) == 10
-    assert products[3].get('rec_name') == "prod3"
+    assert isinstance(products[3], CoreModel)
+    assert products[3].rec_name == "prod3"
     product = await product_model.load({"rec_name": "prod2"})
+    assert isinstance(product, CoreModel)
+    assert product.label == "Product2"
+    # add list prduct and test find/ and distinct
+    await env.close_db()
+
+
+@pytestmark
+async def test_add_component_resource_1_product_raw_query():
+    cfg = await OzonEnv.readfilejson(get_config_path())
+    env = OzonEnv(cfg)
+    await env.init_env()
+    env.orm.orm_static_models_map['user'] = User
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    product_model = env.get('prodotti')
+    products = await product_model.find_raw(product_model.get_domain())
+    assert len(products) == 10
+    assert isinstance(products[3], dict)
+    assert products[3].get('rec_name') == "prod3"
+    product = await product_model.load_raw({"rec_name": "prod2"})
+    assert isinstance(product, dict)
     assert product.get('label') == "Product2"
     # add list prduct and test find/ and distinct
     await env.close_db()

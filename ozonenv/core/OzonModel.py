@@ -451,6 +451,22 @@ class OzonModelBase:
 
         return self.model_record
 
+    async def load_raw(self, domain: dict) -> dict:
+        self.init_status()
+        if self.virtual and not self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, data=domain)
+            return None
+        coll = self.db.engine.get_collection(self.data_model)
+        data = await coll.find_one(domain)
+        if not data:
+            self.error_status(_("Not found"), domain)
+            return {}
+
+        return data
+
     async def find(
         self, domain: dict, sort: str = "", limit=0, skip=0
     ) -> list[CoreModel]:
@@ -475,6 +491,29 @@ class OzonModelBase:
             for rec_data in await datas.to_list(length=None):
                 self.mm.new(rec_data)
                 res.append(self.mm.instance)
+        return res
+
+    async def find_raw(
+        self, domain: dict, sort: str = "", limit=0, skip=0
+    ) -> list[dict]:
+        self.init_status()
+        if self.virtual and not self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, domain)
+            return []
+        _sort = self.eval_sort_str(sort)
+        coll = self.db.engine.get_collection(self.data_model)
+        res = []
+        if limit > 0:
+            datas = coll.find(domain).sort(_sort).skip(skip).limit(limit)
+        elif sort:
+            datas = coll.find(domain).sort(_sort)
+        else:
+            datas = coll.find(domain)
+        if datas:
+            return await datas.to_list(length=None)
         return res
 
     async def aggregate(

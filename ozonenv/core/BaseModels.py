@@ -1,5 +1,6 @@
 # Copyright INRIM (https://www.inrim.eu)
 # See LICENSE file for full licensing details.
+from __future__ import annotations
 from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 from typing import TypeVar
@@ -281,8 +282,8 @@ class CoreModel(MainModel):
         d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
         return d
 
-    def get_dict_copy(self):
-        return copy.deepcopy(self.get_dict())
+    def get_dict_copy(self, exclude=[]):
+        return self.get_dict(exclude=exclude)
 
     def rec_name_domain(self):
         return {"rec_name": self.rec_name}.copy()
@@ -351,10 +352,12 @@ class CoreModel(MainModel):
         )
         self.selection_value(key, value, value_label)
 
+    @classmethod
+    def no_clone_field_keys(cls):
+        return ["list_order"]
+
     def clone_data(self):
-        dat = self.get_dict_copy()
-        dat.pop("rec_name")
-        dat.pop("list_order")
+        dat = self.get_dict_copy(exclude=self.no_clone_field_keys())
         return dat.copy()
 
     def to_datetime(self, key):
@@ -364,9 +367,81 @@ class CoreModel(MainModel):
         except Exception:
             return v
 
+    @classmethod
+    def tranform_data_value(cls):
+        return {}
+
+    @classmethod
+    def fields_limit_value(cls):
+        return {}
+
+    @classmethod
+    def create_task_action(cls):
+        return []
+
+    @classmethod
+    def fields_properties(cls):
+        return {}
+
+    @classmethod
+    def default_hidden_fields(cls):
+        return []
+
+    @classmethod
+    def default_readonly_fields(cls):
+        return []
+
+    @classmethod
+    def default_disabled_fields(cls):
+        return []
+
+    @classmethod
+    def default_required_fields(cls):
+        return []
+
+    @classmethod
+    def realted_fields_logic(cls):
+        return {}
+
+    @classmethod
+    def fields_logic(cls):
+        return {}
+
+    @classmethod
+    def fields_conditional(cls):
+        return {}
+
+    @classmethod
+    def filter_keys(cls):
+        return []
+
+    @classmethod
+    def components_ext_data_src(cls):
+        return []
+
+    @classmethod
+    def get_data_model(cls):
+        return ""
+
 
 class BasicModel(CoreModel):
     rec_name: str = ""
+
+    @classmethod
+    def get_unique_fields(cls):
+        return ["rec_name"]
+
+    @classmethod
+    def computed_fields(cls):
+        return {}
+
+    @classmethod
+    def no_clone_field_keys(cls):
+        return ["rec_name", "list_order"]
+
+    @classmethod
+    def config_fields(cls):
+        return {}
 
 
 class AttachmentTrash(BasicModel):
@@ -374,10 +449,6 @@ class AttachmentTrash(BasicModel):
     model: str = ""
     model_rec_name: str = ""
     attachments: List[Dict] = []
-
-    @classmethod
-    def get_unique_fields(cls):
-        return ["rec_name"]
 
 
 class Component(BasicModel):
@@ -434,6 +505,10 @@ class Session(CoreModel):
     @classmethod
     def get_unique_fields(cls):
         return ["token"]
+
+    @classmethod
+    def no_clone_field_keys(cls):
+        return ["token", "list_order"]
 
 
 class DictRecord(BaseModel):

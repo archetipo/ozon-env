@@ -1,135 +1,91 @@
 from datetime import datetime, timedelta
+from dateutil.parser import parse
 from pydantic.main import ModelMetaclass
 from ozonenv.core.ModelMaker import ModelMaker
-from ozonenv.core.BaseModels import default_list_metadata
 from ozonenv.core.BaseModels import (
     Component,
-    DictRecord,
     BasicModel,
     CoreModel,
     BasicReturn,
+    DictRecord,
+    default_list_metadata,
     default_list_metadata_clean,
 )
 from ozonenv.core.i18n import _
 import re
 import copy
-import bson
 import logging
-
 import pydantic
 import pymongo
+import locale
+import bson
 
 logger = logging.getLogger(__name__)
 
 
-class OzonModelBase:
+class OzonMBase:
     def __init__(
         self,
         model_name,
+        config_system={},
         data_model="",
         session_model=False,
         virtual=False,
         static: BasicModel = None,
         schema={},
     ):
+        """
+        :param model_name: the name of model must be unique
+        :param config_system: base config of environment
+        :param data_model: the name of data model in case of virtual model
+                           use this collection to store o retreive data.
+        :param session_model: True/False if the model is Session or
+                              a subclass of Session Model
+        :param virtual: True/False if is virtual_model create a model from a
+                        generic data dictionary, without the schema
+        :param static: ModelClass, if the model is in python Class you need to
+                    set model as a static model, when object init the data
+                    model, use directly this model class insted to run model
+                    maker.
+        :param schema: formio form schema, mandatory if
+        """
         self.name = model_name
+        self.config_system = config_system.copy()
         self.virtual = virtual
         self.static: BasicModel = static
+        self.instance: BasicModel
         if self.virtual:
             self.data_model = data_model
         else:
             self.data_model = data_model or model_name
-        self.model_meta: ModelMetaclass = None
         self.schema = copy.deepcopy(schema)
-        self.default_domain = {"active": True, "deleted": 0}
+        self.session_model = session_model
         self.is_session_model = session_model
-        self.model_record: CoreModel = None
+        self.model_meta: ModelMetaclass = None
+        self.modelr: CoreModel = None
         self.mm: ModelMaker = None
+        self.model: BasicModel
         self.name_allowed = re.compile(r"^[A-Za-z0-9._~()'!*:@,;+?-]*$")
         self.sort_dir = {"asc": 1, "desc": -1}
         self.default_sort_str = "list_order:desc,"
-        self.sort_rule = []
+        self.default_domain = {"active": True, "deleted": 0}
+        self.transform_config = {}
         self.status: BasicReturn = BasicReturn(
             **{"fail": False, "msg": "", "data": {}}
         )
-        self.transform_config = {}
-        # self.init_model()
-
-    @property
-    def unique_fields(self):
-        return self.mm.unique_fields
-
-    @property
-    def user_session(self):
-        return self.orm.user_session
-
-    @property
-    def message(self):
-        return self.status.msg
-
-    def is_error(self):
-        return self.status.fail
-
-    def get_domain(self, domain={}):
-        _domain = self.default_domain.copy()
-        _domain.update(domain)
-        return _domain
-
-    def set_model_meta_defualt(self):
-        if not self.virtual:
-            self.model_meta = self.mm.model
-        if not self.static and not self.virtual:
-            if self.mm.schema_object.properties.get("sort", False):
-                self.default_sort_str = self.mm.schema_object.properties.get(
-                    "sort"
-                )
+        self.tranform_data_value = {}
 
     async def init_model(self):
-        self.init_status()
+        # print("init_model")
         self.mm = ModelMaker(self.name)
         if self.static:
-            self.mm.model = self.static
-            for field in self.static.get_unique_fields():
-                if field not in self.mm.unique_fields:
-                    self.mm.unique_fields.append(field)
-
+            self.model = self.static
+            self.tranform_data_value = self.model.tranform_data_value()
         elif not self.static and not self.virtual:
             c_maker = ModelMaker("component")
             c_maker.model = Component
             c_maker.new()
             self.mm.from_formio(self.schema)
-            self.mm.schema_object = c_maker.instance
-        self.set_model_meta_defualt()
-
-    def eval_sort_str(self, sortstr="") -> list[tuple]:
-        """
-        eval sort string in sort rule
-        :param sortstr: eg. list_order:asc,rec_name:desc
-        :return: List(Tuple) eg. [('list_order', 1),('rec_name', -1)]
-        """
-        if not sortstr:
-            sortstr = self.default_sort_str
-        sort_rules = sortstr.split(",")
-        sort = []
-        for rule_str in sort_rules:
-            if rule_str:
-                rule_list = rule_str.split(":")
-                if len(rule_list) > 1:
-                    rule = (rule_list[0], self.sort_dir[rule_list[1]])
-                    sort.append(rule)
-        return sort
-
-    async def set_lang(self):
-        self.lang = self.orm.lang
-
-    async def init_unique(self):
-        for field in self.mm.unique_fields:
-            await self.set_unique(field)
-
-    async def set_unique(self, field_name):
-        self.init_status()
-        component_coll = self.db.engine.get_collection(self.data_model)
-        await component_coll.create_index([(field_name, 1)], unique=True)
 
     @classmethod
     def _value_type(cls, v):
@@ -166,7 +122,35 @@ class OzonModelBase:
             else:
                 return type_def.get(rgx.lastgroup)
 
-    def _make_from_dict(self, dict_data, root_dict=None):
+    def make_data_value(self, val, cfg):
+        if cfg["type"] == "datetime":
+            res = self._readable_datetime(val)
+        elif cfg["type"] == "date":
+            res = self._readable_date(val)
+        elif cfg["type"] == "float":
+            res = self.readable_float(val, dp=cfg["dp"])
+        else:
+            res = val
+        return res
+
+    def _readable_datetime(self, val):
+        if isinstance(val, str):
+            return parse(val).strftime(self.config_system["ui_datetime_mask"])
+        else:
+            return val.strftime(self.config_system["ui_datetime_mask"])
+
+    def _readable_date(self, val):
+        if isinstance(val, str):
+            return parse(val).strftime(self.config_system["ui_date_mask"])
+        else:
+            return val.strftime(self.config_system["ui_date_mask"])
+
+    def readable_float(self, val, dp=2, g=True):
+        if isinstance(val, str):
+            val = float(val)
+        return locale.format_string(f"%.{dp}f", val, g)
+
+    def _make_from_dict(self, dict_data):
         res_dict = {}
         for k, v in dict_data.items():
             if isinstance(v, dict):  # For DICT
@@ -184,38 +168,50 @@ class OzonModelBase:
             else:
                 if "data_value" not in res_dict:
                     res_dict["data_value"] = {}
-                if k in self.mm.tranform_data_value:
-                    res_dict["data_value"][k] = self.env.make_data_value(
-                        v, self.mm.tranform_data_value[k]
+                if k in self.tranform_data_value:
+                    res_dict["data_value"][k] = self.make_data_value(
+                        v, self.tranform_data_value[k]
                     )
                 elif self._value_type(v) is datetime:
-                    res_dict["data_value"][k] = self.env.make_data_value(
+                    res_dict["data_value"][k] = self.make_data_value(
                         v, {"type": datetime}
                     )
                 elif self._value_type(v) is float:
-                    res_dict["data_value"][k] = self.env.make_data_value(
+                    res_dict["data_value"][k] = self.make_data_value(
                         v, {"type": float, "dp": 2}
                     )
                 res_dict[k] = v
 
         return res_dict.copy()
 
-    def _load_data(self, data):
+    def load_data(self, data):
         if not self.virtual:
-            self.mm.new(data)
+            self.modelr = self.model(**data)
         else:
             self.mm = ModelMaker(self.data_model)
             if self.transform_config:
-                self.mm.tranform_data_value = self.transform_config.copy()
+                self.tranform_data_value = self.transform_config.copy()
             if data.get("_id"):
                 data.pop("_id")
             self.mm.from_data_dict(data)
-            self.mm.new()
-        self.model_record = self.mm.instance
-        if not self.is_session_model and not self.model_record.rec_name:
-            self.model_record.rec_name = (
-                f"{self.data_model}.{self.model_record.id}"
-            )
+
+            self.modelr = self.mm.new()
+        if not self.is_session_model and not self.modelr.rec_name:
+            self.modelr.rec_name = f"{self.data_model}.{self.modelr.id}"
+
+
+class OzonModelBase(OzonMBase):
+    @property
+    def message(self):
+        return self.status.msg
+
+    @property
+    def unique_fields(self):
+        return self.model.unique_fields
+
+    @property
+    def user_session(self):
+        return self.orm.user_session
 
     def error_status(self, msg, data):
         self.status.fail = True
@@ -226,6 +222,67 @@ class OzonModelBase:
         self.status.fail = False
         self.status.msg = ""
         self.status.data = {}
+
+    def is_error(self):
+        return self.status.fail
+
+    def get_domain(self, domain={}):
+        _domain = self.default_domain.copy()
+        _domain.update(domain)
+        return _domain
+
+    async def set_lang(self):
+        self.lang = self.orm.lang
+
+    def eval_sort_str(self, sortstr="") -> list[tuple]:
+        """
+        eval sort string in sort rule
+        :param sortstr: eg. list_order:asc,rec_name:desc
+        :return: List(Tuple) eg. [('list_order', 1),('rec_name', -1)]
+        """
+        if not sortstr:
+            sortstr = self.default_sort_str
+        sort_rules = sortstr.split(",")
+        sort = []
+        for rule_str in sort_rules:
+            if rule_str:
+                rule_list = rule_str.split(":")
+                if len(rule_list) > 1:
+                    rule = (rule_list[0], self.sort_dir[rule_list[1]])
+                    sort.append(rule)
+        return sort
+
+    def get_dict(self, rec: CoreModel, exclude=[]) -> CoreModel:
+        return rec.get_dict(exclude=exclude)
+
+    def get_dict_record(self, rec: CoreModel, rec_name="") -> DictRecord:
+        dictd = self.get_dict(rec, exclude=default_list_metadata + ["_id"])
+        if rec_name:
+            dictd["rec_name"] = rec_name
+        dat = DictRecord(
+            model="virtual", rec_name=rec_name, data=copy.deepcopy(dictd)
+        )
+        return dat
+
+    def set_user_data(self, record: CoreModel, user={}) -> CoreModel:
+        record.owner_uid = user.get("user.uid")
+        record.owner_name = user.get("user.full_name", "")
+        record.owner_mail = user.get("user.mail", "")
+        record.owner_sector = user.get("sector", "")
+        record.owner_sector_id = user.get("sector_id", "")
+        record.owner_personal_type = user.get("user.tipo_personale", "")
+        record.owner_job_title = user.get("user.qualifica", "")
+        record.owner_function = user.get("function", "")
+        return record
+
+    async def init_unique(self):
+        for field in self.model.get_unique_fields():
+            await self.set_unique(field)
+
+    async def set_unique(self, field_name):
+        self.init_status()
+        component_coll = self.db.engine.get_collection(self.data_model)
+        await component_coll.create_index([(field_name, 1)], unique=True)
 
     async def count_by_filter(self, domain: dict) -> int:
         self.init_status()
@@ -244,18 +301,6 @@ class OzonModelBase:
         else:
             return 0
 
-    def get_dict(self, rec: CoreModel, exclude=[]) -> CoreModel:
-        return rec.get_dict(exclude=exclude)
-
-    def get_dict_record(self, rec: CoreModel, rec_name="") -> DictRecord:
-        dictd = self.get_dict(rec, exclude=default_list_metadata + ["_id"])
-        if rec_name:
-            dictd["rec_name"] = rec_name
-        dat = DictRecord(
-            model="virtual", rec_name=rec_name, data=copy.deepcopy(dictd)
-        )
-        return dat
-
     async def new(self, data={}, rec_name="", trnf_config={}) -> CoreModel:
         self.init_status()
         if not data and rec_name or rec_name and self.virtual:
@@ -264,28 +309,16 @@ class OzonModelBase:
         if not self.virtual:
             data = self._make_from_dict(copy.deepcopy(data))
         self.transform_config = trnf_config.copy()
-        self._load_data(data)
-        if not self.name_allowed.match(self.model_record.rec_name):
+        self.load_data(data)
+        if not self.name_allowed.match(self.modelr.rec_name):
             msg = (
-                _("Not allowed chars in field name: %s")
-                % self.model_record.rec_name
+                _("Not allowed chars in field name: %s") % self.modelr.rec_name
             )
             self.error_status(msg, data=data)
             return None
-        self.model_record.set_active()
+        self.modelr.set_active()
 
-        return self.model_record
-
-    def set_user_data(self, record: CoreModel, user={}) -> CoreModel:
-        record.owner_uid = user.get("user.uid")
-        record.owner_name = user.get("user.full_name", "")
-        record.owner_mail = user.get("user.mail", "")
-        record.owner_sector = user.get("sector", "")
-        record.owner_sector_id = user.get("sector_id", "")
-        record.owner_personal_type = user.get("user.tipo_personale", "")
-        record.owner_job_title = user.get("user.qualifica", "")
-        record.owner_function = user.get("function", "")
-        return record
+        return self.modelr
 
     async def insert(self, record: CoreModel) -> CoreModel:
         self.init_status()
@@ -296,7 +329,9 @@ class OzonModelBase:
             )
             return None
         try:
-            if not self.name_allowed.match(record.rec_name):
+            if not record.rec_name or not self.name_allowed.match(
+                record.rec_name
+            ):
                 msg = _("Not allowed chars in field name: %s") % record.get(
                     "rec_name"
                 )
@@ -344,22 +379,20 @@ class OzonModelBase:
             )
             return None
         record_to_copy = await self.load(domain)
-        self.model_record.renew_id()
+        self.modelr.renew_id()
         if (
             hasattr(record_to_copy, "rec_name")
             and self.name not in record_to_copy.rec_name
         ):
-            self.model_record.rec_name = f"{self.model_record.rec_name}_copy"
+            self.modelr.rec_name = f"{self.modelr.rec_name}_copy"
         else:
-            self.model_record.rec_name = (
-                f"{self.data_model}.{self.model_record.id}"
-            )
-        self.model_record.list_order = await self.count()
-        self.model_record.create_datetime = datetime.now().isoformat()
-        self.model_record.update_datetime = datetime.now().isoformat()
-        record = await self.new(data=self.model_record.get_dict())
+            self.modelr.rec_name = f"{self.data_model}.{self.modelr.id}"
+        self.modelr.list_order = await self.count()
+        self.modelr.create_datetime = datetime.now().isoformat()
+        self.modelr.update_datetime = datetime.now().isoformat()
+        record = await self.new(data=self.modelr.get_dict())
         record = self.set_user_data(record, self.user_session)
-        for k in self.mm.unique_fields:
+        for k in self.model.get_unique_fields():
             if k not in ["rec_name"]:
                 record.set(k, f"{record.get(k)}_copy")
         record.set_active()
@@ -383,7 +416,7 @@ class OzonModelBase:
                 )
             else:
                 record.list_order = await self.count()
-                to_save = self._make_from_dict(
+                to_save = self.mo._make_from_dict(
                     copy.deepcopy(record.get_dict())
                 )
             if "rec_name" in to_save:
@@ -447,9 +480,9 @@ class OzonModelBase:
             self.error_status(_("Not found"), domain)
             return None
 
-        self._load_data(data)
+        self.load_data(data)
 
-        return self.model_record
+        return self.modelr
 
     async def load_raw(self, domain: dict) -> dict:
         self.init_status()
@@ -489,8 +522,10 @@ class OzonModelBase:
         if datas:
             res = []
             for rec_data in await datas.to_list(length=None):
-                self.mm.new(rec_data)
-                res.append(self.mm.instance)
+                if self.virtual:
+                    res.append(self.mm.new(rec_data))
+                else:
+                    res.append(self.model(**rec_data))
         return res
 
     async def find_raw(

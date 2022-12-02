@@ -3,6 +3,9 @@
     "rec_name": "documento",
     "title": "documento",
     "type": "form",
+    "app_code": [
+      "test"
+    ],
     "components": [
       {
         "label": "Columns",

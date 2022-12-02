@@ -26,10 +26,12 @@ class MockWorker1(OzonWorkerEnv):
         assert self.p_model.data_model == "documento"
 
         self.virtual_doc_model = await self.add_model(
-            'virtual_doc', virtual=True, data_model="documento_beni_servizi")
+            'virtual_doc', virtual=True,
+            data_model="documento_beni_servizi")
 
         self.virtual_row_doc_model = await self.add_model(
-            'virtual_row_doc', virtual=True, data_model='riga_doc')
+            'virtual_row_doc', virtual=True,
+            data_model='riga_doc')
         try:
             documento = await self.process_document(data)
             if not documento:
@@ -81,7 +83,8 @@ class MockWorker1(OzonWorkerEnv):
             data_doc,
             rec_name=f"DOC{data_doc['idDg']}",
             trnf_config={
-                "dtRegistrazione": {"type": date}
+                "dtRegistrazione": {"type": 'date'},
+                "ammImpEuro": {"type": 'float', "dp": 2},
             })
 
         if self.virtual_doc_model.is_error():
@@ -96,6 +99,7 @@ class MockWorker1(OzonWorkerEnv):
         assert v_doc.ammImpEuro == 1446.16
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133
         assert v_doc.dg18XIndModOrdinat.denominazione == "Mario Rossi"
+
         for id, row in enumerate(v_doc.dg15XVoceCalcolata):
             row_dictr = self.virtual_row_doc_model.get_dict_record(
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
@@ -199,6 +203,7 @@ async def test_init_schema_for_woker():
     doc_schema3 = await env.get('component').new(data=schema_list3[0])
     doc_schema3 = await env.get('component').insert(doc_schema3)
     assert doc_schema3.rec_name == "documento_beni_servizi"
+    assert doc_schema3.data_model == "documento"
     doc_riga_schema = await env.get('component').new(data=schema_list2[0])
     doc_riga_schema = await env.get('component').insert(doc_riga_schema)
     assert doc_riga_schema.rec_name == "riga_doc"
@@ -209,6 +214,8 @@ async def test_init_worker_ok():
     cfg = await MockWorker1.readfilejson(get_config_path())
     worker = MockWorker1(cfg)
     res = await worker.make_app_session(
+        use_cache=True,
+        redis_url="redis://localhost:10001",
         params={
             "current_session_token": "BA6BA930",
             "topic_name": "test_topic",
@@ -233,6 +240,8 @@ async def test_init_worker_fail():
     cfg = await MockWorker1.readfilejson(get_config_path())
     worker = MockWorker1(cfg)
     res = await worker.make_app_session(
+        use_cache=True,
+        redis_url="redis://localhost:10001",
         params={
             "current_session_token": "BA6BA930",
             "topic_name": "test_topic",
@@ -245,6 +254,7 @@ async def test_init_worker_fail():
         }
     )
     assert res.fail is True
+    print(res.msg)
     assert res.msg == "Errore Duplicato rec_name: DOC99999.1"
     assert res.data['test_topic']["error"] is True
     assert res.data['test_topic']["done"] is True

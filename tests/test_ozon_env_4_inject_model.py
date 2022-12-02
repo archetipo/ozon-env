@@ -23,7 +23,7 @@ async def test_add_user_static_model():
     ret_model = env.get('user')
     assert ret_model.name == "user"
     assert ret_model.static is User
-    assert user_model.unique_fields == User.get_unique_fields()
+    assert ['rec_name', 'uid'] == User.get_unique_fields()
     users = await user_model.find({'uid': 'admin'})
     assert len(users) == 0
     await env.close_db()
@@ -36,6 +36,7 @@ async def test_user_static_model_add_data():
     data = await get_user_data()
     env = OzonEnv(cfg)
     await env.init_env()
+    env.orm.orm_models.append('user')
     env.orm.orm_static_models_map['user'] = User
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -58,7 +59,8 @@ async def test_add_component_resource_1_product():
     cfg = await OzonEnv.readfilejson(get_config_path())
     env = OzonEnv(cfg)
     await env.init_env()
-    env.orm.orm_static_models_map['user'] = User
+    await env.orm.add_static_model('user', User)
+    assert len(env.orm.orm_models) == 4
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     product_model = await env.add_schema(schema_dict)
@@ -83,7 +85,7 @@ async def test_add_component_resource_1_product_raw_query():
     cfg = await OzonEnv.readfilejson(get_config_path())
     env = OzonEnv(cfg)
     await env.init_env()
-    env.orm.orm_static_models_map['user'] = User
+    await env.orm.add_static_model('user', User)
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     product_model = env.get('prodotti')
@@ -102,7 +104,7 @@ async def test_aggregation_with_product():
     cfg = await OzonEnv.readfilejson(get_config_path())
     env = OzonEnv(cfg)
     await env.init_env()
-    env.orm.orm_static_models_map['user'] = User
+    await env.orm.add_static_model('user', User)
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     product_model = env.get('prodotti')

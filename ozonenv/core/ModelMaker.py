@@ -2,8 +2,7 @@
 # See LICENSE file for full licensing details.
 from typing import List
 from pydantic import create_model
-from pydantic.main import ModelMetaclass
-from datetime import datetime, date
+from datetime import datetime
 from ozonenv.core.BaseModels import BasicModel, BaseModel, MainModel
 from ozonenv.core.utils import (
     fetch_dict_get_value,
@@ -63,7 +62,7 @@ class Component:
         self.cfg = {}
         self.index = 0
         self.iindex = 0
-        self.update_config()
+        # self.update_config()
 
     @property
     def id(self):
@@ -176,6 +175,10 @@ class Component:
         return self.raw.get("logic", False)
 
     @property
+    def has_data(self):
+        return self.raw.get("data", False)
+
+    @property
     def has_conditions(self):
         return isinstance(self.raw.get("conditional", {}).get("json"), dict)
 
@@ -248,6 +251,7 @@ class Component:
         )
         if not calc_server and self.properties.get("calculateServer", False):
             calc_server = self.properties.get("calculateServer")
+        self.cfg["component"] = "Component"
         self.cfg["calculateServer"] = calc_server
         self.cfg["action_type"] = self.properties.get("action_type", False)
         self.cfg["no_clone"] = self.properties.get("no_clone", False)
@@ -256,13 +260,13 @@ class Component:
         self.cfg["min"] = False
         self.cfg["max"] = False
         if self.type == "datetime":
-            self.cfg["date"] = self.raw.get("enableDate", True)
-            self.cfg["time"] = self.raw.get("enableTime", True)
+            self.cfg["date"] = self.raw.get("enableDate", False)
+            self.cfg["time"] = self.raw.get("enableTime", False)
             if self.cfg["date"] is True:
-                self.cfg["transform"] = {"type": date}
+                self.cfg["transform"] = {"type": "date"}
             if self.cfg["date"] is True and self.cfg["time"] is True:
                 self.cfg["datetime"] = True
-                self.cfg["transform"] = {"type": datetime}
+                self.cfg["transform"] = {"type": "datetime"}
             self.cfg["min"] = self.raw["widget"]["minDate"]
             self.cfg["max"] = self.raw["widget"]["maxDate"]
         if self.raw.get("requireDecimal") is True:
@@ -272,7 +276,7 @@ class Component:
             self.cfg["delimiter"] = self.raw.get("delimiter", ",")
             self.cfg["dp"] = self.raw.get("decimalLimit", 2)
             self.cfg["transform"] = {
-                "type": float,
+                "type": "float",
                 "dp": self.cfg["dp"],
                 "mask": self.cfg["mask"],
                 "dps": self.cfg["delimiter"],
@@ -428,7 +432,9 @@ class selectComponent(Component):
         self.defaultValue = self.raw.get("defaultValue", "")
         self.idPath = self.raw.get("idPath", "")
         self.multiple = self.raw.get("multiple", False)
-        if self.dataSrc and self.dataSrc == "resource":
+        self.dataSrc = self.raw.get("dataSrc", "values")
+        if self.dataSrc == "resource":
+            self.builder.components_ext_data_src.append(self.key)
             if self.raw.get("template"):
                 self.template_label_keys = decode_resource_template(
                     self.raw.get("template")
@@ -437,31 +443,57 @@ class selectComponent(Component):
                 self.template_label_keys = decode_resource_template(
                     "<span>{{ item.label }}</span>"
                 )
-            if self.raw.get("data") and self.raw.get("data").get("resource"):
-                self.resource_id = self.raw.get("data") and self.raw.get(
-                    "data"
-                ).get("resource")
-            if self.dataSrc and self.dataSrc == "url":
-                self.url = self.raw.get("data").get("url")
-                self.header_key = (
-                    self.raw.get("data", {}).get("headers", {})[0].get("key")
-                )
-                self.header_value_key = (
-                    self.raw.get("data", {}).get("headers", [])[0].get("value")
-                )
+            self.resource_id = self.raw.get("data") and self.raw.get(
+                "data"
+            ).get("resource")
+        if self.dataSrc == "url":
+            self.builder.components_ext_data_src.append(self.key)
+            self.url = self.raw.get("data").get("url")
+            self.header_key = (
+                self.raw.get("data", {}).get("headers", [])[0].get("key")
+            )
+            self.header_value_key = (
+                self.raw.get("data", {}).get("headers", [])[0].get("value")
+            )
 
-    def make_resource_list(self):
-        resource_list = self.resources
-        self.raw["data"] = {"values": []}
-        for item in resource_list:
-            if self.dataSrc == "resource":
-                label = fetch_dict_get_value(item, self.template_label_keys[:])
-                iid = item["rec_name"]
-            else:
-                label = item[self.properties["label"]]
-                iid = item[self.properties["id"]]
-            self.search_object["values"].update({iid: label})
-            self.raw["data"]["values"].append({"label": label, "value": iid})
+    def update_config(self):
+        super(selectComponent, self).update_config()
+        if self.type == "select":
+            self.cfg["component"] = "selectComponent"
+            self.cfg["valueProperty"] = self.valueProperty
+            self.cfg["selectValues"] = self.selectValues
+            self.cfg["defaultValue"] = self.defaultValue
+            self.cfg["multiple"] = self.multiple
+            self.cfg["dataSrc"] = self.dataSrc
+            self.cfg["idPath"] = self.idPath
+            self.cfg["resource_id"] = self.resource_id
+            self.cfg["values"] = self.raw.get("data", {}).get("values", [])
+            self.cfg[self.dataSrc] = self.raw.get("data").get(self.dataSrc)
+            self.cfg["template_label_keys"] = self.template_label_keys
+
+    @classmethod
+    def make_resource_list(cls, cfg={}, resource_list=[]):
+        data_src = cfg["dataSrc"]
+        template_label_keys = cfg["template_label_keys"]
+        properties = cfg["properties"]
+        values = {"values": []}
+        search_object = {"values": []}
+        if data_src in ["resource", "url"]:
+            for item in resource_list:
+                if data_src == "resource":
+                    label = fetch_dict_get_value(item, template_label_keys[:])
+                    iid = item["rec_name"]
+                else:
+                    label = item[properties["label"]]
+                    iid = item[properties["id"]]
+                search_object["values"].update({iid: label})
+                values["values"].append({"label": label, "value": iid})
+        elif data_src in ["values"]:
+            values["values"] = cfg["values"][:]
+            search_object["values"] = [
+                {item["value"]: item["label"]} for item in values["values"]
+            ]
+        return values, search_object
 
     @property
     def value_label(self):
@@ -493,42 +525,54 @@ class selectComponent(Component):
         return value_labels or []
 
     @property
-    def data(self):
-        return self.raw.get("data")
-
-    @property
     def values(self):
-        return self.raw.get("data", {}).get("values")
+        return self.cfg["values"]
 
-    def get_default(self):
+    @classmethod
+    def get_default(cls, cfg, key, form_data={}):
         """
         search default in context_data i.e. --> default  'user.uid'
         context data contain dict --> 'user' and user is a dict that
         contain property 'uid'
         If exist in context exist user.uid the value is set as default.
         """
-        default = self.defaultValue
-        if self.multiple:
-            if self.defaultValue:
-                default = [self.defaultValue]
+        multiple = cfg[key]["multiple"]
+        defaultValue = cfg[key]["defaultValue"]
+        default = defaultValue
+        selected_id = cfg[key]["selected_id"]
+        valueProperty = cfg[key]["valueProperty"]
+        if multiple:
+            if defaultValue:
+                default = [defaultValue]
             else:
                 default = []
-
-        if self.valueProperty and not self.selected_id:
-            if "." in self.valueProperty:
-                to_eval = self.valueProperty.split(".")
-                if len(to_eval) > 0:
-                    obj = self.builder.context_data.get(to_eval[0], {})
-                    if obj and isinstance(obj, dict):
-                        self.selected_id = obj.get(to_eval[1], "")
-                if self.multiple:
-                    default.append(self.selected_id)
+        if valueProperty and not selected_id:
+            if "." in valueProperty:
+                to_eval = valueProperty.split(".")
+                if len(to_eval) > 0 and form_data:
+                    selected_id = form_data.get(to_eval[1], "")
+                if multiple:
+                    default.append(selected_id)
                 else:
-                    default = self.selected_id
+                    default = selected_id
         return default
 
 
 class surveyComponent(Component):
+    def __init__(self, raw, builder, **kwargs):
+        super().__init__(raw, builder, **kwargs)
+        self.questions = self.raw.get("questions")
+        self.values = self.raw.get("values")
+        self.defaultValue = self.raw.get("defaultValue", "")
+
+    def update_config(self):
+        super(surveyComponent, self).update_config()
+        if self.type == "survey":
+            self.cfg["component"] = "surveyComponent"
+            self.cfg["questions"] = self.questions
+            self.cfg["values"] = self.values
+            self.cfg["defaultValue"] = self.defaultValue
+
     @property
     def values_labels(self):
         comp = self.component_owner.input_components.get(self.key)
@@ -544,43 +588,37 @@ class surveyComponent(Component):
             labels.append(label)
         return labels
 
-    @property
-    def questions(self):
-        return self.raw.get("questions")
-
-    @property
-    def question_values(self):
-        return self.raw.get("values")
-
-    @property
-    def grid(self):
-        comp = self
-        builder_questions = comp.raw.get("questions")
-        builder_values = comp.raw.get("values")
+    @classmethod
+    def grid(cls, cfg, key, form_data):
+        builder_questions = cfg[key]["questions"]
+        builder_values = cfg[key]["values"]
+        form_data_value = form_data[key]
         grid = []
         for question in builder_questions:
             # question
-            if self.i18n.get(self.language):
-                question_label = self.i18n[self.language].get(
-                    question["label"], question["label"]
-                )
-            else:
-                question_label = question["label"]
+            # if self.i18n.get(self.language):
+            #     # TODO i18n
+            #     # question_label = self.i18n[self.language].get(
+            #     #     question["label"], question["label"]
+            #     # )
+            #     question_label = question["label"]
+            #
+            # else:
+            question_label = question["label"]
             question_dict = {
                 "question_value": question["value"],
                 "question_label": question_label,
                 "values": [],
             }
-
             # value
             for b_val in builder_values:
-                if self.i18n.get(self.language):
-                    val_label = self.i18n[self.language].get(
-                        b_val["label"], b_val["label"]
-                    )
-                else:
-                    val_label = b_val["label"]
-
+                # TODO i18n
+                # if self.i18n.get(self.language):
+                #     val_label = self.i18n[self.language].get(
+                #         b_val["label"], b_val["label"]
+                #     )
+                # else:
+                val_label = b_val["label"]
                 value = {
                     "label": val_label,
                     "value": b_val["value"],
@@ -588,9 +626,9 @@ class surveyComponent(Component):
                     # default as fallback (if new values in builder)
                 }
 
-                if self.value.get(question["value"]):
+                if value.get(question["value"]):
                     value["checked"] = (
-                        self.value[question["value"]] == b_val["value"]
+                        form_data_value[question["value"]] == b_val["value"]
                     )
 
                 question_dict["values"].append(value)
@@ -609,7 +647,7 @@ class BaseModelMaker:
         self.form_fields_layout = {}
         self.context_data = {}
         self.simple = False
-        self.model: ModelMetaclass
+        self.model = None
         self.instance: BasicModel = None
         self.components_todo = {}
         self.model_name = model_name
@@ -629,9 +667,10 @@ class BaseModelMaker:
         ]
         self.layoyt_components = ["tabs", "columns", "panel"]
         self.no_clone_field_type = ["file"]
-        self.no_clone_field_keys = {}
+        self.no_clone_field_keys = ["rec_name"]
         self.computed_fields = {}
-        self.create_task_action = {}
+        self.fields_properties = {}
+        self.create_task_action = []
         self.create_model_to_nesteded = ["datagrid", "form", "table"]
         self.create_simple_model_to_nesteded = []
         self.linked_object = []
@@ -661,14 +700,19 @@ class BaseModelMaker:
         self.parent_builder = None
         self.virtual = False
         self.filter_keys = []
-        self.realted_fields_logic = {}
         self.search_areas = []
         self.table_colums = {}
         self.filters = []
-        self.filter_keys = []
         self.components_logic = []
+        self.default_hidden_fields = []
+        self.default_readonly_fields = []
+        self.default_disabled_fields = []
+        self.default_required_fields = []
+        self.fields_logic = []
+        self.realted_fields_logic = {}
         self.tranform_data_value = {}
         self.fields_limit_value = {}
+        self.default_sort_str = "list_order:desc,"
         self.schema_object = None
 
     def get_field_value(self, v):
@@ -705,7 +749,7 @@ class BaseModelMaker:
                     return s
                 else:
                     # fing group value in groupdict
-                    # i present the real value matched
+                    # present the real value matched
                     # take it to return the real value cleaned
                     # from nosisy charter
                     if rgx.lastgroup in ["int", "float"]:
@@ -798,7 +842,6 @@ class BaseModelMaker:
     def from_data_dict(self, data):
         self.virtual = True
         components = self._make_from_dict(data)
-        # TODO reactivate when pydantic is stable
         self.components = self._make_models(components)
         self.model = create_model(
             self.model_name, __base__=BasicModel, **self.components
@@ -806,11 +849,27 @@ class BaseModelMaker:
 
     def new(self, data={}):
         self.instance = self.model(**data)
+        return self.instance
 
 
 class FormioModelMaker(BaseModelMaker):
     def __init__(self, model_name: str):
         super(FormioModelMaker, self).__init__(model_name=model_name)
+        self.default_sort_str = "list_order:desc,"
+        self.component_props = {}
+        self.select_fields = []
+        self.survey_fields = []
+        self.datagrid_fields = []
+        self.components_ext_data_src = []
+        self.config_fields = {}
+        self.projectId = ""
+        self.handle_global_change = 0
+        self.no_cancel = 0
+        self.schema_display = "form"
+        self.app_code = []
+        self.schema_type = "form"
+        self.data_model = ""
+        self.title = ""
 
     def from_formio(
         self, schema: dict, simple=False, parent="", parent_builder=None
@@ -819,6 +878,8 @@ class FormioModelMaker(BaseModelMaker):
         self.parent_builder = parent_builder
         self.simple = simple
         self.components_todo = schema.get("components")[:]
+        self.component_props = schema.get("properties", {})
+        self.data_model = schema.get("data_model", "")
         self.make()
         return self.model
 
@@ -846,7 +907,16 @@ class FormioModelMaker(BaseModelMaker):
         if field.type == "table" and field:
             self.computed_fields[field.key] = field.calculateServer
         if field.type == "fieldset" and field.action_type:
-            self.create_task_action[field.key] = field.properties.copy()
+            self.create_task_action.append(field.key)
+        if field.properties:
+            self.fields_properties[field.key] = field.properties.copy()
+        if field.hidden:
+            self.default_hidden_fields.append(field.key)
+        if field.readonly:
+            self.default_readonly_fields.append(field.key)
+        if field.required:
+            self.default_required_fields.append(field.key)
+        self.config_fields[field.key] = field.cfg.copy()
         try:
             field.eval_components()
         except Exception as e:
@@ -856,7 +926,6 @@ class FormioModelMaker(BaseModelMaker):
         builder = self
         if self.parent_builder:
             builder = self.parent_builder
-        self.components[comp.get("key")] = tuple(compo_todo)
         if comp.get("type") == "select":
             field = selectComponent(comp, builder, input_type=compo_todo[0])
         elif comp.get("type") == "survey":
@@ -865,20 +934,24 @@ class FormioModelMaker(BaseModelMaker):
             field = Component(comp, builder, input_type=str)
         else:
             field = Component(comp, builder, input_type=compo_todo[0])
+        field.update_config()
         field.parent = self.parent
         if field.required:
             self.required_fields.append(field.key)
         if field.unique:
             self.unique_fields.append(field.key)
-            self.no_clone_field_keys.update({field.key: compo_todo[1]})
+            self.no_clone_field_keys.append(field.key)
         if field.calculateServer:
             self.computed_fields[field.key] = field.calculateServer
-        if field.no_clone or field.key in self.unique_fields:
-            self.no_clone_field_keys.update({field.key: compo_todo[1]})
+        if field.no_clone and field.key not in self.no_clone_field_keys:
+            self.no_clone_field_keys.append(field.key)
         if field.transform:
             self.tranform_data_value[field.key] = field.transform.copy()
         if field.limit_values:
             self.fields_limit_value = field.limit_values.copy()
+        if field.defaultValue:
+            compo_todo[1] = field.defaultValue
+        self.components[comp.get("key")] = tuple(compo_todo)
         self.complete_component(field)
 
     def add_textfield(self, comp):
@@ -950,7 +1023,7 @@ class FormioModelMaker(BaseModelMaker):
         compo_todo = self.mapper.get("file")[:]
         self.complete_component_field(comp.copy(), compo_todo)
 
-    def make_model(self):
+    def make_model(self) -> BaseModel:
         self.model = create_model(
             self.model_name, __base__=BasicModel, **self.components
         )
@@ -1028,7 +1101,8 @@ class FormioModelMaker(BaseModelMaker):
                             component.childs = child
                     self.form_fields[component.key] = component
 
-    def make(self):
+    def make(self) -> BaseModel:
+        print(f"{self.model_name} --> {self.data_model}")
         for c in self.components_todo:
             self._scan(c)
         if "rec_name" not in self.components_keys:
@@ -1039,7 +1113,14 @@ class FormioModelMaker(BaseModelMaker):
             component["hidden"] = True
             component["defaultValue"] = ""
             self.compute_component_field(component.copy())
-
+        if self.data_model and "data_model" not in self.components_keys:
+            component = {}
+            component["type"] = "textfield"
+            component["key"] = "data_value"
+            component["label"] = "Data Value"
+            component["hidden"] = True
+            component["defaultValue"] = self.data_model
+            self.compute_component_field(component.copy())
         self.make_model()
 
 

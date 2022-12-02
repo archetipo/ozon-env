@@ -16,30 +16,35 @@ from ozonenv.core.BaseModels import (
     AttachmentTrash,
     CoreModel,
 )
-import logging
-import aiofiles
 from dateutil.parser import parse
 from starlette.concurrency import run_in_threadpool
 from ozonenv.core.i18n import update_translation
 from ozonenv.core.i18n import _
-from datetime import datetime, date
-import datetime as dt
 import locale
-from ozonenv.core.cache.cache_utils import init_cache, stop_cache
-from ozonenv.core.cache.cache import get_cache
+from ozonenv.core.cache.cache_utils import stop_cache  # , init_cache
+
+# from ozonenv.core.cache.cache import get_cache
+from os.path import dirname, exists
+import aiofiles
+import logging
+import asyncio
+from importlib.machinery import SourceFileLoader
+from aiopath import AsyncPath
 
 logger = logging.getLogger(__file__)
 
 MAIN_CACHE_TIME = 800
 
+# auto_model_path = join(dirname(__file__), "amodels")
+base_model_path = dirname(__file__)
+
 
 class OzonEnvBase:
     def __init__(self, cfg, upload_folder=""):
-        self.config_system = {}
         self.orm: OzonOrm
         self.db: Mongo
         self.ozon_client: OzonClient
-        self.config_system = cfg
+        self.config_system = cfg.copy()
         self.settings = DbSettings(**self.config_system)
         self.model = ""
         self.models = {}
@@ -126,32 +131,15 @@ class OzonEnvBase:
         await close_mongo_connection()
 
     def make_data_value(self, val, cfg):
-        if cfg["type"] is datetime or cfg["type"] is dt.datetime:
+        if cfg["type"] == "":
             res = self._readable_datetime(val)
-        elif cfg["type"] is date or cfg["type"] is dt.date:
+        elif cfg["type"] == "date":
             res = self._readable_date(val)
-        elif cfg["type"] is float:
+        elif cfg["type"] == "float":
             res = self.readable_float(val, dp=cfg["dp"])
         else:
             res = val
         return res
-
-    def _readable_datetime(self, val):
-        if isinstance(val, str):
-            return parse(val).strftime(self.config_system["ui_datetime_mask"])
-        else:
-            return val.strftime(self.config_system["ui_datetime_mask"])
-
-    def _readable_date(self, val):
-        if isinstance(val, str):
-            return parse(val).strftime(self.config_system["ui_date_mask"])
-        else:
-            return val.strftime(self.config_system["ui_date_mask"])
-
-    def readable_float(self, val, dp=2, g=True):
-        if isinstance(val, str):
-            val = float(val)
-        return locale.format_string(f"%.{dp}f", val, g)
 
     async def init_env(self):
         await self.connect_db()
@@ -204,7 +192,10 @@ class OzonOrm:
         self.env: OzonEnvBase = env
         self.lang = env.lang
         self.db: Mongo = env.db
+        self.config_system = env.config_system.copy()
+        self.models_path = self.config_system.get("models_folder", "/models")
         self.user_session: CoreModel = None
+        self.list_auto_models = []
         self.orm_models = ["component", "session", "attachmenttrash"]
         self.orm_static_models_map = {
             "component": Component,
@@ -213,6 +204,8 @@ class OzonOrm:
         }
         self.db_models = []
         self.orm_sys_models = ["component", "session"]
+        # if self.models_path not in sys.path:
+        #     sys.path.append(self.models_path)
 
     async def add_static_model(
         self, model_name: str, model_class: CoreModel
@@ -234,13 +227,20 @@ class OzonOrm:
 
     async def init_models(self):
         await self.init_db_models()
+        await AsyncPath(f"{self.models_path}/__init__.py").touch(exist_ok=True)
+        self.list_auto_models = AsyncPath(self.models_path).glob("*.py")
         for main_model in self.orm_models:
             if main_model not in self.env.models:
                 await self.make_model(main_model)
 
         for db_model in self.db_models:
-            if db_model not in self.env.models:
-                await self.add_model(db_model)
+            if db_model not in list(self.env.models.keys()):
+                home = AsyncPath(f"{self.models_path}/{db_model}.py")
+                if await home.exists():
+                    await self.import_module_model(db_model)
+                    await self.make_model(db_model)
+                else:
+                    await self.add_model(db_model)
 
     async def get_collections_names(self, query={}):
         if not query:
@@ -277,14 +277,160 @@ class OzonOrm:
             {"token": token}
         )
 
+    async def runcmd(self, cmd):
+        # for security reason check the command
+        if not cmd.startswith("datamodel-codegen --input"):
+            return
+        res = True
+        proc = await asyncio.create_subprocess_shell(
+            cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+
+        stdout, stderr = await proc.communicate()
+
+        logger.info(f"[{cmd!r} exited with {proc.returncode}]")
+        if stdout:
+            logger.info(f"[stdout]\n{stdout.decode()}")
+            res = True
+        if stderr:
+            logger.error(f"[stderr]\n{stderr.decode()}")
+            res = False
+
+        return res
+
+    async def import_module_model(self, model_name):
+        def camel(snake_str):
+            names = snake_str.split("_")
+            return "".join([*map(str.title, names)])
+
+        def _getattribute(obj, name):
+            for subpath in name.split("."):
+                if subpath == "<locals>":
+                    raise AttributeError(
+                        "Can't get local attribute {!r} on {!r}".format(
+                            name, obj
+                        )
+                    )
+                try:
+                    parent = obj
+                    obj = getattr(obj, subpath)
+                except AttributeError:
+                    raise AttributeError(
+                        "Can't get attribute {!r} on {!r}".format(name, obj)
+                    ) from None
+            return obj, parent
+
+        mclass = camel(model_name)
+        module_name = f"{model_name}"
+        file_path = f"{self.models_path}/{model_name}.py"
+        module = SourceFileLoader(module_name, file_path).load_module()
+        model, parent = _getattribute(module, mclass)
+        self.orm_static_models_map[model_name] = model
+
+    async def make_local_model(self, mod):
+        jdata = mod.mm.model.schema_json(indent=2)
+        async with aiofiles.open(f"/tmp/{mod.name}.json", "w+") as mod_file:
+            await mod_file.write(jdata)
+        res = await self.runcmd(
+            f"datamodel-codegen --input /tmp/{mod.name}.json"
+            f" --output {self.models_path}/{mod.name}.py "
+            f"--base-class ozonenv.core.BaseModels.BasicModel"
+        )
+        if not res:
+            return
+        tmp = f"""
+        
+    @classmethod
+    def get_unique_fields(cls):
+        return {mod.mm.unique_fields}
+        
+    @classmethod
+    def computed_fields(cls):
+        return {mod.mm.computed_fields}
+    
+    @classmethod
+    def no_clone_field_keys(cls):
+        return {mod.mm.no_clone_field_keys}
+    
+    @classmethod
+    def tranform_data_value(cls):
+        return {json.dumps(mod.mm.tranform_data_value)}    
+    
+    @classmethod
+    def fields_limit_value(cls):
+        return {mod.mm.fields_limit_value}     
+    
+    @classmethod
+    def create_task_action(cls):
+        return {mod.mm.create_task_action}
+    
+    @classmethod
+    def fields_properties(cls):
+        return {mod.mm.fields_properties}
+        
+    @classmethod
+    def default_hidden_fields(cls):
+        return {mod.mm.default_hidden_fields}
+
+    @classmethod
+    def default_readonly_fields(cls):
+        return {mod.mm.default_readonly_fields}
+    
+    @classmethod
+    def default_required_fields(cls):
+        return {mod.mm.default_required_fields}   
+         
+    @classmethod
+    def filter_keys(cls):
+        return {mod.mm.filter_keys}  
+         
+    @classmethod
+    def config_fields(cls):
+        return {mod.mm.config_fields}
+         
+    @classmethod
+    def components_ext_data_src(cls):
+        return {mod.mm.components_ext_data_src}
+    
+    @classmethod
+    def get_data_model(cls):
+        return "{mod.mm.data_model}"
+    
+"""
+        async with aiofiles.open(
+            f"{self.models_path}/{mod.name}.py", "a+"
+        ) as mod_file:
+            await mod_file.write(tmp)
+
     async def add_model(self, model_name, virtual=False, data_model=""):
         schema = {}
+        print(f"add_model {model_name} - {data_model}")
         if not virtual:
             component = await self.env.get("component").load(
                 {"rec_name": model_name}
             )
             if component:
                 schema = component.get_dict_copy()
+        if (
+            schema
+            and model_name not in list(self.orm_static_models_map.keys())
+            and not virtual
+        ):
+            if not exists(f"{self.models_path}/{model_name}.py"):
+                session_model = model_name == "session"
+                mod = OzonModel(
+                    model_name,
+                    self,
+                    data_model=data_model,
+                    static=self.orm_static_models_map.get(model_name, None),
+                    virtual=virtual,
+                    schema=schema,
+                    session_model=session_model,
+                )
+                await mod.init_model()
+                await self.make_local_model(mod)
+            await self.import_module_model(model_name)
+
         await self.make_model(
             model_name, schema=schema, virtual=virtual, data_model=data_model
         )
@@ -293,15 +439,19 @@ class OzonOrm:
     async def make_model(
         self, model_name, schema={}, virtual=False, data_model=""
     ):
-
-        if (
-            model_name in list(self.orm_static_models_map.keys())
-            or schema
-            or virtual
-        ):
+        print(f"make_model {model_name} - {data_model}")
+        if model_name in list(self.orm_static_models_map.keys()) or virtual:
             session_model = model_name == "session"
             if not data_model and schema:
                 data_model = schema.get("data_model", "")
+            if (
+                not data_model
+                and not virtual
+                and self.orm_static_models_map[model_name].get_data_model()
+            ):
+                data_model = self.orm_static_models_map[
+                    model_name
+                ].get_data_model()
             self.env.models[model_name] = OzonModel(
                 model_name,
                 self,
@@ -315,6 +465,13 @@ class OzonOrm:
             if not virtual:
                 if model_name not in self.db_models:
                     await self.env.models[model_name].init_unique()
+
+            # if (
+            #     model_name in list(self.orm_static_models_map.keys())
+            #     or virtual
+            # ):
+            #     return
+            # Make pyodule
 
     async def set_lang(self):
         self.lang = self.env.lang
@@ -335,50 +492,16 @@ class OzonModel(OzonModelBase):
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env
+        self.config_system = orm.config_system.copy()
         self.db: Mongo = orm.env.db
         self.mm_from_cache = False
         self.use_cache = False
         super(OzonModel, self).__init__(
-            model_name,
+            model_name=model_name,
+            config_system=self.config_system.copy(),
             data_model=data_model,
             session_model=session_model,
             virtual=virtual,
             static=static,
             schema=schema,
         )
-
-    async def get_cache_object(self):
-        if self.orm.env.use_cache:
-            await init_cache(url=self.orm.env.redis_url)
-            cache = await get_cache()
-            mm_candidate = await cache.get(self.orm.env.cache_index, self.name)
-            self.mm_from_cache = mm_candidate is not False
-            print(mm_candidate, type(mm_candidate), self.mm_from_cache)
-            if self.mm_from_cache:
-                self.mm = mm_candidate
-                logger.info(
-                    f"Use Model Object in cache for "
-                    f"{self.orm.env.cache_index}.{self.name} "
-                )
-
-    async def mm_or_cache(self):
-        if not self.mm_from_cache:
-            await super(OzonModel, self).init_model()
-            print(f"add {self.name}")
-            cache = await get_cache()
-            await cache.clear(self.orm.env.cache_index, self.name)
-            await cache.set(
-                self.orm.env.cache_index,
-                self.name,
-                self.mm,
-                expire=MAIN_CACHE_TIME,
-            )  # 8 hours
-        else:
-            self.set_model_meta_defualt()
-
-    async def init_model(self):
-        if not self.orm.env.use_cache:
-            await super(OzonModel, self).init_model()
-        else:
-            await self.get_cache_object()
-            await self.mm_or_cache()

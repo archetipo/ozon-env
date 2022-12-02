@@ -30,6 +30,7 @@
   "report_header_space": "30mm",
   "report_footer_space": "8mm",
   "upload_folder": "/uploads",
+  "models_folder": "tests/models",
   "delete_record_after_days": 2,
   "session_expire_hours": 48,
   "server_datetime_mask": "%Y-%m-%dT%H:%M:%S",

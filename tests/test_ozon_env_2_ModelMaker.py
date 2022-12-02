@@ -33,7 +33,7 @@ async def test_make_form_schema():
     assert test_2.unique_fields == ["rec_name", "firstName"]
     assert test_2.required_fields == ["rec_name", "firstName"]
     assert test_2.components_logic == []
-    assert "rec_name" in list(test_2.no_clone_field_keys.keys())
+    assert "rec_name" in test_2.no_clone_field_keys
     test_2.new({"rec_name": "test"})
     assert isinstance(test_2.instance, BasicModel) is True
     assert test_2.instance.rec_name == "test"
@@ -72,4 +72,5 @@ async def test_make_form_cond_schema():
                  'default': False, 'active': True, 'demo': False, 'childs': [],
                  'create_datetime': '1970-01-01T00:00:00',
                  'update_datetime': '1970-01-01T00:00:00', 'rec_name': '',
-                 'username': 'wrong', 'password': 'incorrect', 'secret': ''}
+                 'username': 'wrong', 'password': 'incorrect',
+                 'secret': 'Secret message'}

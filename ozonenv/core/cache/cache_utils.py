@@ -19,5 +19,6 @@ async def init_cache(url="redis://redis_cache"):
 async def stop_cache():
     logger.info("stopping Redis Cache...")
     redis = await get_redis()
-    await redis.close()
+    if redis:
+        await redis.close()
     logger.info("stopped！")

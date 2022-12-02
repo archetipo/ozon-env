@@ -41,7 +41,7 @@ async def test_env_data_file_virtual_model():
     data['ammImpEuro'] = 0.0
     virtual_doc_model = await env.add_model('virtual_doc', virtual=True)
     assert virtual_doc_model.virtual is True
-    assert virtual_doc_model.model_record == virtual_doc_model.mm.instance
+    assert virtual_doc_model.modelr == virtual_doc_model.mm.instance
     doc = await virtual_doc_model.new(data=data, rec_name="virtual_data.test")
     assert doc.get('rec_name') == 'virtual_data.test'
     assert doc.active is True
@@ -104,8 +104,9 @@ async def test_test_form_1_init_data():
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     test_form_1_model = await env.add_model('test_form_1')
-    assert test_form_1_model.unique_fields == ["rec_name", "firstName"]
-    test_form_1 = await test_form_1_model.new(data=data)
+    assert test_form_1_model.model.get_unique_fields() == ["rec_name",
+                                                         "firstName"]
+    test_form_1 = await test_form_1_model.new(data)
     assert test_form_1.is_error() is False
     assert test_form_1.birthdate == parse("1987-12-17T12:00:00")
     await env.close_db()

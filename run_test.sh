@@ -9,6 +9,6 @@ poetry run bandit ozonenv/**/*.py
 pip install -e .
 echo "run test"
 poetry run pytest --cov --cov-report=html
-docker-compose down
-rm tests/models/*.py
+#docker-compose down
+#rm tests/models/*.py
 echo "make project: Done."

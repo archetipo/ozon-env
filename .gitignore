@@ -9,3 +9,4 @@ poetry.lock
 #.coveralls.yml
 htmlcov
 .coverage
+tests/model/*.py

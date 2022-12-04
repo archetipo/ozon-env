@@ -246,7 +246,7 @@ class CoreModel(MainModel):
     parent: str = ""
     process_id: str = ""
     process_task_id: str = ""
-    data_value: Dict = Field(default={})
+    data_value: dict = {}
     owner_name: str = ""
     deleted: int = 0
     list_order: int = 0

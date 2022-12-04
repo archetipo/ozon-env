@@ -8,9 +8,29 @@ authors = ["Alessio Gerace <alessio.gerace@gmail.com>"]
 license = "MIT"
 packages = [{ include = "ozonenv/**/*.py" }]
 exclude = ["tests/*"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Natural Language :: English",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython"]
+
+[build-system]
+requires = ["poetry_core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+pattern = "^(?P<base>\\d+\\.\\d+\\.\\d+)(-?((?P<stage>[a-zA-Z]+)\\.?(?P<revision>\\d+)?))?$"
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["*/version.py"]
+patterns = ["(^version: str = ')[^']*(')"]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<4.0"
+python = "^3.10"
 pydantic = ">=1.10.2"
 httpx = ">=0.23.0"
 pytz = ">=2022.1"
@@ -39,22 +59,26 @@ pytest-mock = "*"
 pytest-cov = "2.12.0,<4.0.0"
 flake9 = ">=3.8.3"
 isort = ">=5.8.0"
-black = ">=20.8b1"
-bandit = ">=1.7.0"
-pytest-benchmark = ">=3.4.1"
-
-[tool.black]
-line_length = 79
+black = ">=22.10.0"
+types-toml = "*"
+httpx = "*"
 
 [tool.flake8]
 max-complexity = 15
 max-line-length = 79
 extend-ignore = "E203,W293,W291"
 
+[tool.black]
+line-length = 79
+skip-string-normalization = true
+exclude = '(tests/data|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|.*\/models\.py.*|.*\/models\/.*)'
+
 [tool.isort]
 line_length = 79
 include_trailing_comma = true
+use_parentheses = true
 force_single_line = true
+skip = "tests"
 
 [tool.pytest.ini_options]
 filterwarnings = [
@@ -65,6 +89,16 @@ filterwarnings = [
     'ignore:function ham\(\) is deprecated:DeprecationWarning'
 ]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.coverage.report]
+ignore_errors = true
+exclude_lines = [
+    "if self.debug:",
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if not TYPE_CHECKING:"]
+
+omit = ["tests/*"]
+
+

@@ -27,7 +27,7 @@ class MockWorker1(OzonWorkerEnv):
 
         self.virtual_doc_model = await self.add_model(
             'virtual_doc', virtual=True,
-            data_model="documento_beni_servizi")
+            data_model=self.p_model.data_model)
 
         self.virtual_row_doc_model = await self.add_model(
             'virtual_row_doc', virtual=True,
@@ -160,6 +160,8 @@ class MockWorker1(OzonWorkerEnv):
             '%.2f', 1446.16, True)
         assert documento.anomalia_gestita is False
         assert documento.data_value['dtRegistrazione'] == "24/05/2022"
+        doc_bn = await self.p_model.load({"rec_name": documento.rec_name})
+        assert doc_bn.dec_nome == documento.dec_nome
         return documento
 
 

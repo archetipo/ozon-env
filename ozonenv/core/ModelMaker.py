@@ -1102,7 +1102,6 @@ class FormioModelMaker(BaseModelMaker):
                     self.form_fields[component.key] = component
 
     def make(self) -> BaseModel:
-        print(f"{self.model_name} --> {self.data_model}")
         for c in self.components_todo:
             self._scan(c)
         if "rec_name" not in self.components_keys:
@@ -1116,8 +1115,8 @@ class FormioModelMaker(BaseModelMaker):
         if self.data_model and "data_model" not in self.components_keys:
             component = {}
             component["type"] = "textfield"
-            component["key"] = "data_value"
-            component["label"] = "Data Value"
+            component["key"] = "data_model"
+            component["label"] = "Data Model"
             component["hidden"] = True
             component["defaultValue"] = self.data_model
             self.compute_component_field(component.copy())

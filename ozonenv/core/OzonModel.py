@@ -468,6 +468,7 @@ class OzonModelBase(OzonMBase):
 
     async def load(self, domain: dict) -> CoreModel:
         self.init_status()
+        print(f" --- {self.data_model}")
         if self.virtual and not self.data_model:
             msg = _(
                 "Data Model is required for virtual model to get data from db"
@@ -479,7 +480,6 @@ class OzonModelBase(OzonMBase):
         if not data:
             self.error_status(_("Not found"), domain)
             return None
-
         self.load_data(data)
 
         return self.modelr

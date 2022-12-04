@@ -16,11 +16,11 @@ from ozonenv.core.BaseModels import (
     AttachmentTrash,
     CoreModel,
 )
-from dateutil.parser import parse
+
 from starlette.concurrency import run_in_threadpool
 from ozonenv.core.i18n import update_translation
 from ozonenv.core.i18n import _
-import locale
+
 from ozonenv.core.cache.cache_utils import stop_cache  # , init_cache
 
 # from ozonenv.core.cache.cache import get_cache
@@ -404,7 +404,6 @@ class OzonOrm:
 
     async def add_model(self, model_name, virtual=False, data_model=""):
         schema = {}
-        print(f"add_model {model_name} - {data_model}")
         if not virtual:
             component = await self.env.get("component").load(
                 {"rec_name": model_name}
@@ -439,7 +438,6 @@ class OzonOrm:
     async def make_model(
         self, model_name, schema={}, virtual=False, data_model=""
     ):
-        print(f"make_model {model_name} - {data_model}")
         if model_name in list(self.orm_static_models_map.keys()) or virtual:
             session_model = model_name == "session"
             if not data_model and schema:

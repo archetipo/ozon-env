@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ozon-env"
-version = "0.7.0"
+version = "0.7.1"
 homepage = "https://github.com/archetipo/ozon-env"
 description = "Ozon Env API"
 readme = "README.md"
@@ -17,17 +17,8 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"]
 
 [build-system]
-requires = ["poetry_core>=1.0.0", "poetry-dynamic-versioning"]
+requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-pattern = "^(?P<base>\\d+\\.\\d+\\.\\d+)(-?((?P<stage>[a-zA-Z]+)\\.?(?P<revision>\\d+)?))?$"
-
-[tool.poetry-dynamic-versioning.substitution]
-files = ["*/version.py"]
-patterns = ["(^version: str = ')[^']*(')"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -100,5 +91,11 @@ exclude_lines = [
     "if not TYPE_CHECKING:"]
 
 omit = ["tests/*"]
+
+[project]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
 
 

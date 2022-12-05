@@ -242,6 +242,7 @@ class OzonOrm:
 
     async def init_models(self):
         await self.init_db_models()
+        await AsyncPath(self.models_path).mkdir(parents=True, exist_ok=True)
         await AsyncPath(f"{self.models_path}/__init__.py").touch(exist_ok=True)
         self.list_auto_models = AsyncPath(self.models_path).glob("*.py")
         for main_model in self.orm_models:

@@ -9,5 +9,5 @@ pip install -e .
 echo "run test"
 poetry run pytest --cov --cov-report=html
 docker-compose down
-rm tests/models/*.py
+rm -rf tests/models
 echo "make project: Done."

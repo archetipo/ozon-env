@@ -423,6 +423,10 @@ class CoreModel(MainModel):
     def get_data_model(cls):
         return ""
 
+    @classmethod
+    def get_version(cls):
+        return ""
+
 
 class BasicModel(CoreModel):
     rec_name: str = ""

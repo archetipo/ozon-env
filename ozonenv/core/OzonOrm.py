@@ -97,6 +97,23 @@ class OzonEnvBase:
         if upldate:
             await self.orm.set_lang()
 
+    async def insert_update_component(self, schema):
+        """
+        :param schema: json dict of component with formio schema
+        :return: Component record
+        """
+        c_model = self.get('component')
+        model_name = schema.get("rec_name")
+        component = await c_model.load({"rec_name": model_name})
+        new_component = await c_model.new(data=schema)
+        if not component:
+            res = await c_model.insert(new_component)
+            await self.orm.add_model(model_name)
+        else:
+            res = await c_model.update(new_component)
+            await self.orm.update_model(schema, component)
+        return res
+
     def get(self, model_name) -> OzonModelBase:
         return self.models.get(model_name)
 
@@ -204,8 +221,6 @@ class OzonOrm:
         }
         self.db_models = []
         self.orm_sys_models = ["component", "session"]
-        # if self.models_path not in sys.path:
-        #     sys.path.append(self.models_path)
 
     async def add_static_model(
         self, model_name: str, model_class: CoreModel
@@ -238,7 +253,25 @@ class OzonOrm:
                 home = AsyncPath(f"{self.models_path}/{db_model}.py")
                 if await home.exists():
                     await self.import_module_model(db_model)
-                    await self.make_model(db_model)
+                    model = self.orm_static_models_map[db_model]
+                    component = await self.env.get("component").load(
+                        {
+                            '$and': [
+                                {"rec_name": db_model},
+                                {
+                                    'update_datetime': {
+                                        '$gt': model.get_version()
+                                    }
+                                },
+                            ]
+                        }
+                    )
+                    if component:
+                        await self.update_model(
+                            component.get_dict_copy(), component
+                        )
+                    else:
+                        await self.make_model(db_model)
                 else:
                     await self.add_model(db_model)
 
@@ -286,15 +319,9 @@ class OzonOrm:
             cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
 
-        stdout, stderr = await proc.communicate()
+        await proc.communicate()
 
         logger.info(f"[{cmd!r} exited with {proc.returncode}]")
-        if stdout:
-            logger.info(f"[stdout]\n{stdout.decode()}")
-            res = True
-        if stderr:
-            logger.error(f"[stderr]\n{stderr.decode()}")
-            res = False
 
         return res
 
@@ -305,19 +332,8 @@ class OzonOrm:
 
         def _getattribute(obj, name):
             for subpath in name.split("."):
-                if subpath == "<locals>":
-                    raise AttributeError(
-                        "Can't get local attribute {!r} on {!r}".format(
-                            name, obj
-                        )
-                    )
-                try:
-                    parent = obj
-                    obj = getattr(obj, subpath)
-                except AttributeError:
-                    raise AttributeError(
-                        "Can't get attribute {!r} on {!r}".format(name, obj)
-                    ) from None
+                parent = obj
+                obj = getattr(obj, subpath)
             return obj, parent
 
         mclass = camel(model_name)
@@ -327,7 +343,7 @@ class OzonOrm:
         model, parent = _getattribute(module, mclass)
         self.orm_static_models_map[model_name] = model
 
-    async def make_local_model(self, mod):
+    async def make_local_model(self, mod, version):
         jdata = mod.mm.model.schema_json(indent=2)
         async with aiofiles.open(f"/tmp/{mod.name}.json", "w+") as mod_file:
             await mod_file.write(jdata)
@@ -339,6 +355,10 @@ class OzonOrm:
         if not res:
             return
         tmp = f"""
+    
+    @classmethod
+    def get_version(cls):
+        return '{version}'
         
     @classmethod
     def get_unique_fields(cls):
@@ -402,6 +422,22 @@ class OzonOrm:
         ) as mod_file:
             await mod_file.write(tmp)
 
+    async def init_model_and_write_code(
+        self, model_name, data_model, virtual, schema, component
+    ):
+        session_model = model_name == "session"
+        mod = OzonModel(
+            model_name,
+            self,
+            data_model=data_model,
+            static=self.orm_static_models_map.get(model_name, None),
+            virtual=virtual,
+            schema=schema,
+            session_model=session_model,
+        )
+        await mod.init_model()
+        await self.make_local_model(mod, component.update_datetime.isoformat())
+
     async def add_model(self, model_name, virtual=False, data_model=""):
         schema = {}
         if not virtual:
@@ -416,20 +452,10 @@ class OzonOrm:
             and not virtual
         ):
             if not exists(f"{self.models_path}/{model_name}.py"):
-                session_model = model_name == "session"
-                mod = OzonModel(
-                    model_name,
-                    self,
-                    data_model=data_model,
-                    static=self.orm_static_models_map.get(model_name, None),
-                    virtual=virtual,
-                    schema=schema,
-                    session_model=session_model,
+                await self.init_model_and_write_code(
+                    model_name, data_model, virtual, schema, component
                 )
-                await mod.init_model()
-                await self.make_local_model(mod)
             await self.import_module_model(model_name)
-
         await self.make_model(
             model_name, schema=schema, virtual=virtual, data_model=data_model
         )
@@ -464,12 +490,19 @@ class OzonOrm:
                 if model_name not in self.db_models:
                     await self.env.models[model_name].init_unique()
 
-            # if (
-            #     model_name in list(self.orm_static_models_map.keys())
-            #     or virtual
-            # ):
-            #     return
-            # Make pyodule
+    async def update_model(self, schema, component):
+        if schema.get("rec_name") in self.orm_static_models_map:
+            self.orm_static_models_map.pop(schema.get("rec_name"))
+        await self.init_model_and_write_code(
+            schema.get("rec_name"), "", False, schema, component
+        )
+        await self.import_module_model(schema.get("rec_name"))
+        await self.make_model(
+            schema.get("rec_name"),
+            schema=schema,
+            virtual=False,
+            data_model="",
+        )
 
     async def set_lang(self):
         self.lang = self.env.lang

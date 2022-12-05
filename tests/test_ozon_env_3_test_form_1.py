@@ -5,25 +5,23 @@ from pydantic.main import ModelMetaclass
 from ozonenv.OzonEnv import OzonEnv
 from datetime import *
 from dateutil.parser import *
+import time as time_
 
 pytestmark = pytest.mark.asyncio
 
 
 @pytestmark
-async def test_component_test_form_1_init():
+async def test_env_orm_basic():
     path = get_config_path()
     cfg = await OzonEnv.readfilejson(path)
     env = OzonEnv(cfg)
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
-    data = await readfilejson('data', 'test_form_1_formio_schema.json')
-
-    component = await env.get('component').new(data=data)
-    assert component.owner_uid == "admin"
-    component = await env.get('component').insert(component)
-    assert component.rec_name == "test_form_1"
-    assert len(component.get('components')) == 12
+    executed_cmd = await env.orm.runcmd("ls -alh")
+    await env.orm.set_lang()
+    assert env.models['component'].model.str_name() == 'component'
+    assert executed_cmd is None
     await env.close_db()
 
 
@@ -80,6 +78,74 @@ async def test_env_data_file_virtual_model():
 
 
 @pytestmark
+async def test_component_test_form_1_init():
+    path = get_config_path()
+    cfg = await OzonEnv.readfilejson(path)
+    env = OzonEnv(cfg)
+    await env.init_env()
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    data = await readfilejson('data', 'test_form_1.0_formio_schema.json')
+    component = await env.insert_update_component(data)
+    assert component.owner_uid == "admin"
+    assert component.rec_name == "test_form_1"
+    assert component.update_datetime == parse("1970-01-01T00:00:00")
+    assert len(component.get('components')) == 10
+    await env.close_db()
+
+
+@pytestmark
+async def test_component_test_form_1_raw_update():
+    path = get_config_path()
+    cfg = await OzonEnv.readfilejson(path)
+    env = OzonEnv(cfg)
+    await env.init_env()
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    old_test_form_1_model = env.get('test_form_1')
+    old_test_form_1 = await old_test_form_1_model.new()
+    assert hasattr(old_test_form_1, "uploadBase64") is False
+    assert hasattr(old_test_form_1, "content") is False
+    assert hasattr(old_test_form_1, "content1") is True
+    data = await readfilejson('data', 'test_form_1.1_formio_schema.json')
+    component = await env.get('component').new(data=data)
+    assert component.owner_uid == "admin"
+    component = await env.get('component').update(component)
+    assert component.rec_name == "test_form_1"
+    assert not component.update_datetime == parse("1970-01-01T00:00:00")
+    assert len(component.get('components')) == 11
+    await env.close_db()
+
+
+@pytestmark
+async def test_component_test_form_1_update():
+    start_time = time_.monotonic()
+    path = get_config_path()
+    cfg = await OzonEnv.readfilejson(path)
+    env = OzonEnv(cfg)
+    await env.init_env()
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    old_test_form_1_model = env.get('test_form_1')
+    old_test_form_1 = await old_test_form_1_model.new()
+    assert hasattr(old_test_form_1, "uploadBase64") is False
+    assert hasattr(old_test_form_1, "content") is True
+    assert hasattr(old_test_form_1, "content1") is True
+    data_schema = await readfilejson('data', 'test_form_1_formio_schema.json')
+    component = await env.insert_update_component(data_schema)
+    assert component.owner_uid == "admin"
+    assert component.rec_name == "test_form_1"
+    assert len(component.get('components')) == 12
+    test_form_1_model = env.get('test_form_1')
+    test_form_1 = await test_form_1_model.new({})
+    assert hasattr(test_form_1, "uploadBase64") is True
+    assert hasattr(test_form_1, "content") is True
+    assert hasattr(test_form_1, "content1") is True
+    assert float(env.get_formatted_metrics(start_time)) < 1.0
+    await env.close_db()
+
+
+@pytestmark
 async def test_component_test_form_1_load():
     path = get_config_path()
     cfg = await OzonEnv.readfilejson(path)
@@ -103,9 +169,12 @@ async def test_test_form_1_init_data():
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
+    # model is in env.models
+
     test_form_1_model = await env.add_model('test_form_1')
     assert test_form_1_model.model.get_unique_fields() == ["rec_name",
-                                                         "firstName"]
+                                                           "firstName"]
+
     test_form_1 = await test_form_1_model.new(data)
     assert test_form_1.is_error() is False
     assert test_form_1.birthdate == parse("1987-12-17T12:00:00")
@@ -121,6 +190,8 @@ async def test_test_form_1_insert_ok():
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
+    # model exist in env models
+    assert 'test_form_1' in list(env.models.keys())
     test_form_1_model = await env.add_model('test_form_1')
     test_form_1 = await test_form_1_model.new(data=data)
 
@@ -148,6 +219,8 @@ async def test_test_form_1_insert_ko():
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
+    # model is in env.models
+    assert 'test_form_1' in list(env.models.keys())
     test_form_1_model = await env.add_model('test_form_1')
     test_form_1 = await test_form_1_model.new(data=data)
     test_form_1_new = await test_form_1_model.insert(test_form_1)

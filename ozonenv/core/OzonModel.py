@@ -76,7 +76,6 @@ class OzonMBase:
         self.tranform_data_value = {}
 
     async def init_model(self):
-        # print("init_model")
         self.mm = ModelMaker(self.name)
         if self.static:
             self.model = self.static
@@ -467,21 +466,10 @@ class OzonModelBase(OzonMBase):
         return num
 
     async def load(self, domain: dict) -> CoreModel:
-        self.init_status()
-        print(f" --- {self.data_model}")
-        if self.virtual and not self.data_model:
-            msg = _(
-                "Data Model is required for virtual model to get data from db"
-            )
-            self.error_status(msg, data=domain)
-            return None
-        coll = self.db.engine.get_collection(self.data_model)
-        data = await coll.find_one(domain)
-        if not data:
-            self.error_status(_("Not found"), domain)
+        data = await self.load_raw(domain)
+        if self.status.fail:
             return None
         self.load_data(data)
-
         return self.modelr
 
     async def load_raw(self, domain: dict) -> dict:

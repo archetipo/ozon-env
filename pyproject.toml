@@ -90,7 +90,13 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if not TYPE_CHECKING:"]
 
-omit = ["tests/*"]
+omit = [
+    "tests/*",
+    "ozonenv/core/cache/*",
+    "ozonenv/core/db/BsonTypes.py",
+    "ozonenv/core/utils.py",
+    "ozonenv/core/OzonClient.py"
+]
 
 [project]
 dynamic = ["dependencies"]

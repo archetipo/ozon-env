@@ -375,7 +375,7 @@ class OzonOrm:
     
     @classmethod
     def tranform_data_value(cls):
-        return {json.dumps(mod.mm.tranform_data_value)}    
+        return {mod.mm.tranform_data_value}    
     
     @classmethod
     def fields_limit_value(cls):

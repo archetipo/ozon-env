@@ -147,17 +147,6 @@ class OzonEnvBase:
     async def close_db(self):
         await close_mongo_connection()
 
-    def make_data_value(self, val, cfg):
-        if cfg["type"] == "":
-            res = self._readable_datetime(val)
-        elif cfg["type"] == "date":
-            res = self._readable_date(val)
-        elif cfg["type"] == "float":
-            res = self.readable_float(val, dp=cfg["dp"])
-        else:
-            res = val
-        return res
-
     async def init_env(self):
         await self.connect_db()
         await self.set_lang()

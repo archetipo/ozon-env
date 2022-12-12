@@ -30,6 +30,7 @@ import logging
 import asyncio
 from importlib.machinery import SourceFileLoader
 from aiopath import AsyncPath
+import locale
 
 logger = logging.getLogger(__file__)
 
@@ -91,10 +92,11 @@ class OzonEnvBase:
                 return item.get(label_key)
         return ""
 
-    async def set_lang(self, lang="it", upldate=False):
+    async def set_lang(self, lang="it", update=False):
         self.lang = lang
         await run_in_threadpool(update_translation, lang)
-        if upldate:
+        locale.setlocale(locale.LC_NUMERIC, locale.getlocale()[0])
+        if update:
             await self.orm.set_lang()
 
     async def insert_update_component(self, schema):

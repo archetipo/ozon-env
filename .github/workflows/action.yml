@@ -20,8 +20,8 @@ jobs:
       PYTHON: ${{ matrix.python-version }}
       ISORT: ${{ matrix.isort-version }}
     steps:
-      - name: pt_BR.UTF-8
-      - run: |
+      - name: it_IT.UTF-8
+        run: |
           sudo locale-gen it_IT.UTF-8
           sudo update-locale LANG=it_IT.UTF-8
       - uses: docker-practice/actions-setup-docker@master

@@ -95,7 +95,7 @@ class OzonEnvBase:
     async def set_lang(self, lang="it", update=False):
         self.lang = lang
         await run_in_threadpool(update_translation, lang)
-        locale.setlocale(locale.LC_NUMERIC, locale.getlocale()[0])
+        locale.setlocale(locale.LC_NUMERIC, locale.locale_alias[lang])
         if update:
             await self.orm.set_lang()
 

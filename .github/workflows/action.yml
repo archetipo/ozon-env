@@ -31,6 +31,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: update locale
         run: |
+          export LANGUAGE="it_IT:it"
           export LC_ALL="it_IT.UTF-8"
           export LC_CTYPE="it_IT.UTF-8"
           sudo dpkg-reconfigure locales

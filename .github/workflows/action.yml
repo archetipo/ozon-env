@@ -33,10 +33,6 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup locale
-        run: |
-          sudo locale-gen ${{ env.LANG }}
-          sudo update-locale LANG=${{ env.LANG }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

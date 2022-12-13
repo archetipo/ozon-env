@@ -29,6 +29,11 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
+      - name: update locale
+        run: |
+          export LC_ALL="it_IT.UTF-8"
+          export LC_CTYPE="it_IT.UTF-8"
+          sudo dpkg-reconfigure locales
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

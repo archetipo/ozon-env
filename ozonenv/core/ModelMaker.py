@@ -235,6 +235,7 @@ class Component:
             self.raw["properties"] = {}
         if not self.raw.get("validate"):
             self.raw["validate"] = {}
+        self.cfg['ctype'] = self.raw.get("type")
         self.cfg["disabled"] = self.raw.get("disabled", False)
         ro = self.raw.get("readOnlyValue", False)
         if self.properties.get("readonly"):
@@ -259,9 +260,19 @@ class Component:
         self.cfg["datetime"] = False
         self.cfg["min"] = False
         self.cfg["max"] = False
-        if self.type == "datetime":
-            self.cfg["date"] = self.raw.get("enableDate", False)
+        if self.raw.get("type") == "datetime":
+            enableDateInCfg = "enableDate" in self.raw
             self.cfg["time"] = self.raw.get("enableTime", False)
+            self.cfg["date"] = self.raw.get("enableDate", False)
+            # when formio js make json for a bug not store enableDate in config
+            # is datime field have not time and date activated
+            # set date as visible by default
+            if (
+                not self.cfg["time"]
+                and not self.cfg["date"]
+                and not enableDateInCfg
+            ):
+                self.cfg["date"] = True
             if self.cfg["date"] is True:
                 self.cfg["transform"] = {"type": "date"}
             if self.cfg["date"] is True and self.cfg["time"] is True:

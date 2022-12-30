@@ -1025,7 +1025,7 @@ class FormioModelMaker(BaseModelMaker):
 
     def make_model(self) -> BaseModel:
         self.model = create_model(
-            self.model_name, __base__=BasicModel, **self.components
+            self.model_name, __base__=MainModel, **self.components
         )
         logger.debug(f"Make model {self.model_name}... Done")
 
@@ -1054,7 +1054,7 @@ class FormioModelMaker(BaseModelMaker):
 
     def make_simple_model(self, fields_def):
         self.model = create_model(
-            self.model_name, __base__=BaseModel, **fields_def
+            self.model_name, __base__=MainModel, **fields_def
         )
         logger.debug(f"Make model simple {self.model_name}... Done")
 

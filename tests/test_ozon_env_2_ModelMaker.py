@@ -1,6 +1,6 @@
 import pytest
 from test_common import *
-from ozonenv.core.ModelMaker import ModelMaker, BasicModel
+from ozonenv.core.ModelMaker import ModelMaker, BasicModel, MainModel
 from pydantic.main import ModelMetaclass
 
 # from ozonenv.core.i18n import i18nlocaledir
@@ -35,9 +35,8 @@ async def test_make_form_schema():
     assert test_2.components_logic == []
     assert "rec_name" in test_2.no_clone_field_keys
     test_2.new({"rec_name": "test"})
-    assert isinstance(test_2.instance, BasicModel) is True
+    assert isinstance(test_2.instance, MainModel) is True
     assert test_2.instance.rec_name == "test"
-    assert test_2.instance.process_id == ""
     test_2.new(formio_data_json)
     assert test_2.instance.textFieldTab1 == "text in tab 1"
     assert test_2.instance.email == 'name@company.it'
@@ -60,17 +59,6 @@ async def test_make_form_cond_schema():
     assert test_2.realted_fields_logic == {'username': ['secret'],
                                            'password': ['secret']}
     d = test_2.instance.get_dict()
-    assert d == {'id': d.get('id'), 'app_code': [], 'data_model': '',
-                 'parent': '',
-                 'process_id': '',
-                 'process_task_id': '', 'data_value': {}, 'owner_name': '',
-                 'deleted': 0, 'list_order': 0,
-                 'owner_uid': '', 'owner_mail': '', 'owner_function': '',
-                 'owner_function_type': '', 'owner_sector': '',
-                 'owner_sector_id': 0, 'owner_personal_type': '',
-                 'owner_job_title': '', 'update_uid': '', 'sys': False,
-                 'default': False, 'active': True, 'demo': False, 'childs': [],
-                 'create_datetime': '1970-01-01T00:00:00',
-                 'update_datetime': '1970-01-01T00:00:00', 'rec_name': '',
-                 'username': 'wrong', 'password': 'incorrect',
-                 'secret': 'Secret message'}
+    print(d)
+    assert d == {'username': 'wrong', 'password': 'incorrect',
+                 'secret': 'Secret message', 'rec_name': ''}

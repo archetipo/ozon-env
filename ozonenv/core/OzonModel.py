@@ -415,7 +415,7 @@ class OzonModelBase(OzonMBase):
                 )
             else:
                 record.list_order = await self.count()
-                to_save = self.mo._make_from_dict(
+                to_save = self._make_from_dict(
                     copy.deepcopy(record.get_dict())
                 )
             if "rec_name" in to_save:

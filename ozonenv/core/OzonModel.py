@@ -165,7 +165,9 @@ class OzonMBase:
                     else:
                         res_dict[k].append(i)
             else:
-                if "data_value" not in res_dict:
+                if "data_value" not in res_dict or not isinstance(
+                    res_dict, dict
+                ):
                     res_dict["data_value"] = {}
                 if k in self.tranform_data_value:
                     res_dict["data_value"][k] = self.make_data_value(

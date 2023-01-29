@@ -484,10 +484,12 @@ class OzonModelBase(OzonMBase):
             return None
         coll = self.db.engine.get_collection(self.data_model)
         data = await coll.find_one(domain)
+
         if not data:
             self.error_status(_("Not found"), domain)
             return {}
-
+        if data.get("_id"):
+            data.pop("_id")
         return data
 
     async def find(

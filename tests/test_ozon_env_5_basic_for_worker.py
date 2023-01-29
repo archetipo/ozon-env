@@ -8,6 +8,7 @@ from datetime import *
 from dateutil.parser import *
 import traceback
 import locale
+import logging
 
 pytestmark = pytest.mark.asyncio
 
@@ -166,6 +167,123 @@ class MockWorker1(OzonWorkerEnv):
         return documento
 
 
+class MockWorker2(MockWorker1):
+
+    async def process_document(self, data_doc) -> CoreModel:
+        data_doc["numeroRegistrazione"] = "9"
+        data_doc["idDg"] = "99998"
+        data_doc['stato'] = ""
+        data_doc['tipologia'] = []
+        data_doc['document_type'] = ""
+        data_doc['ammImpEuro'] = 0.0
+        data_doc['ammImpScontatoConIvaEuro'] = 0.0
+        data_doc['ammImpScontatoEuro'] = 00
+        data_doc['ammIvaEuro'] = 0.0
+        data_doc['ammScontoEuro'] = 0.0
+        data_doc['anomalia_gestita'] = False
+        data_doc['other_doc'] = {}
+
+        v_doc = await self.virtual_doc_model.new(
+            data_doc,
+            rec_name=f"DOC{data_doc['idDg']}",
+            trnf_config={
+                "dtRegistrazione": {"type": 'date'},
+                "ammImpEuro": {"type": 'float', "dp": 2},
+            })
+
+        if self.virtual_doc_model.is_error():
+            return v_doc
+
+        assert v_doc.annoRif == 2022
+
+        query = {
+            "$and": [
+                {"active": True},
+                {"document_type": {
+                    "$in": ["ordine"]}},
+                {"numeroRegistrazione": 8},
+                {"annoRif": v_doc.annoRif}
+            ]
+        }
+        other_doc_raw = await self.p_model.load_raw(query)
+        assert other_doc_raw['rec_name'] == "DOC99999"
+        v_doc.other_doc = other_doc_raw.copy()
+        v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
+        v_doc.selection_value(
+            'tipologia', ["a", "b"], ["A", "B"])
+        v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
+        v_doc.selection_value("stato", "caricato", "Caricato")
+
+        assert v_doc.ammImpEuro == 1446.16
+        assert v_doc.other_doc.get("ammImpEuro") == 1446.16
+        assert v_doc.dg18XIndModOrdinat.cdCap == 10133
+        assert v_doc.other_doc.get(
+            "dg18XIndModOrdinat").get("denominazione") == "Mario Rossi"
+
+        for id, row in enumerate(v_doc.dg15XVoceCalcolata):
+            row_dictr = self.virtual_row_doc_model.get_dict_record(
+                row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
+
+            row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
+            row_dictr.selection_value("stato", "caricato", "Caricato")
+            row_dictr.selection_value(
+                'tipologia', ["a", "b"], ["A", "B"])
+
+            assert row_dictr.get('data_value.stato').startswith("Car") is True
+
+            row_o = await self.virtual_row_doc_model.new(
+                rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
+                data=row_dictr.data.copy()
+            )
+
+            assert row_o.nrRiga == row.nrRiga
+            assert row_o.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
+            assert row_o.prova == "test"
+            assert row_o.tipologia == ["a", "b"]
+            assert row_o.data_value.get('stato') == "Caricato"
+            assert row_o.get('data_value.stato').startswith("Car") is True
+            assert row_o.get('dett.test').startswith("a") is True
+            assert row_o.stato == "caricato"
+            assert row_o.prova1 == 0
+
+            row_db = await self.virtual_row_doc_model.insert(row_o)
+
+            if not row_db:
+                return row_db
+
+            assert row_db.nrRiga == row.nrRiga
+            assert row_db.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
+            assert row_db.tipologia == ["a", "b"]
+            assert row_db.data_value.get('stato') == "Caricato"
+            assert row_db.get('data_value.stato').startswith("Car") is True
+            assert row_db.stato == "caricato"
+
+
+            row_db.selection_value("stato", "done", 'Done')
+            row_db.selection_value("tipologia", ["a", "c"], ["A", "C"])
+
+            row_upd = await self.row_model.update(row_db)
+
+            assert row_upd.nrRiga == row.nrRiga
+            assert row_upd.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
+            assert row_upd.tipologia == ["a", "c"]
+            assert row_upd.data_value.get('stato') == "Done"
+            assert row_upd.data_value.get('tipologia') == ["A", "C"]
+            assert row_upd.get('data_value.stato').startswith("Do") is True
+            assert row_upd.stato == "done"
+
+        documento = await self.virtual_doc_model.insert(v_doc)
+
+        assert documento.dec_nome == "Test Dec"
+        assert documento.data_value['ammImpEuro'] == locale.format_string(
+            '%.2f', 1446.16, grouping=True)
+        assert documento.other_doc.get("ammImpEuro") == 1446.16
+        assert documento.other_doc.get(
+            "dg18XIndModOrdinat").get("denominazione") == "Mario Rossi"
+        assert documento.data_value['dtRegistrazione'] == "24/05/2022"
+        return documento
+
+
 @pytestmark
 async def test_base_worker_env():
     path = get_config_path()
@@ -259,3 +377,29 @@ async def test_init_worker_fail():
     assert res.data['test_topic']["done"] is True
     assert res.data['test_topic']['next_page'] == "self"
     assert res.data['test_topic']['model'] == "documento_beni_servizi"
+
+
+@pytestmark
+async def test_worker2_with_nested():
+    cfg = await MockWorker2.readfilejson(get_config_path())
+    worker = MockWorker2(cfg)
+    res = await worker.make_app_session(
+        use_cache=True,
+        redis_url="redis://localhost:10001",
+        params={
+            "current_session_token": "BA6BA930",
+            "topic_name": "test_topic",
+            "document_type": "standard",
+            "model": "documento_beni_servizi",
+            "session_is_api": False,
+            "action_next_page": {
+                "success": {"form": "/open/doc"},
+            }
+        }
+    )
+    assert res.fail is False
+    assert res.data['test_topic']["error"] is False
+    assert res.data['test_topic']["done"] is True
+    assert res.data['test_topic']['next_page'] == "/open/doc/DOC99998"
+    assert res.data['test_topic']['model'] == "documento_beni_servizi"
+    assert res.data['documento_beni_servizi']['stato'] == "caricato"

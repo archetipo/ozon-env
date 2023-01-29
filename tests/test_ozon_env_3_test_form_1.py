@@ -231,20 +231,23 @@ async def test_test_form_1_insert_ko():
     await env.set_lang("en")
     test_form_en = await test_form_1_model.insert(test_form_1)
     assert test_form_en is None
-    assert test_form_1_model.message == "Duplicate key error rec_name: first_form"
+    assert test_form_1_model.message == "Duplicate key error" \
+                                        " rec_name: first_form"
 
     await env.set_lang("it")
 
     test_form_1.set('rec_name', "first form")
     test_form_e1 = await test_form_1_model.insert(test_form_1)
     assert test_form_e1 is None
-    assert test_form_1_model.message == "Caratteri non consetiti nel campo name: first form"
+    assert test_form_1_model.message == "Caratteri non consetiti" \
+                                        " nel campo name: first form"
 
     data_err = data.copy()
     data_err['rec_name'] = "first/form"
     test_form_e2 = await test_form_1_model.new(data=data_err)
     assert test_form_e2 is None
-    assert test_form_1_model.message == "Caratteri non consetiti nel campo name: first/form"
+    assert test_form_1_model.message == "Caratteri non consetiti " \
+                                        "nel campo name: first/form"
 
     await env.close_db()
 

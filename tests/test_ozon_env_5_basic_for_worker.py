@@ -92,8 +92,9 @@ class MockWorker1(OzonWorkerEnv):
             return v_doc
 
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
-        v_doc.selection_value('tipologia', ["a", "b"],
-                              ["A", "B"])
+        v_doc.selection_value(
+            'tipologia', ["a", "b"], ["A", "B"]
+        )
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
         v_doc.selection_value("stato", "caricato", "Caricato")
 
@@ -101,6 +102,7 @@ class MockWorker1(OzonWorkerEnv):
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133
         assert v_doc.dg18XIndModOrdinat.denominazione == "Mario Rossi"
 
+        num_doc = len(v_doc.dg15XVoceCalcolata)
         for id, row in enumerate(v_doc.dg15XVoceCalcolata):
             row_dictr = self.virtual_row_doc_model.get_dict_record(
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
@@ -116,7 +118,7 @@ class MockWorker1(OzonWorkerEnv):
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
                 data=row_dictr.data.copy()
             )
-
+            row_o.parent = v_doc.rec_name
             assert row_o.nrRiga == row.nrRiga
             assert row_o.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_o.prova == "test"
@@ -126,12 +128,15 @@ class MockWorker1(OzonWorkerEnv):
             assert row_o.get('dett.test').startswith("a") is True
             assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
+            assert row_o.active is True
+            assert row_o.deleted == 0
 
             row_db = await self.virtual_row_doc_model.insert(row_o)
 
             if not row_db:
                 return row_db
 
+            assert row_db.active is True
             assert row_db.nrRiga == row.nrRiga
             assert row_db.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_db.tipologia == ["a", "b"]
@@ -141,25 +146,34 @@ class MockWorker1(OzonWorkerEnv):
             assert row_db.list_order == id
 
             row_db.selection_value("stato", "done", 'Done')
+
+            row_db = await self.virtual_row_doc_model.update(row_db)
+            assert row_db.list_order == id
+            assert row_db.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
+            assert row_db.stato == "done"
+            assert row_db.get('data_value.stato').startswith("Do") is True
+
             row_db.selection_value("tipologia", ["a", "c"], ["A", "C"])
 
             row_upd = await self.row_model.update(row_db)
-
             assert row_upd.nrRiga == row.nrRiga
             assert row_upd.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_upd.tipologia == ["a", "c"]
             assert row_upd.data_value.get('stato') == "Done"
             assert row_upd.data_value.get('tipologia') == ["A", "C"]
             assert row_upd.get('data_value.stato').startswith("Do") is True
-            assert row_upd.stato == "done"
             assert row_db.list_order == id
+
+        rows = await self.virtual_row_doc_model.find(
+            {"parent": v_doc.rec_name})
+
+        assert len(rows) == num_doc
 
         documento = await self.virtual_doc_model.insert(v_doc)
 
         assert documento.dec_nome == "Test Dec"
         assert documento.data_value['ammImpEuro'] == locale.format_string(
             '%.2f', 1446.16, grouping=True)
-        # assert documento.data_value['ammImpEuro'] == "1446,16"
         assert documento.anomalia_gestita is False
         assert documento.data_value['dtRegistrazione'] == "24/05/2022"
         doc_bn = await self.p_model.load({"rec_name": documento.rec_name})
@@ -258,7 +272,6 @@ class MockWorker2(MockWorker1):
             assert row_db.get('data_value.stato').startswith("Car") is True
             assert row_db.stato == "caricato"
 
-
             row_db.selection_value("stato", "done", 'Done')
             row_db.selection_value("tipologia", ["a", "c"], ["A", "C"])
 
@@ -286,9 +299,7 @@ class MockWorker2(MockWorker1):
 
 @pytestmark
 async def test_base_worker_env():
-    path = get_config_path()
-    cfg = await OzonWorkerEnv.readfilejson(path)
-    worker = OzonWorkerEnv(cfg)
+    worker = OzonWorkerEnv()
     await worker.init_env()
     worker.params = {
         "current_session_token": "BA6BA930",
@@ -301,7 +312,7 @@ async def test_base_worker_env():
     assert worker.model == ""
     assert worker.topic_name == "test_topic"
     assert worker.doc_type == "standard"
-    await worker.close_db()
+    await worker.close_env()
 
 
 @pytestmark
@@ -313,8 +324,7 @@ async def test_init_schema_for_woker():
     schema_list = await get_formio_doc_schema()
     schema_list2 = await get_formio_doc_riga_schema()
     schema_list3 = await get_formio_doc_schema2()
-    cfg = await OzonEnv.readfilejson(get_config_path())
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -325,12 +335,12 @@ async def test_init_schema_for_woker():
     assert doc_schema3.data_model == "documento"
     doc_riga_schema = await env.insert_update_component(schema_list2[0])
     assert doc_riga_schema.rec_name == "riga_doc"
+    await env.close_env()
 
 
 @pytestmark
 async def test_init_worker_ok():
-    cfg = await MockWorker1.readfilejson(get_config_path())
-    worker = MockWorker1(cfg)
+    worker = MockWorker1()
     res = await worker.make_app_session(
         use_cache=True,
         redis_url="redis://localhost:10001",
@@ -355,8 +365,7 @@ async def test_init_worker_ok():
 
 @pytestmark
 async def test_init_worker_fail():
-    cfg = await MockWorker1.readfilejson(get_config_path())
-    worker = MockWorker1(cfg)
+    worker = MockWorker1()
     res = await worker.make_app_session(
         use_cache=True,
         redis_url="redis://localhost:10001",
@@ -381,8 +390,7 @@ async def test_init_worker_fail():
 
 @pytestmark
 async def test_worker2_with_nested():
-    cfg = await MockWorker2.readfilejson(get_config_path())
-    worker = MockWorker2(cfg)
+    worker = MockWorker2()
     res = await worker.make_app_session(
         use_cache=True,
         redis_url="redis://localhost:10001",

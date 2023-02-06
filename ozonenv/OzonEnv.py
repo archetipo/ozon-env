@@ -12,7 +12,7 @@ class OzonEnv(OzonEnvBase):
 
 
 class OzonWorkerEnv(OzonEnv):
-    def __init__(self, cfg):
+    def __init__(self, cfg={}):
         super(OzonWorkerEnv, self).__init__(cfg)
         self.doc_type = ""
         self.action_next_page = ""

@@ -175,12 +175,20 @@ class Component:
         return self.raw.get("logic", False)
 
     @property
+    def get_logic(self):
+        return self.raw.get("logic", [])
+
+    @property
     def has_data(self):
         return self.raw.get("data", False)
 
     @property
     def has_conditions(self):
         return isinstance(self.raw.get("conditional", {}).get("json"), dict)
+
+    @property
+    def get_conditions(self):
+        return self.raw.get("conditional", {})
 
     @property
     def properties(self):
@@ -735,9 +743,12 @@ class BaseModelMaker:
             "list": list,
             "date": datetime,
         }
+
         s = v
         if not isinstance(v, str):
             s = str(v)
+        if s in ["false", "true", "True", "False"]:
+            return bool("true" == s.lower())
         regex = re.compile(
             r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
             r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
@@ -750,8 +761,6 @@ class BaseModelMaker:
             rgx = regex.search(s)
             if not rgx:
                 return s
-            if s in ["false", "true", "True", "False"]:
-                return bool("true" == s)
             if rgx.lastgroup not in ["list", "dict"]:
                 types_d = []
                 for match in regex.finditer(s):
@@ -759,7 +768,7 @@ class BaseModelMaker:
                 if len(types_d) > 1:
                     return s
                 else:
-                    # fing group value in groupdict
+                    # find group value in groupdict
                     # present the real value matched
                     # take it to return the real value cleaned
                     # from nosisy charter
@@ -791,6 +800,8 @@ class BaseModelMaker:
         s = v
         if not isinstance(v, str):
             s = str(v)
+        if s in ["false", "true", "True", "False"]:
+            return bool
         regex = re.compile(
             r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
             r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
@@ -859,7 +870,7 @@ class BaseModelMaker:
         )
 
     def new(self, data={}):
-        self.instance = self.model(**data)
+        self.instance = self.model(**json.loads(json.dumps(data)))
         return self.instance
 
 
@@ -872,6 +883,8 @@ class FormioModelMaker(BaseModelMaker):
         self.survey_fields = []
         self.datagrid_fields = []
         self.components_ext_data_src = []
+        self.conditional = {}
+        self.logic = {}
         self.config_fields = {}
         self.projectId = ""
         self.handle_global_change = 0
@@ -927,6 +940,10 @@ class FormioModelMaker(BaseModelMaker):
             self.default_readonly_fields.append(field.key)
         if field.required:
             self.default_required_fields.append(field.key)
+        if field.has_conditions:
+            self.conditional[field.key] = field.get_conditions
+        if field.has_logic:
+            self.logic[field.key] = field.get_logic
         self.config_fields[field.key] = field.cfg.copy()
         try:
             field.eval_components()

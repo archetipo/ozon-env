@@ -550,7 +550,13 @@
             "key": "columns7",
             "type": "columns",
             "input": false,
-            "tableView": false
+            "tableView": false,
+            "conditional": {
+              "json": {
+                "var": "is_admin"
+              },
+              "show": false
+            }
           },
           {
             "label": "Columns",

@@ -134,7 +134,6 @@ default_list_metadata_fields_update = [
     "owner_mail",
     "owner_personal_type",
     "owner_job_title",
-    "list_order",
 ]
 
 export_list_metadata = [
@@ -183,7 +182,6 @@ class MainModel(BaseModel):
     def get_dict_diff(
         self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
     ):
-
         if ignore_fields and remove_ignore_fileds:
             original_dict = self.get_dict(exclude=ignore_fields)
         else:
@@ -248,7 +246,7 @@ class CoreModel(MainModel):
     process_task_id: str = ""
     data_value: dict = {}
     owner_name: str = ""
-    deleted: int = 0
+    deleted: float = 0
     list_order: int = 0
     owner_uid: str = ""
     owner_mail: str = ""
@@ -294,7 +292,6 @@ class CoreModel(MainModel):
     def get_dict_diff(
         self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
     ):
-
         if ignore_fields and remove_ignore_fileds:
             original_dict = self.get_dict(exclude=ignore_fields)
         else:
@@ -432,19 +429,27 @@ class BasicModel(CoreModel):
     rec_name: str = ""
 
     @classmethod
-    def get_unique_fields(cls):
+    def get_unique_fields(cls) -> []:
         return ["rec_name"]
 
     @classmethod
-    def computed_fields(cls):
+    def computed_fields(cls) -> {}:
         return {}
 
     @classmethod
-    def no_clone_field_keys(cls):
+    def no_clone_field_keys(cls) -> []:
         return ["rec_name", "list_order"]
 
     @classmethod
-    def config_fields(cls):
+    def config_fields(cls) -> {}:
+        return {}
+
+    @classmethod
+    def conditional(cls) -> {str, dict}:
+        return {}
+
+    @classmethod
+    def logic(cls) -> {str, list}:
         return {}
 
 
@@ -698,3 +703,804 @@ class BasicReturn(BaseModel):
     fail: bool = False
     msg: str = ""
     data: dict = {}
+
+
+class ExternalProxyUriConfigs(BasicModel):
+    domain: Optional[str] = Field('', title='Domain')
+    rec_name: Optional[str] = Field('', title='Rec Name')
+
+
+class Settings(BasicModel):
+    list_order: Optional[int] = Field(0, title='List Order')
+    rec_name: Optional[str] = Field('', title='Rec Name')
+    internal_port: Optional[int] = Field(0, title='Internal Port')
+    app_origin_type: Optional[str] = Field('', title='App Origin Type')
+    module_label: Optional[str] = Field('', title='Module Label')
+    description: Optional[str] = Field('', title='Description')
+    admins: Optional[List[str]] = Field([], title='Admins')
+    module_type: Optional[str] = Field('app', title='Module Type')
+    module_group: Optional[str] = Field('', title='Module Group')
+    version: Optional[str] = Field('1.0.0', title='Version')
+    port: Optional[int] = Field(0, title='Port')
+    stato: Optional[str] = Field('', title='Stato')
+    upload_folder: Optional[str] = Field('/uploads', title='Upload Folder')
+    web_concurrency: Optional[int] = Field(1, title='Web Concurrency')
+    delete_record_after_days: Optional[int] = Field(
+        1, title='Delete Record After Days'
+    )
+    session_expire_hours: Optional[int] = Field(
+        12, title='Session Expire Hours'
+    )
+    theme: Optional[str] = Field('italia', title='Theme')
+    logo_img_url: Optional[str] = Field('', title='Logo Img Url')
+    server_datetime_mask: Optional[str] = Field(
+        '%Y-%m-%dT%H:%M:%S', title='Server Datetime Mask'
+    )
+    server_date_mask: Optional[str] = Field(
+        '%Y-%m-%dT%H:%M:%S', title='Server Date Mask'
+    )
+    ui_datetime_mask: Optional[str] = Field(
+        '%d/%m/%Y %H:%M:%S', title='Ui Datetime Mask'
+    )
+    ui_date_mask: Optional[str] = Field('%d/%m/%Y', title='Ui Date Mask')
+    tz: Optional[str] = Field('Europe/Rome', title='Tz')
+    report_orientation: Optional[str] = Field(
+        'Portrait', title='Report Orientation'
+    )
+    report_page_size: Optional[str] = Field('A4', title='Report Page Size')
+    report_footer_company: Optional[str] = Field(
+        '', title='Report Footer Company'
+    )
+    report_footer_title1: Optional[str] = Field(
+        '', title='Report Footer Title1'
+    )
+    report_footer_sub_title: Optional[str] = Field(
+        '', title='Report Footer Sub Title'
+    )
+    report_footer_pagination: Optional[bool] = Field(
+        True, title='Report Footer Pagination'
+    )
+    report_header_space: Optional[str] = Field(
+        '30mm', title='Report Header Space'
+    )
+    report_footer_space: Optional[str] = Field(
+        '8mm', title='Report Footer Space'
+    )
+    report_margin_left: Optional[str] = Field(
+        '10mm', title='Report Margin Left'
+    )
+    report_margin_right: Optional[str] = Field(
+        '10mm', title='Report Margin Right'
+    )
+    external_proxy_uri_configs: Optional[
+        List[ExternalProxyUriConfigs]
+    ] = Field([], title='External Proxy Uri Configs')
+
+    @classmethod
+    def get_version(cls):
+        return '2022-08-01T10:11:04.635610'
+
+    @classmethod
+    def get_unique_fields(cls):
+        return ['rec_name']
+
+    @classmethod
+    def computed_fields(cls):
+        return {}
+
+    @classmethod
+    def no_clone_field_keys(cls):
+        return ['rec_name']
+
+    @classmethod
+    def tranform_data_value(cls):
+        return {}
+
+    @classmethod
+    def fields_limit_value(cls):
+        return {}
+
+    @classmethod
+    def create_task_action(cls):
+        return []
+
+    @classmethod
+    def fields_properties(cls):
+        return {'admins': {'label': 'full_name', 'id': 'uid'}}
+
+    @classmethod
+    def default_hidden_fields(cls):
+        return []
+
+    @classmethod
+    def default_readonly_fields(cls):
+        return []
+
+    @classmethod
+    def default_required_fields(cls):
+        return [
+            'rec_name',
+            'internal_port',
+            'app_origin_type',
+            'module_label',
+            'description',
+            'module_type',
+            'module_group',
+            'version',
+            'port',
+            'theme',
+            'server_datetime_mask',
+            'server_date_mask',
+            'ui_datetime_mask',
+            'tz',
+            'report_orientation',
+            'report_page_size',
+            'report_header_space',
+            'report_footer_space',
+            'report_margin_left',
+            'report_margin_right',
+        ]
+
+    @classmethod
+    def filter_keys(cls):
+        return [
+            'list_order',
+            'rec_name',
+            'internal_port',
+            'app_origin_type',
+            'module_label',
+            'description',
+            'admins',
+            'module_type',
+            'module_group',
+            'version',
+            'port',
+            'stato',
+            'upload_folder',
+            'web_concurrency',
+            'delete_record_after_days',
+            'session_expire_hours',
+            'theme',
+            'logo_img_url',
+            'server_datetime_mask',
+            'server_date_mask',
+            'ui_datetime_mask',
+            'ui_date_mask',
+            'tz',
+            'report_orientation',
+            'report_page_size',
+            'report_footer_company',
+            'report_footer_title1',
+            'report_footer_sub_title',
+            'report_footer_pagination',
+            'report_header_space',
+            'report_footer_space',
+            'report_margin_left',
+            'report_margin_right',
+            'domain',
+            'external_proxy_uri_configs',
+        ]
+
+    @classmethod
+    def config_fields(cls):
+        return {
+            'list_order': {
+                'ctype': 'number',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'rec_name': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'internal_port': {
+                'ctype': 'number',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'app_origin_type': {
+                'ctype': 'select',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'selectComponent',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+                'valueProperty': None,
+                'selectValues': None,
+                'defaultValue': '',
+                'multiple': False,
+                'dataSrc': 'values',
+                'idPath': '',
+                'resource_id': '',
+                'values': [
+                    {'label': 'System', 'value': 'system'},
+                    {'label': 'Virtual', 'value': 'virtual'},
+                ],
+                'template_label_keys': [],
+            },
+            'module_label': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'description': {
+                'ctype': 'textarea',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'admins': {
+                'ctype': 'select',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'selectComponent',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+                'valueProperty': None,
+                'selectValues': None,
+                'defaultValue': '',
+                'multiple': True,
+                'dataSrc': 'url',
+                'idPath': '',
+                'resource_id': '',
+                'values': [],
+                'url': 'https://people.ininrim.it/api'
+                '/get_addressbook_service_user/0',
+                'template_label_keys': [],
+            },
+            'module_type': {
+                'ctype': 'select',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'selectComponent',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+                'valueProperty': None,
+                'selectValues': None,
+                'defaultValue': 'app',
+                'multiple': False,
+                'dataSrc': 'values',
+                'idPath': '',
+                'resource_id': '',
+                'values': [
+                    {'label': 'App', 'value': 'app'},
+                    {'label': 'Backend', 'value': 'server'},
+                ],
+                'template_label_keys': [],
+            },
+            'module_group': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'version': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'port': {
+                'ctype': 'number',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'stato': {
+                'ctype': 'select',
+                'disabled': True,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'selectComponent',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+                'valueProperty': None,
+                'selectValues': None,
+                'defaultValue': '',
+                'multiple': False,
+                'dataSrc': 'values',
+                'idPath': '',
+                'resource_id': '',
+                'values': [
+                    {'label': 'Attivo', 'value': 'live'},
+                    {'label': 'Spento', 'value': 'spento'},
+                ],
+                'template_label_keys': [],
+            },
+            'upload_folder': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'web_concurrency': {
+                'ctype': 'number',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'delete_record_after_days': {
+                'ctype': 'number',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'session_expire_hours': {
+                'ctype': 'number',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'theme': {
+                'ctype': 'select',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'selectComponent',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+                'valueProperty': None,
+                'selectValues': None,
+                'defaultValue': 'italia',
+                'multiple': False,
+                'dataSrc': 'values',
+                'idPath': '',
+                'resource_id': '',
+                'values': [{'label': 'Italia', 'value': 'italia'}],
+                'template_label_keys': [],
+            },
+            'logo_img_url': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'server_datetime_mask': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'server_date_mask': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'ui_datetime_mask': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'ui_date_mask': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'tz': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_orientation': {
+                'ctype': 'select',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'selectComponent',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+                'valueProperty': None,
+                'selectValues': None,
+                'defaultValue': 'Portrait',
+                'multiple': False,
+                'dataSrc': 'values',
+                'idPath': '',
+                'resource_id': '',
+                'values': [
+                    {'label': 'Portrait', 'value': 'Portrait'},
+                    {'label': 'Landscape', 'value': 'Landscape'},
+                ],
+                'template_label_keys': [],
+            },
+            'report_page_size': {
+                'ctype': 'select',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'selectComponent',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+                'valueProperty': None,
+                'selectValues': None,
+                'defaultValue': 'A4',
+                'multiple': False,
+                'dataSrc': 'values',
+                'idPath': '',
+                'resource_id': '',
+                'values': [
+                    {'label': 'Legal', 'value': 'Legal'},
+                    {'label': 'Letter', 'value': 'Letter'},
+                    {'label': 'A4', 'value': 'A4'},
+                    {'label': 'A3', 'value': 'A3'},
+                ],
+                'template_label_keys': [],
+            },
+            'report_footer_company': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_footer_title1': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_footer_sub_title': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_footer_pagination': {
+                'ctype': 'checkbox',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': False,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_header_space': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_footer_space': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_margin_left': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'report_margin_right': {
+                'ctype': 'textfield',
+                'disabled': False,
+                'readonly': False,
+                'hidden': False,
+                'required': True,
+                'unique': False,
+                'component': 'Component',
+                'calculateServer': None,
+                'action_type': False,
+                'no_clone': False,
+                'transform': {},
+                'datetime': False,
+                'min': False,
+                'max': False,
+            },
+            'external_proxy_uri_configs': {},
+        }
+
+    @classmethod
+    def components_ext_data_src(cls):
+        return ['admins']
+
+    @classmethod
+    def get_data_model(cls):
+        return ""

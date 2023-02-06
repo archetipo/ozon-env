@@ -12,9 +12,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytestmark
 async def test_env_orm_basic():
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -27,9 +25,7 @@ async def test_env_orm_basic():
 
 @pytestmark
 async def test_env_data_file_virtual_model():
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -79,9 +75,7 @@ async def test_env_data_file_virtual_model():
 
 @pytestmark
 async def test_component_test_form_1_init():
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -96,9 +90,7 @@ async def test_component_test_form_1_init():
 
 @pytestmark
 async def test_component_test_form_1_raw_update():
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -114,15 +106,13 @@ async def test_component_test_form_1_raw_update():
     assert component.rec_name == "test_form_1"
     assert not component.update_datetime == parse("1970-01-01T00:00:00")
     assert len(component.get('components')) == 11
-    await env.close_db()
+    await env.close_env()
 
 
 @pytestmark
 async def test_component_test_form_1_update():
     start_time = time_.monotonic()
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -143,14 +133,12 @@ async def test_component_test_form_1_update():
     assert hasattr(test_form_1, "content1") is True
     # on git workflow time is 2.32 sec.
     assert float(env.get_formatted_metrics(start_time)) < 3.0  # 1.0
-    await env.close_db()
+    await env.close_env()
 
 
 @pytestmark
 async def test_component_test_form_1_load():
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -158,15 +146,14 @@ async def test_component_test_form_1_load():
     assert component.owner_uid == "admin"
     assert len(component.components) == 12
     assert component.get(f'components.{3}.label') == "Panel"
-    await env.close_db()
+    await env.close_env()
 
 
 @pytestmark
 async def test_test_form_1_init_data():
     path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
     data = await readfilejson('data', 'test_form_1_formio_data.json')
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -179,15 +166,14 @@ async def test_test_form_1_init_data():
     test_form_1 = await test_form_1_model.new(data)
     assert test_form_1.is_error() is False
     assert test_form_1.birthdate == parse("1987-12-17T12:00:00")
-    await env.close_db()
+    await env.close_env()
 
 
 @pytestmark
 async def test_test_form_1_insert_ok():
     path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
     data = await readfilejson('data', 'test_form_1_formio_data.json')
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -208,15 +194,13 @@ async def test_test_form_1_insert_ok():
         'uid')
     assert test_form_1.get("rec_name") == "first_form"
     assert test_form_1.create_datetime.date() == datetime.now().date()
-    await env.close_db()
+    await env.close_env()
 
 
 @pytestmark
 async def test_test_form_1_insert_ko():
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
     data = await readfilejson('data', 'test_form_1_formio_data.json')
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -249,14 +233,12 @@ async def test_test_form_1_insert_ko():
     assert test_form_1_model.message == "Caratteri non consetiti " \
                                         "nel campo name: first/form"
 
-    await env.close_db()
+    await env.close_env()
 
 
 @pytestmark
 async def test_test_form_1_copy_record():
-    path = get_config_path()
-    cfg = await OzonEnv.readfilejson(path)
-    env = OzonEnv(cfg)
+    env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
@@ -268,4 +250,4 @@ async def test_test_form_1_copy_record():
     test_form_1_copy = await test_form_1_model.insert(test_form_1_copy)
     assert test_form_1_copy.is_error() is False
     # test rec_name --> model.ids
-    await env.close_db()
+    await env.close_env()

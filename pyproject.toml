@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ozon-env"
-version = "0.7.11"
+version = "0.8.0"
 homepage = "https://github.com/archetipo/ozon-env"
 description = "Ozon Env API"
 readme = "README.md"
@@ -21,7 +21,7 @@ requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10,<4.0"
 pydantic = ">=1.10.2"
 httpx = ">=0.23.0"
 pytz = ">=2022.1"

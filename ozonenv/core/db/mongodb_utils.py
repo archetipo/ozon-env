@@ -1,6 +1,9 @@
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, \
+    AsyncIOMotorCollection
 import logging
 from pydantic import BaseModel
+from pymongo.collection import Collection
+from pymongo.typings import _DocumentType
 
 logger = logging.getLogger("asyncio")
 

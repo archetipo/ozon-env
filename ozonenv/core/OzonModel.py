@@ -1,15 +1,17 @@
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 from pydantic.main import ModelMetaclass
+from ozonenv.core.db.BsonTypes import codec_options, JsonEncoder
 from ozonenv.core.ModelMaker import ModelMaker
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
     CoreModel,
+    Settings,
     BasicReturn,
     DictRecord,
     default_list_metadata,
-    default_list_metadata_clean,
+    default_list_metadata_fields_update,
 )
 from ozonenv.core.i18n import _
 import re
@@ -18,6 +20,7 @@ import logging
 import pydantic
 import pymongo
 import locale
+import json
 import bson
 
 logger = logging.getLogger(__name__)
@@ -27,7 +30,7 @@ class OzonMBase:
     def __init__(
         self,
         model_name,
-        config_system={},
+        setting_app={},
         data_model="",
         session_model=False,
         virtual=False,
@@ -36,7 +39,7 @@ class OzonMBase:
     ):
         """
         :param model_name: the name of model must be unique
-        :param config_system: base config of environment
+        :param setting_app: base App settings
         :param data_model: the name of data model in case of virtual model
                            use this collection to store o retreive data.
         :param session_model: True/False if the model is Session or
@@ -50,7 +53,7 @@ class OzonMBase:
         :param schema: formio form schema, mandatory if
         """
         self.name = model_name
-        self.config_system = config_system.copy()
+        self.setting_app: Settings = setting_app
         self.virtual = virtual
         self.static: BasicModel = static
         self.instance: BasicModel
@@ -69,6 +72,7 @@ class OzonMBase:
         self.sort_dir = {"asc": 1, "desc": -1}
         self.default_sort_str = "list_order:desc,"
         self.default_domain = {"active": True, "deleted": 0}
+        self.archived_domain = {"active": False, "deleted": {"$gt": 0}}
         self.transform_config = {}
         self.status: BasicReturn = BasicReturn(
             **{"fail": False, "msg": "", "data": {}}
@@ -134,15 +138,15 @@ class OzonMBase:
 
     def _readable_datetime(self, val):
         if isinstance(val, str):
-            return parse(val).strftime(self.config_system["ui_datetime_mask"])
+            return parse(val).strftime(self.setting_app.ui_datetime_mask)
         else:
-            return val.strftime(self.config_system["ui_datetime_mask"])
+            return val.strftime(self.setting_app.ui_datetime_mask)
 
     def _readable_date(self, val):
         if isinstance(val, str):
-            return parse(val).strftime(self.config_system["ui_date_mask"])
+            return parse(val).strftime(self.setting_app.ui_date_mask)
         else:
-            return val.strftime(self.config_system["ui_date_mask"])
+            return val.strftime(self.setting_app.ui_date_mask)
 
     def readable_float(self, val, dp=2, g=True):
         if isinstance(val, str):
@@ -192,8 +196,8 @@ class OzonMBase:
             self.mm = ModelMaker(self.data_model)
             if self.transform_config:
                 self.tranform_data_value = self.transform_config.copy()
-            if data.get("_id"):
-                data.pop("_id")
+            # if data.get("_id"):
+            #     data.pop("_id")
             self.mm.from_data_dict(data)
 
             self.modelr = self.mm.new()
@@ -232,6 +236,11 @@ class OzonModelBase(OzonMBase):
         _domain.update(domain)
         return _domain
 
+    def get_domain_archived(self, domain={}):
+        _domain = self.archived_domain.copy()
+        _domain.update(domain)
+        return _domain
+
     async def set_lang(self):
         self.lang = self.orm.lang
 
@@ -244,13 +253,12 @@ class OzonModelBase(OzonMBase):
         if not sortstr:
             sortstr = self.default_sort_str
         sort_rules = sortstr.split(",")
-        sort = []
+        sort = {}
         for rule_str in sort_rules:
             if rule_str:
                 rule_list = rule_str.split(":")
                 if len(rule_list) > 1:
-                    rule = (rule_list[0], self.sort_dir[rule_list[1]])
-                    sort.append(rule)
+                    sort[rule_list[0]] = self.sort_dir[rule_list[1]]
         return sort
 
     def get_dict(self, rec: CoreModel, exclude=[]) -> CoreModel:
@@ -282,12 +290,16 @@ class OzonModelBase(OzonMBase):
 
     async def set_unique(self, field_name):
         self.init_status()
-        component_coll = self.db.engine.get_collection(self.data_model)
+        component_coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
         await component_coll.create_index([(field_name, 1)], unique=True)
 
     async def count_by_filter(self, domain: dict) -> int:
         self.init_status()
-        coll = self.db.engine.get_collection(self.data_model)
+        coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
         val = await coll.count_documents(domain)
         if not val:
             val = 0
@@ -295,12 +307,9 @@ class OzonModelBase(OzonMBase):
 
     async def count(self, domain={}) -> int:
         self.init_status()
-        if not self.virtual or self.data_model:
-            if not domain:
-                domain = self.default_domain
-            return await self.count_by_filter(domain)
-        else:
-            return 0
+        if not domain:
+            domain = self.default_domain
+        return await self.count_by_filter(domain)
 
     async def new(self, data={}, rec_name="", trnf_config={}) -> CoreModel:
         self.init_status()
@@ -339,17 +348,21 @@ class OzonModelBase(OzonMBase):
                 self.error_status(msg, data=record.get_dict_json())
                 return None
 
-            coll = self.db.engine.get_collection(self.data_model)
-            record.list_order = await self.count()
+            coll = self.db.engine.get_collection(
+                self.data_model, codec_options=codec_options
+            )
+
             record.create_datetime = datetime.now().isoformat()
             record = self.set_user_data(record, self.user_session)
+            record.list_order = await self.count()
+            record.active = True
             to_save = self._make_from_dict(copy.deepcopy(record.get_dict()))
+            if "_id" not in to_save:
+                to_save['_id'] = bson.ObjectId(to_save['id'])
             result_save = await coll.insert_one(to_save)
             result = None
             if result_save:
-                return await self.load(
-                    {"_id": bson.ObjectId(result_save.inserted_id)}
-                )
+                return await self.load({"rec_name": to_save['rec_name']})
             return result
         except pymongo.errors.DuplicateKeyError as e:
             logger.error(f" Duplicate {e.details['errmsg']}")
@@ -407,23 +420,25 @@ class OzonModelBase(OzonMBase):
             )
             return None
         try:
-            coll = self.db.engine.get_collection(self.data_model)
+            coll = self.db.engine.get_collection(
+                self.data_model, codec_options=codec_options
+            )
             original = await self.load(record.rec_name_domain())
             if not self.virtual:
                 to_save = original.get_dict_diff(
                     record.get_dict_copy(),
-                    default_list_metadata_clean,
+                    default_list_metadata_fields_update,
                     True,
                 )
+
             else:
-                record.list_order = await self.count()
                 to_save = self._make_from_dict(
                     copy.deepcopy(record.get_dict())
                 )
+                if "_id" not in to_save:
+                    to_save['_id'] = bson.ObjectId(to_save['id'])
             if "rec_name" in to_save:
                 to_save.pop("rec_name")
-            to_save["active"] = True
-            to_save["deleted"] = 0
             to_save["update_uid"] = self.orm.user_session.get("user.uid")
             to_save["update_datetime"] = datetime.now().isoformat()
             await coll.update_one(record.rec_name_domain(), {"$set": to_save})
@@ -452,7 +467,9 @@ class OzonModelBase(OzonMBase):
                 _("Cannot delete a virtual object"), record.get_dict_copy()
             )
             return False
-        coll = self.db.engine.get_collection(self.data_model)
+        coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
         await coll.delete_one(record.rec_name_domain())
         return True
 
@@ -463,7 +480,9 @@ class OzonModelBase(OzonMBase):
             )
             self.error_status(msg, domain)
             return 0
-        coll = self.db.engine.get_collection(self.data_model)
+        coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
         num = await coll.delete_many(domain)
         return num
 
@@ -482,7 +501,9 @@ class OzonModelBase(OzonMBase):
             )
             self.error_status(msg, data=domain)
             return None
-        coll = self.db.engine.get_collection(self.data_model)
+        coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
         data = await coll.find_one(domain)
 
         if not data:
@@ -493,35 +514,29 @@ class OzonModelBase(OzonMBase):
         return data
 
     async def find(
-        self, domain: dict, sort: str = "", limit=0, skip=0
+        self, domain: dict, sort: str = "", limit=0, skip=0, pipeline_items=[]
     ) -> list[CoreModel]:
-        self.init_status()
-        if self.virtual and not self.data_model:
-            msg = _(
-                "Data Model is required for virtual model to get data from db"
-            )
-            self.error_status(msg, domain)
-            return []
-        _sort = self.eval_sort_str(sort)
-        coll = self.db.engine.get_collection(self.data_model)
+        datas = await self.find_raw(
+            domain,
+            sort=sort,
+            limit=limit,
+            skip=skip,
+            pipeline_items=pipeline_items,
+        )
         res = []
-        if limit > 0:
-            datas = coll.find(domain).sort(_sort).skip(skip).limit(limit)
-        elif sort:
-            datas = coll.find(domain).sort(_sort)
-        else:
-            datas = coll.find(domain)
         if datas:
-            res = []
-            for rec_data in await datas.to_list(length=None):
+            for rec_dat in datas:
+                rec_data = json.loads(json.dumps(rec_dat, cls=JsonEncoder))
+                if "_id" in rec_data:
+                    rec_data['id'] = rec_data.pop("_id")
                 if self.virtual:
-                    res.append(self.mm.new(rec_data))
+                    res.append(self.load_data(rec_data))
                 else:
                     res.append(self.model(**rec_data))
         return res
 
     async def find_raw(
-        self, domain: dict, sort: str = "", limit=0, skip=0
+        self, domain: dict, sort: str = "", limit=0, skip=0, pipeline_items=[]
     ) -> list[dict]:
         self.init_status()
         if self.virtual and not self.data_model:
@@ -531,48 +546,43 @@ class OzonModelBase(OzonMBase):
             self.error_status(msg, domain)
             return []
         _sort = self.eval_sort_str(sort)
-        coll = self.db.engine.get_collection(self.data_model)
+        coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
         res = []
+        pipeline = [{"$match": domain}]
+        for item in pipeline_items:
+            pipeline.append(item)
+        if _sort:
+            pipeline.append({"$sort": _sort})
         if limit > 0:
-            datas = coll.find(domain).sort(_sort).skip(skip).limit(limit)
-        elif sort:
-            datas = coll.find(domain).sort(_sort)
-        else:
-            datas = coll.find(domain)
+            pipeline.append({"$skip": skip})
+            pipeline.append({"$limit": limit})
+        datas = coll.aggregate(pipeline)
         if datas:
             return await datas.to_list(length=None)
+
         return res
 
     async def aggregate(
-        self, pipeline: list, sort: str, limit=0, skip=0
+        self, pipeline: list, sort: str = "", limit=0, skip=0
     ) -> list[CoreModel]:
-
-        self.init_status()
-        if self.virtual and not self.data_model:
-            msg = _(
-                "Data Model is required for virtual model to get data from db"
-            )
-            self.error_status(msg, pipeline)
-            return []
-        _sort = self.eval_sort_str(sort)
-        coll = self.db.engine.get_collection(self.data_model)
-        if _sort:
-            s = {"$sort": {}}
-            for item in _sort:
-                s["$sort"][item[0]] = item[1]
-            pipeline.append(s)
-        if skip:
+        if sort:
+            _sort = self.eval_sort_str(sort)
+            pipeline.append({"$sort": _sort})
+        if limit > 0:
             pipeline.append({"$skip": skip})
-        if limit:
             pipeline.append({"$limit": limit})
-
-        datas = await coll.aggregate(pipeline).to_list(None)
+        coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
+        datas = await coll.aggregate(pipeline).to_list(length=None)
         res = []
-
-        agg_mm = ModelMaker(f"{self.data_model}.agg")
-        for rec_data in datas:
+        for rec_dat in datas:
+            rec_data = json.loads(json.dumps(rec_dat, cls=JsonEncoder))
+            agg_mm = ModelMaker(f"{self.data_model}.agg")
             if "_id" in rec_data:
-                rec_data.pop("_id")
+                rec_data['id'] = rec_data.pop("_id")
             agg_mm.from_data_dict(rec_data)
             agg_mm.new(),
             res.append(agg_mm.instance)
@@ -636,15 +646,24 @@ class OzonModelBase(OzonMBase):
             pipeline, sort=sort, limit=limit, skip=skip
         )
 
-    async def set_to_delete(self, record: CoreModel) -> bool:
+    async def set_to_delete(self, record: CoreModel) -> CoreModel:
         self.init_status()
         if self.virtual:
             msg = _("Unable to set to delete a virtual model")
             self.error_status(msg, record.get_dict_copy())
             return False
         delete_at_datetime = datetime.now() + timedelta(
-            days=self.env.config_system["delete_record_after_days"]
+            days=self.setting_app.delete_record_after_days
         )
         record.set_to_delete(delete_at_datetime.timestamp())
+        return await self.update(record)
+
+    async def set_active(self, record: CoreModel) -> CoreModel:
+        self.init_status()
+        if self.virtual:
+            msg = _("Unable to set to delete a virtual model")
+            self.error_status(msg, record.get_dict_copy())
+            return False
+        record.set_active()
         await self.update(record)
-        return True
+        return record

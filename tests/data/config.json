@@ -1,5 +1,8 @@
 {
-  "app_code": "test",
+  "rec_name": "test",
+  "app_code": [
+    "test"
+  ],
   "init_db": false,
   "module_name": "test-service",
   "module_label": "test Service",
@@ -42,9 +45,9 @@
   "stack": "test",
   "plugins": [],
   "mongo_url": "localhost:10000",
-  "mongo_user": "servicetest",
-  "mongo_pass": "servicetest",
-  "mongo_db": "servicetest",
+  "mongo_user": "",
+  "mongo_pass": "",
+  "mongo_db": "",
   "mongo_replica": "",
   "admin_password": "test",
   "admin_username": "test"

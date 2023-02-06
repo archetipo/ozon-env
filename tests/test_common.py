@@ -6,10 +6,15 @@ from ozonenv.core.BaseModels import BasicModel, List, Dict
 pytestmark = pytest.mark.asyncio
 
 
-# @pytest.fixture(scope='function', autouse=True)
-# def exit_pytest_first_failure():
-#     if pytest.TestReport.outcome == 'failed':
-#         pytest.exit('Exiting pytest')
+def init_env_var():
+    os.environ["APP_CODE"] = "test"
+    os.environ["STACK"] = "test"
+    os.environ["MONGO_DB"] = "servicemci"
+    os.environ["MONGO_USER"] = "servicetest"
+    os.environ["MONGO_PASS"] = "servicetest"
+    os.environ["MONGO_URL"] = "localhost:10000"
+    os.environ["MONGO_REPLICA"] = ""
+    os.environ["MODELS_FOLDER"] = "tests/models"
 
 
 def get_i18n_localedir():
@@ -42,8 +47,11 @@ async def init_collecetion(db, file_name, collection):
 
 
 @pytestmark
-async def insert_session_collections(db):
+async def init_main_collections(db):
     await init_collecetion(db, 'coll_session.json', "session")
+    await init_collecetion(db, 'config.json', "settings")
+
+
 
 
 @pytestmark

@@ -19,6 +19,28 @@
       "input": true
     },
     {
+      "label": "Qt",
+      "tableView": true,
+      "key": "quantity",
+      "type": "number",
+      "input": true
+    },
+    {
+      "label": "Tot",
+      "tableView": true,
+      "key": "tot",
+      "type": "number",
+      "requireDecimal": true,
+      "input": true
+    },
+    {
+      "label": "Price",
+      "tableView": true,
+      "key": "price",
+      "type": "textfield",
+      "input": true
+    },
+    {
       "type": "button",
       "label": "Submit",
       "key": "submit",

@@ -4,7 +4,7 @@
 
 import decimal
 import re
-from datetime import datetime
+import datetime
 from typing import Any, Dict, Pattern, cast
 
 import bson
@@ -21,6 +21,11 @@ from pydantic.validators import (
     pattern_validator,
 )
 from bson.objectid import ObjectId as BsonObjectId
+from bson.codec_options import TypeRegistry
+from bson.codec_options import CodecOptions
+from bson.codec_options import TypeCodec
+from decimal import *
+import json
 
 
 class PyObjectId(BsonObjectId):
@@ -58,9 +63,6 @@ class Int64(bson.int64.Int64):
         return bson.int64.Int64(a)
 
 
-Long = Int64
-
-
 class Decimal128(bson.decimal128.Decimal128):
     @classmethod
     def __get_validators__(cls):  # type: ignore
@@ -73,10 +75,10 @@ class Decimal128(bson.decimal128.Decimal128):
 
     @classmethod
     def validate(cls, v: Any) -> bson.decimal128.Decimal128:
-        if isinstance(v, bson.decimal128.Decimal128):
-            return v
+        # if isinstance(v, bson.decimal128.Decimal128):
+        #     return v
         a = decimal_validator(v)
-        return bson.decimal128.Decimal128(a)
+        return float(a)
 
 
 class Binary(bson.binary.Binary):
@@ -131,7 +133,7 @@ class _Pattern:
         return a
 
 
-class DateTime(datetime):
+class DateTime(datetime.datetime):
     @classmethod
     def __get_validators__(cls):  # type: ignore
         yield cls.validate
@@ -181,6 +183,42 @@ class _decimalDecimal(decimal.Decimal):
         return bson.decimal128.Decimal128(v)
 
 
+# Codec
+class Decimal128Codec(TypeCodec):
+    python_type = decimal.Decimal  # the Python type acted upon by this type codec
+    bson_type = Decimal128  # the BSON type acted upon by this type codec
+
+    def transform_python(self, value):
+        """Function that transforms a custom type value into a type
+        that BSON can encode."""
+        return Decimal128(value)
+
+    def transform_bson(self, value):
+        """Function that transforms a vanilla BSON type value into our
+        custom type."""
+        return float(value.to_decimal())
+
+
+class JsonEncoder(json.JSONEncoder):
+    """JSON serializer for objects not serializable by default json code"""
+
+    def default(self, o):
+        if isinstance(o, bson.decimal128.Decimal128):
+            return float(o.to_decimal())
+        if isinstance(o, bson.objectid.ObjectId):
+            return str(o)
+        if isinstance(o, (datetime.datetime, datetime.date)):
+            return o.isoformat()
+        return super().default(o)
+
+
+
+
+decimal_codec = Decimal128Codec()
+
+type_registry = TypeRegistry([])
+codec_options = CodecOptions(type_registry=type_registry)
+
 BSON_TYPES_ENCODERS = {
     bson.ObjectId: str,
     bson.decimal128.Decimal128: lambda x: float(x.to_decimal()),
@@ -198,5 +236,5 @@ _BSON_SUBSTITUTED_FIELDS = {
     bson.regex.Regex: Regex,
     Pattern: _Pattern,
     decimal.Decimal: _decimalDecimal,
-    datetime: DateTime,
+    datetime.datetime: DateTime,
 }

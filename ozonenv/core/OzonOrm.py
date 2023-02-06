@@ -5,14 +5,18 @@ from ozonenv.core.db.mongodb_utils import (
     close_mongo_connection,
     DbSettings,
     Mongo,
+    Collection,
+    _DocumentType,
 )
 import time as time_
 from ozonenv.core.OzonModel import OzonModelBase, BasicReturn
 from ozonenv.core.OzonClient import OzonClient
+from ozonenv.core.db.BsonTypes import codec_options
 from ozonenv.core.BaseModels import (
     DbViewModel,
     Component,
     Session,
+    Settings,
     AttachmentTrash,
     CoreModel,
 )
@@ -24,6 +28,7 @@ from ozonenv.core.i18n import _
 from ozonenv.core.cache.cache_utils import stop_cache  # , init_cache
 
 # from ozonenv.core.cache.cache import get_cache
+import os
 from os.path import dirname, exists
 import aiofiles
 import logging
@@ -40,12 +45,23 @@ base_model_path = dirname(__file__)
 
 
 class OzonEnvBase:
-    def __init__(self, cfg, upload_folder=""):
+    def __init__(self, cfg={}, upload_folder=""):
         self.orm: OzonOrm
         self.db: Mongo
         self.ozon_client: OzonClient
-        self.config_system = cfg.copy()
-        self.settings = DbSettings(**self.config_system)
+        if not cfg:
+            self.config_system = {
+                "app_code": os.getenv("APP_CODE"),
+                "mongo_user": os.getenv("MONGO_USER"),
+                "mongo_pass": os.getenv("MONGO_PASS"),
+                "mongo_url": os.getenv("MONGO_URL"),
+                "mongo_db": os.getenv("MONGO_DB"),
+                "mongo_replica": os.getenv("MONGO_REPLICA"),
+                "models_folder": os.getenv("MODELS_FOLDER", "/models"),
+            }
+        else:
+            self.config_system = cfg.copy()
+        self.db_settings = DbSettings(**self.config_system)
         self.model = ""
         self.models = {}
         self.params = {}
@@ -57,8 +73,9 @@ class OzonEnvBase:
         self.redis_url = ""
         self.orm_from_cache = False
         self.upload_folder = upload_folder
-        if not upload_folder:
-            self.upload_folder = cfg["upload_folder"]
+        self.models_folder = self.config_system.get("models_folder", "/models")
+        self.is_db_local = True
+        self.app_code = self.config_system.get("app_code")
 
     @classmethod
     async def readfilejson(cls, cfg_file):
@@ -118,6 +135,11 @@ class OzonEnvBase:
     def get(self, model_name) -> OzonModelBase:
         return self.models.get(model_name)
 
+    def get_collection(self, collection) -> Collection[_DocumentType]:
+        return self.db.engine.get_collection(
+            collection, codec_options=codec_options
+        )
+
     async def add_schema(self, schema: dict) -> OzonModelBase:
         component_model = self.models.get("component")
         component = await component_model.new(schema)
@@ -143,18 +165,23 @@ class OzonEnvBase:
         return await self.orm.add_static_model(model_name, model_class)
 
     async def connect_db(self):
-        self.db = await connect_to_mongo(self.settings)
+        self.db = await connect_to_mongo(self.db_settings)
 
     async def close_db(self):
         await close_mongo_connection()
 
-    async def init_env(self):
-        await self.connect_db()
+    async def init_env(self, db=None):
+        if db:
+            self.db = db
+            self.is_db_local = False
+        else:
+            await self.connect_db()
         await self.set_lang()
         self.orm = OzonOrm(self)
 
     async def close_env(self):
-        await self.close_db()
+        if self.is_db_local:
+            await self.close_db()
         if self.use_cache:
             await stop_cache()
 
@@ -183,6 +210,8 @@ class OzonEnvBase:
         self.session_token = self.params.get("current_session_token")
         await self.orm.init_models()
         await self.orm.init_session(self.session_token)
+        if not self.upload_folder:
+            self.upload_folder = self.orm.app_settings.upload_folder
         self.user_session = self.orm.user_session
         if not self.user_session:
             return self.fail_response(
@@ -200,17 +229,25 @@ class OzonOrm:
         self.lang = env.lang
         self.db: Mongo = env.db
         self.config_system = env.config_system.copy()
-        self.models_path = self.config_system.get("models_folder", "/models")
         self.user_session: CoreModel = None
         self.list_auto_models = []
-        self.orm_models = ["component", "session", "attachmenttrash"]
+        self.orm_models = [
+            "component",
+            "session",
+            "attachmenttrash",
+            "settings",
+        ]
         self.orm_static_models_map = {
             "component": Component,
             "session": Session,
             "attachmenttrash": AttachmentTrash,
+            "settings": Settings,
         }
         self.db_models = []
-        self.orm_sys_models = ["component", "session"]
+        self.orm_sys_models = ["component", "session", "settings"]
+        self.models_path = self.env.models_folder
+        self.app_settings = {}
+        self.app_code = self.env.app_code
 
     async def add_static_model(
         self, model_name: str, model_class: CoreModel
@@ -229,8 +266,10 @@ class OzonOrm:
 
     async def init_db_models(self):
         self.db_models = await self.get_collections_names()
+        self.app_settings = await self.init_settings(self.app_code)
 
     async def init_models(self):
+        # self.models_path = self.config_system.get("models_folder", "/models")
         await self.init_db_models()
         await AsyncPath(self.models_path).mkdir(parents=True, exist_ok=True)
         await AsyncPath(f"{self.models_path}/__init__.py").touch(exist_ok=True)
@@ -273,6 +312,14 @@ class OzonOrm:
             filter=query
         )
         return collection_names
+
+    async def init_settings(self, app_code):
+        query = {"rec_name": app_code}
+        coll_settings = self.env.get_collection("settings")
+        db_settings = await coll_settings.find_one(query)
+        if db_settings.get("_id"):
+            db_settings.pop("_id")
+        return Settings(**db_settings)
 
     async def create_view(self, dbviewcfg: DbViewModel):
         if (
@@ -407,6 +454,21 @@ class OzonOrm:
     def get_data_model(cls):
         return "{mod.mm.data_model}"
     
+    @classmethod
+    def conditional(cls) -> {{str, dict}}:
+        return {mod.mm.conditional}
+
+    @classmethod
+    def logic(cls) -> {{str, list}}:
+        return {mod.mm.logic}
+    
+    @classmethod
+    def conditional(cls) -> {{str, dict}}:
+        return {mod.mm.conditional}
+
+    @classmethod
+    def logic(cls) -> {{str, list}}:
+        return {mod.mm.conditional}
 """
         async with aiofiles.open(
             f"{self.models_path}/{mod.name}.py", "a+"
@@ -514,13 +576,13 @@ class OzonModel(OzonModelBase):
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env
-        self.config_system = orm.config_system.copy()
+        self.setting_app = orm.app_settings.copy()
         self.db: Mongo = orm.env.db
         self.mm_from_cache = False
         self.use_cache = False
         super(OzonModel, self).__init__(
             model_name=model_name,
-            config_system=self.config_system.copy(),
+            setting_app=self.setting_app,
             data_model=data_model,
             session_model=session_model,
             virtual=virtual,

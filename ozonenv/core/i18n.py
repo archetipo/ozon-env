@@ -106,7 +106,6 @@ class I18n(metaclass=Singleton):
                 continue
 
             for folder in Path(dirname).iterdir():
-
                 locale_dir = folder.joinpath("LC_MESSAGES")
                 if not locale_dir.is_dir():
                     continue

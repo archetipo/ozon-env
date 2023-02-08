@@ -30,7 +30,6 @@ async def test_ozonenv_cfg():
     }
     env = OzonEnv(config_system)
     assert env.config_system['app_code'] == 'test'
-    assert env.config_system['app_code'] == 'test'
 
 
 @pytestmark

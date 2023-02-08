@@ -52,8 +52,6 @@ async def init_main_collections(db):
     await init_collecetion(db, 'config.json', "settings")
 
 
-
-
 @pytestmark
 async def get_config():
     return await readfilejson('data', 'config.json')

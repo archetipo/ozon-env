@@ -170,7 +170,7 @@ class OzonEnvBase:
     async def close_db(self):
         await close_mongo_connection()
 
-    async def init_env(self, db=None):
+    async def init_orm(self, db=None, local_model={}):
         if db:
             self.db = db
             self.is_db_local = False
@@ -178,6 +178,14 @@ class OzonEnvBase:
             await self.connect_db()
         await self.set_lang()
         self.orm = OzonOrm(self)
+        if local_model:
+            for k, v in local_model.items():
+                self.orm.orm_models.append(k)
+                self.orm.orm_static_models_map[k] = v
+
+    async def init_env(self, db=None, local_model={}):
+        await self.init_orm(db=db, local_model=local_model)
+        await self.orm.init_models()
 
     async def close_env(self):
         if self.is_db_local:
@@ -191,13 +199,15 @@ class OzonEnvBase:
         use_cache=True,
         cache_idx="ozon_env",
         redis_url="redis://redis_cache",
+        db=None,
+        local_model={},
     ) -> BasicReturn:
         try:
             self.params = copy.deepcopy(params)
             self.use_cache = use_cache
             self.cache_index = cache_idx
             self.redis_url = redis_url
-            await self.init_env()
+            await self.init_env(db=db, local_model=local_model)
             res = await self.session_app()
             await self.close_env()
             return res
@@ -208,7 +218,6 @@ class OzonEnvBase:
     async def session_app(self) -> BasicReturn:
         self.session_is_api = self.params.get("session_is_api", False)
         self.session_token = self.params.get("current_session_token")
-        await self.orm.init_models()
         await self.orm.init_session(self.session_token)
         if not self.upload_folder:
             self.upload_folder = self.orm.app_settings.upload_folder

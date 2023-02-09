@@ -31,11 +31,8 @@ async def test_add_user_static_model():
 async def test_user_static_model_add_data():
     data = await get_user_data()
     env = OzonEnv()
-    await env.init_env()
-    env.orm.orm_models.append('user')
-    env.orm.orm_static_models_map['user'] = User
-    env.params = {"current_session_token": "BA6BA930"}
-    await env.session_app()
+    await env.init_env(local_model={'user': User})
+    await env.orm.init_session("BA6BA930")
     user_model = env.get('user')
     assert user_model.name == "user"
     assert user_model.static == User

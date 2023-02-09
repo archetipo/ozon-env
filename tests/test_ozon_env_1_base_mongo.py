@@ -50,7 +50,7 @@ async def test_init_env_db_exist():
     db_settings = DbSettings(**config_system)
     db = await connect_to_mongo(db_settings)
     env = OzonEnv()
-    await env.init_env(db=db)
+    await env.init_orm(db=db)
     session = env.db.engine.get_collection('session')
     assert isinstance(session, AsyncIOMotorCollection)
     await env.close_env()
@@ -68,7 +68,7 @@ async def test_init_env():
     # app_setting = await OzonEnv.readfilejson(path)
     env = OzonEnv()
     env.use_cache = False
-    await env.init_env()
+    await env.init_orm()
     await init_main_collections(env.db)
     session = env.db.engine.get_collection('session')
     stored_obj = await session.find_one({'token': 'BA6BA930'})

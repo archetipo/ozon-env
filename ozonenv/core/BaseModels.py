@@ -705,11 +705,6 @@ class BasicReturn(BaseModel):
     data: dict = {}
 
 
-class ExternalProxyUriConfigs(BasicModel):
-    domain: Optional[str] = Field('', title='Domain')
-    rec_name: Optional[str] = Field('', title='Rec Name')
-
-
 class Settings(BasicModel):
     list_order: Optional[int] = Field(0, title='List Order')
     rec_name: Optional[str] = Field('', title='Rec Name')
@@ -772,9 +767,6 @@ class Settings(BasicModel):
     report_margin_right: Optional[str] = Field(
         '10mm', title='Report Margin Right'
     )
-    external_proxy_uri_configs: Optional[
-        List[ExternalProxyUriConfigs]
-    ] = Field([], title='External Proxy Uri Configs')
 
     @classmethod
     def get_version(cls):

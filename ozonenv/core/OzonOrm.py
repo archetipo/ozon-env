@@ -329,7 +329,12 @@ class OzonOrm:
         db_settings = await coll_settings.find_one(query)
         if db_settings.get("_id"):
             db_settings.pop("_id")
-        return Settings(**db_settings, exclude_none=True)
+        return Settings(
+            **db_settings,
+            exclude_none=True,
+            exclude_unset=True,
+            check_fields=False,
+        )
 
     async def create_view(self, dbviewcfg: DbViewModel):
         if (

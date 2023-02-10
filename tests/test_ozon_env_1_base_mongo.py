@@ -63,9 +63,6 @@ async def test_init_env_db_exist():
 
 @pytestmark
 async def test_init_env():
-    # init_env_var()
-    # path = get_config_path()
-    # app_setting = await OzonEnv.readfilejson(path)
     env = OzonEnv()
     env.use_cache = False
     await env.init_orm()

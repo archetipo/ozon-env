@@ -323,6 +323,7 @@ class OzonOrm:
         return collection_names
 
     async def init_settings(self, app_code):
+        logger.info(f"init app: {app_code}")
         query = {"rec_name": app_code}
         coll_settings = self.env.get_collection("settings")
         db_settings = await coll_settings.find_one(query)

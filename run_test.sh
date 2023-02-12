@@ -7,7 +7,7 @@ poetry run black ozonenv/**/*.py
 poetry run flake8 ozonenv/**/*.py
 pip install -e .
 echo "run test"
-poetry run pytest --cov --cov-report=html
+poetry run pytest --cov --cov-report=html -vv
 docker-compose down
 rm -rf tests/models
 echo "make project: Done."

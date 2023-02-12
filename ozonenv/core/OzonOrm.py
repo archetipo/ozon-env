@@ -40,7 +40,6 @@ logger = logging.getLogger(__file__)
 
 MAIN_CACHE_TIME = 800
 
-# auto_model_path = join(dirname(__file__), "amodels")
 base_model_path = dirname(__file__)
 
 
@@ -226,9 +225,6 @@ class OzonEnvBase:
             return self.fail_response(
                 _("Token %s not allowed") % self.session_token
             )
-        self.ozon_client = OzonClient.create(
-            self.session_token, is_api=self.session_is_api
-        )
         return BasicReturn(fail=False, msg="Done", data={})
 
 
@@ -255,7 +251,7 @@ class OzonOrm:
         self.db_models = []
         self.orm_sys_models = ["component", "session", "settings"]
         self.models_path = self.env.models_folder
-        self.app_settings = {}
+        self.app_settings: Settings = None
         self.app_code = self.env.app_code
 
     async def add_static_model(

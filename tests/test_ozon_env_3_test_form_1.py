@@ -85,6 +85,10 @@ async def test_component_test_form_1_init():
     assert component.rec_name == "test_form_1"
     assert component.update_datetime == parse("1970-01-01T00:00:00")
     assert len(component.get('components')) == 10
+    assert (
+            env.get('test_form_1').schema.get(
+                "components")[0].get("key") == "columns"
+    )
     await env.close_db()
 
 

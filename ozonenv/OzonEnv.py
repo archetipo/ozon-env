@@ -1,5 +1,6 @@
 from ozonenv.core.OzonOrm import OzonEnvBase, BasicReturn
 from ozonenv.core.BaseModels import BasicReturn
+from ozonenv.core.OzonClient import OzonClient
 import json
 import copy
 import logging
@@ -101,11 +102,13 @@ class OzonWorkerEnv(OzonEnv):
             use_cache=False,
             cache_idx="ozon_env",
             redis_url="redis://redis_cache",
+            db=None,
+            local_model={}
     ) -> BasicReturn:
         self.topic_name = params.get('topic_name', "")
         res = await super(OzonWorkerEnv, self).make_app_session(
             params, use_cache=use_cache, cache_idx=cache_idx,
-            redis_url=redis_url)
+            redis_url=redis_url, db=db, local_model=local_model)
         if res.fail:
             return self.exception_response(res.msg)
         return res
@@ -117,4 +120,7 @@ class OzonWorkerEnv(OzonEnv):
         self.doc_type = self.params.get('document_type', "")
         self.topic_name = self.params.get('topic_name', "")
         self.model = self.params.get('model', "")
+        self.ozon_client = OzonClient.create(
+            self.session_token, is_api=self.session_is_api
+        )
         return self.default_response(msg="Done")

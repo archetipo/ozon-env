@@ -44,7 +44,7 @@ base_model_path = dirname(__file__)
 
 
 class OzonEnvBase:
-    def __init__(self, cfg={}, upload_folder=""):
+    def __init__(self, cfg={}, upload_folder="", cls_model=OzonModelBase):
         self.orm: OzonOrm
         self.db: Mongo
         self.ozon_client: OzonClient
@@ -75,6 +75,7 @@ class OzonEnvBase:
         self.models_folder = self.config_system.get("models_folder", "/models")
         self.is_db_local = True
         self.app_code = self.config_system.get("app_code")
+        self.cls_model = cls_model
 
     @classmethod
     async def readfilejson(cls, cfg_file):
@@ -176,7 +177,7 @@ class OzonEnvBase:
         else:
             await self.connect_db()
         await self.set_lang()
-        self.orm = OzonOrm(self)
+        self.orm = OzonOrm(self, cls_model=self.cls_model)
         if local_model:
             for k, v in local_model.items():
                 self.orm.orm_models.append(k)
@@ -229,7 +230,7 @@ class OzonEnvBase:
 
 
 class OzonOrm:
-    def __init__(self, env: OzonEnvBase):
+    def __init__(self, env: OzonEnvBase, cls_model=OzonModelBase):
         self.env: OzonEnvBase = env
         self.lang = env.lang
         self.db: Mongo = env.db
@@ -253,6 +254,7 @@ class OzonOrm:
         self.models_path = self.env.models_folder
         self.app_settings: Settings = None
         self.app_code = self.env.app_code
+        self.cls_model = cls_model
 
     async def add_static_model(
         self, model_name: str, model_class: CoreModel
@@ -260,7 +262,7 @@ class OzonOrm:
         _model_name = model_name.replace(" ", "").strip().lower()
         self.orm_models.append(_model_name)
         self.orm_static_models_map[model_name] = model_class
-        self.env.models[_model_name] = OzonModel(
+        self.env.models[_model_name] = self.cls_model(
             _model_name,
             self,
             static=model_class,
@@ -490,7 +492,7 @@ class OzonOrm:
         self, model_name, data_model, virtual, schema, component
     ):
         session_model = model_name == "session"
-        mod = OzonModel(
+        mod = self.cls_model(
             model_name,
             self,
             data_model=data_model,
@@ -540,7 +542,7 @@ class OzonOrm:
                 data_model = self.orm_static_models_map[
                     model_name
                 ].get_data_model()
-            self.env.models[model_name] = OzonModel(
+            self.env.models[model_name] = self.cls_model(
                 model_name,
                 self,
                 data_model=data_model,

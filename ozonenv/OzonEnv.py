@@ -1,4 +1,4 @@
-from ozonenv.core.OzonOrm import OzonEnvBase, BasicReturn
+from ozonenv.core.OzonOrm import OzonEnvBase, BasicReturn, OzonModel
 from ozonenv.core.BaseModels import BasicReturn
 from ozonenv.core.OzonClient import OzonClient
 import json
@@ -9,12 +9,15 @@ logger = logging.getLogger(__file__)
 
 
 class OzonEnv(OzonEnvBase):
-    ...
+    def __init__(self, cfg={}, upload_folder="", cls_model=OzonModel):
+        super().__init__(
+            cfg=cfg, upload_folder=upload_folder, cls_model=cls_model)
 
 
 class OzonWorkerEnv(OzonEnv):
-    def __init__(self, cfg={}):
-        super(OzonWorkerEnv, self).__init__(cfg)
+    def __init__(self, cfg={}, upload_folder="", cls_model=OzonModel):
+        super(OzonWorkerEnv, self).__init__(
+            cfg=cfg, upload_folder=upload_folder, cls_model=cls_model)
         self.doc_type = ""
         self.action_next_page = ""
         self.topic_name = ""

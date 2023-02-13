@@ -412,7 +412,7 @@ class OzonModelBase(OzonMBase):
         record.set_active()
         return record
 
-    async def update(self, record: CoreModel) -> CoreModel:
+    async def update(self, record: CoreModel, remove_mata=True) -> CoreModel:
         self.init_status()
         if self.virtual and not self.data_model:
             self.error_status(
@@ -427,8 +427,8 @@ class OzonModelBase(OzonMBase):
             if not self.virtual:
                 to_save = original.get_dict_diff(
                     record.get_dict_copy(),
-                    default_list_metadata_fields_update,
-                    True,
+                    ignore_fields=default_list_metadata_fields_update,
+                    remove_ignore_fileds=remove_mata,
                 )
 
             else:

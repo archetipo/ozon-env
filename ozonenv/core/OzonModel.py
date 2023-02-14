@@ -435,8 +435,6 @@ class OzonModelBase(OzonMBase):
                 to_save = self._make_from_dict(
                     copy.deepcopy(record.get_dict())
                 )
-                if "_id" not in to_save:
-                    to_save['_id'] = bson.ObjectId(to_save['id'])
             if "rec_name" in to_save:
                 to_save.pop("rec_name")
             to_save["update_uid"] = self.orm.user_session.get("user.uid")

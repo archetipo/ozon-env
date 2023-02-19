@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ozon-env"
-version = "0.8.7"
+version = "0.8.8"
 homepage = "https://github.com/archetipo/ozon-env"
 description = "Ozon Env API"
 readme = "README.md"
@@ -57,7 +57,7 @@ httpx = "*"
 [tool.flake8]
 max-complexity = 15
 max-line-length = 79
-extend-ignore = "E203,W293,W291"
+extend-ignore = "E203,W293,W291,E211"
 
 [tool.black]
 line-length = 79

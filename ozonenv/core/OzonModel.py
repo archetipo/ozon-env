@@ -3,6 +3,7 @@ from dateutil.parser import parse
 from pydantic.main import ModelMetaclass
 from ozonenv.core.db.BsonTypes import codec_options, JsonEncoder
 from ozonenv.core.ModelMaker import ModelMaker
+from ozonenv.core.utils import is_json
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
@@ -78,6 +79,35 @@ class OzonMBase:
             **{"fail": False, "msg": "", "data": {}}
         )
         self.tranform_data_value = {}
+        self.rheader = False
+        self.rfooter = False
+        self.send_mail_create = False
+        self.send_mail_create = False
+        self.form_disabled = False
+        self.no_submit = False
+        self.queryformeditable = {}
+
+        self.init_schema_properties()
+
+    def init_schema_properties(self):
+        if self.schema.get("properties", {}):
+            for k, v in self.schema.get("properties", {}).items():
+                match k:
+                    case ["sort"]:
+                        self.default_sort_str = v
+                    case [
+                        "send_mail_create",
+                        "send_mail_update",
+                        "rfooter",
+                        "rheader",
+                        "form_disabled",
+                        "no_submit",
+                    ]:
+                        setattr(self, k, v == "1")
+                    case ["queryformeditable"]:
+                        self.queryformeditable = is_json(v)
+                    case _:
+                        print('Command not recognized')
 
     async def init_model(self):
         self.mm = ModelMaker(self.name)

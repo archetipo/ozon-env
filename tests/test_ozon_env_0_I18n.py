@@ -25,7 +25,6 @@ def test_I18n_make_lang_data():
         'en/LC_MESSAGES/messages.po').absolute()
     with open(po_path, 'rb') as f:
         assert "# English translations for PROJECT." in str(f.read())
-    # shutil.rmtree(f"{Path(locale_dir).absolute()}/.", ignore_errors=True)
 
 
 # @pytestmark

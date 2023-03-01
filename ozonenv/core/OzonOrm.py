@@ -318,6 +318,15 @@ class OzonOrm:
         collection_names = await self.db.engine.list_collection_names(
             filter=query
         )
+        q = {
+            "$and": [
+                {"active": True},
+                {"rec_name": {"$nin": collection_names}},
+            ]
+        }
+        coll = self.db.engine.get_collection('component')
+        res = await coll.distinct("rec_name", q)
+        collection_names += res
         return collection_names
 
     async def init_settings(self, app_code):

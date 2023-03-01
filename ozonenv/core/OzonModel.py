@@ -106,9 +106,6 @@ class OzonMBase:
                         setattr(self, k, v == "1")
                     case ["queryformeditable"]:
                         self.queryformeditable = is_json(v)
-                    case _:
-                        logger.warning(
-                            f'{k} property schema not handled ')
 
     async def init_model(self):
         self.mm = ModelMaker(self.name)

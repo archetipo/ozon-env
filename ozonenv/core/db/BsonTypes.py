@@ -5,6 +5,7 @@
 import decimal
 import re
 import datetime
+from datetime import timedelta
 from typing import Any, Dict, Pattern, cast
 
 import bson
@@ -207,11 +208,11 @@ class JsonEncoder(json.JSONEncoder):
             return float(o.to_decimal())
         if isinstance(o, bson.objectid.ObjectId):
             return str(o)
-        if isinstance(o, (datetime.datetime, datetime.date)):
+        if isinstance(o, (datetime.datetime, datetime.date, datetime.time)):
             return o.isoformat()
+        elif isinstance(o, timedelta):
+            return (datetime.datetime.min + o).time().isoformat()
         return super().default(o)
-
-
 
 
 decimal_codec = Decimal128Codec()

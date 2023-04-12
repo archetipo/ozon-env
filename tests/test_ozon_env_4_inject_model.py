@@ -142,12 +142,24 @@ async def test_aggregation_with_product1():
     p2 = products[2]
     assert p3.label == 'AProduct3'
     assert p3.update_datetime > p2.update_datetime
+
+    res2 = await product_model.search_all_distinct(
+        distinct="rec_name", query=product_model.get_domain(),
+        compute_label="rec_name,label", sort="title:asc",
+        skip=3, limit=3, raw_result=True
+    )
+    assert len(res2) == 3
+    assert isinstance(res2[0], dict) is True
+    assert res2[0].get("title") == 'prod3 - AProduct3'
+    assert res2[0].get("rec_name") == 'prod3'
+
     res1 = await product_model.search_all_distinct(
         distinct="rec_name", query=product_model.get_domain(),
         compute_label="rec_name,label", sort="title:asc",
         skip=3, limit=3
     )
     assert len(res1) == 3
+    assert isinstance(res1[0], CoreModel) is True
     assert res1[0].title == 'prod3 - AProduct3'
     assert res1[1].get('title') == 'prod4 - Product4'
     res = await product_model.search_all_distinct(

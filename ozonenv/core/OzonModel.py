@@ -614,9 +614,9 @@ class OzonModelBase(OzonMBase):
 
         return res
 
-    async def aggregate(
+    async def aggregate_raw(
         self, pipeline: list, sort: str = "", limit=0, skip=0
-    ) -> list[CoreModel]:
+    ) -> list[Any]:
         if sort:
             _sort = self.eval_sort_str(sort)
             pipeline.append({"$sort": _sort})
@@ -627,6 +627,14 @@ class OzonModelBase(OzonMBase):
             self.data_model, codec_options=codec_options
         )
         datas = await coll.aggregate(pipeline).to_list(length=None)
+        return datas
+
+    async def aggregate(
+        self, pipeline: list, sort: str = "", limit=0, skip=0
+    ) -> list[CoreModel]:
+        datas = await self.aggregate_raw(
+            pipeline, sort=sort, limit=limit, skip=skip
+        )
         res = []
         for rec_dat in datas:
             rec_data = json.loads(json.dumps(rec_dat, cls=JsonEncoder))
@@ -662,7 +670,8 @@ class OzonModelBase(OzonMBase):
         sort: str = "",
         limit=0,
         skip=0,
-    ) -> list[CoreModel]:
+        raw_result=False,
+    ) -> list[Any]:
         self.init_status()
         if self.virtual and not self.data_model:
             msg = _(
@@ -708,9 +717,14 @@ class OzonModelBase(OzonMBase):
                 }
             },
         ]
-        return await self.aggregate(
-            pipeline, sort=sort, limit=limit, skip=skip
-        )
+        if raw_result:
+            return await self.aggregate_raw(
+                pipeline, sort=sort, limit=limit, skip=skip
+            )
+        else:
+            return await self.aggregate(
+                pipeline, sort=sort, limit=limit, skip=skip
+            )
 
     async def set_to_delete(self, record: CoreModel) -> CoreModel:
         self.init_status()

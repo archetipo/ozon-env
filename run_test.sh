@@ -1,6 +1,7 @@
 #!/bin/bash
 echo "update system"
 poetry update
+echo "make compose"
 docker-compose up -d
 echo "check code"
 poetry run black ozonenv/**/*.py

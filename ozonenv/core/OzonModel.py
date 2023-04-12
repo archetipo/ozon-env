@@ -4,6 +4,7 @@ from pydantic.main import ModelMetaclass
 from ozonenv.core.db.BsonTypes import codec_options, JsonEncoder
 from ozonenv.core.ModelMaker import ModelMaker
 from ozonenv.core.utils import is_json
+from typing import Any
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
@@ -548,6 +549,7 @@ class OzonModelBase(OzonMBase):
             limit=limit,
             skip=skip,
             pipeline_items=pipeline_items,
+            fields={},
         )
         res = []
         if datas:
@@ -562,7 +564,13 @@ class OzonModelBase(OzonMBase):
         return res
 
     async def find_raw(
-        self, domain: dict, sort: str = "", limit=0, skip=0, pipeline_items=[]
+        self,
+        domain: dict,
+        sort: str = "",
+        limit=0,
+        skip=0,
+        pipeline_items=[],
+        fields={},
     ) -> list[dict]:
         self.init_status()
         if self.virtual and not self.data_model:
@@ -575,18 +583,34 @@ class OzonModelBase(OzonMBase):
         coll = self.db.engine.get_collection(
             self.data_model, codec_options=codec_options
         )
-        res = []
-        pipeline = [{"$match": domain}]
-        for item in pipeline_items:
-            pipeline.append(item)
-        if _sort:
-            pipeline.append({"$sort": _sort})
-        if limit > 0:
-            pipeline.append({"$skip": skip})
-            pipeline.append({"$limit": limit})
-        datas = coll.aggregate(pipeline)
-        if datas:
-            return await datas.to_list(length=None)
+        if fields and not pipeline_items:
+            res = []
+            if limit > 0:
+                datas = (
+                    coll.find(domain, projection=fields)
+                    .sort(sort)
+                    .skip(skip)
+                    .limit(limit)
+                )
+            elif sort:
+                datas = coll.find(domain, projection=fields).sort(sort)
+            else:
+                datas = coll.find(domain, projection=fields)
+            if datas:
+                return await datas.to_list(length=None)
+        else:
+            res = []
+            pipeline = [{"$match": domain}]
+            for item in pipeline_items:
+                pipeline.append(item)
+            if _sort:
+                pipeline.append({"$sort": _sort})
+            if limit > 0:
+                pipeline.append({"$skip": skip})
+                pipeline.append({"$limit": limit})
+            datas = coll.aggregate(pipeline)
+            if datas:
+                return await datas.to_list(length=None)
 
         return res
 
@@ -614,10 +638,26 @@ class OzonModelBase(OzonMBase):
             res.append(agg_mm.instance)
         return res
 
+    async def distinct(self, field_name: str, query: dict) -> list[Any]:
+        self.init_status()
+        if self.virtual and not self.data_model:
+            msg = _(
+                "Data Model is required for virtual model to get data from db"
+            )
+            self.error_status(msg, query)
+            return []
+        coll = self.db.engine.get_collection(
+            self.data_model, codec_options=codec_options
+        )
+        datas = await coll.distinct(field_name, query)
+        if datas:
+            res = datas
+        return res
+
     async def search_all_distinct(
         self,
         distinct="",
-        query={},
+        query: dict = {},
         compute_label="",
         sort: str = "",
         limit=0,

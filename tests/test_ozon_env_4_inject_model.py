@@ -42,6 +42,29 @@ async def test_user_static_model_add_data():
     await user_model.insert(user)
     users = await user_model.find({'uid': 'admin'})
     assert len(users) == 1
+    db_user = users[0]
+    assert db_user.uid == "admin"
+    assert db_user.full_name == "Test Test"
+    assert db_user.rec_name == "admin"
+    await env.close_env()
+
+
+@pytestmark
+async def test_user_find_fields():
+    data = await get_user_data()
+    env = OzonEnv()
+    await env.init_env(local_model={'user': User})
+    await env.orm.init_session("BA6BA930")
+    user_model = env.get('user')
+    users = await user_model.find_raw(
+        {'uid': 'admin'},
+        fields={"rec_name": True, "full_name": True, "_id": False})
+    assert len(users) == 1
+    db_user = users[0]
+    assert "uid" not in db_user
+    assert "id" not in db_user
+    assert "full_name" in db_user
+    assert "rec_name" in db_user
     await env.close_env()
 
 
@@ -181,6 +204,20 @@ async def test_aggregation_with_product2():
         pipeline_items, sort="label:asc",
     )
     assert products[0].get(tot_field) == 904.5
+
+
+async def test_products_distinct_name():
+    env = OzonEnv()
+    await env.init_env()
+    await env.orm.add_static_model('user', User)
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    product_model = env.get('prodotti')
+    products = await product_model.distinct(
+        "rec_name", product_model.get_domain()
+    )
+    assert len(products) == 10
+    assert products[3] == "prod3"
 
 
 async def test_set_to_delete_product():

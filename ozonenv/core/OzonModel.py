@@ -658,9 +658,8 @@ class OzonModelBase(OzonMBase):
             self.data_model, codec_options=codec_options
         )
         datas = await coll.distinct(field_name, query)
-        if datas:
-            res = datas
-        return res
+        return datas
+
 
     async def search_all_distinct(
         self,

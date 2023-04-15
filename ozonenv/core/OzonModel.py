@@ -30,14 +30,14 @@ logger = logging.getLogger(__name__)
 
 class OzonMBase:
     def __init__(
-            self,
-            model_name,
-            setting_app={},
-            data_model="",
-            session_model=False,
-            virtual=False,
-            static: BasicModel = None,
-            schema={},
+        self,
+        model_name,
+        setting_app={},
+        data_model="",
+        session_model=False,
+        virtual=False,
+        static: BasicModel = None,
+        schema={},
     ):
         """
         :param model_name: the name of model must be unique
@@ -199,7 +199,7 @@ class OzonMBase:
                         res_dict[k].append(i)
             else:
                 if "data_value" not in res_dict or not isinstance(
-                        res_dict, dict
+                    res_dict, dict
                 ):
                     res_dict["data_value"] = {}
                 if k in self.tranform_data_value:
@@ -351,7 +351,7 @@ class OzonModelBase(OzonMBase):
         self.load_data(data)
         if not self.name_allowed.match(self.modelr.rec_name):
             msg = (
-                    _("Not allowed chars in field name: %s") % self.modelr.rec_name
+                _("Not allowed chars in field name: %s") % self.modelr.rec_name
             )
             self.error_status(msg, data=data)
             return None
@@ -369,7 +369,7 @@ class OzonModelBase(OzonMBase):
             return None
         try:
             if not record.rec_name or not self.name_allowed.match(
-                    record.rec_name
+                record.rec_name
             ):
                 msg = _("Not allowed chars in field name: %s") % record.get(
                     "rec_name"
@@ -424,8 +424,8 @@ class OzonModelBase(OzonMBase):
         record_to_copy = await self.load(domain)
         self.modelr.renew_id()
         if (
-                hasattr(record_to_copy, "rec_name")
-                and self.name not in record_to_copy.rec_name
+            hasattr(record_to_copy, "rec_name")
+            and self.name not in record_to_copy.rec_name
         ):
             self.modelr.rec_name = f"{self.modelr.rec_name}_copy"
         else:
@@ -541,8 +541,7 @@ class OzonModelBase(OzonMBase):
         return data
 
     async def find(
-            self, domain: dict, sort: str = "", limit=0, skip=0,
-            pipeline_items=[]
+        self, domain: dict, sort: str = "", limit=0, skip=0, pipeline_items=[]
     ) -> list[CoreModel]:
         datas = await self.find_raw(
             domain,
@@ -565,13 +564,13 @@ class OzonModelBase(OzonMBase):
         return res
 
     async def find_raw(
-            self,
-            domain: dict,
-            sort: str = "",
-            limit=0,
-            skip=0,
-            pipeline_items=[],
-            fields={},
+        self,
+        domain: dict,
+        sort: str = "",
+        limit=0,
+        skip=0,
+        pipeline_items=[],
+        fields={},
     ) -> list[dict]:
         self.init_status()
         if self.virtual and not self.data_model:
@@ -616,7 +615,7 @@ class OzonModelBase(OzonMBase):
         return res
 
     async def aggregate_raw(
-            self, pipeline: list, sort: str = "", limit=0, skip=0
+        self, pipeline: list, sort: str = "", limit=0, skip=0
     ) -> list[Any]:
         if sort:
             _sort = self.eval_sort_str(sort)
@@ -631,7 +630,7 @@ class OzonModelBase(OzonMBase):
         return datas
 
     async def aggregate(
-            self, pipeline: list, sort: str = "", limit=0, skip=0
+        self, pipeline: list, sort: str = "", limit=0, skip=0
     ) -> list[CoreModel]:
         datas = await self.aggregate_raw(
             pipeline, sort=sort, limit=limit, skip=skip
@@ -662,14 +661,14 @@ class OzonModelBase(OzonMBase):
         return datas
 
     async def search_all_distinct(
-            self,
-            distinct="",
-            query: dict = {},
-            compute_label="",
-            sort: str = "",
-            limit=0,
-            skip=0,
-            raw_result=False,
+        self,
+        distinct="",
+        query: dict = {},
+        compute_label="",
+        sort: str = "",
+        limit=0,
+        skip=0,
+        raw_result=False,
     ) -> list[Any]:
         self.init_status()
         if self.virtual and not self.data_model:

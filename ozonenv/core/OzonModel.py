@@ -70,7 +70,7 @@ class OzonMBase:
         self.modelr: CoreModel = None
         self.mm: ModelMaker = None
         self.model: BasicModel
-        self.name_allowed = re.compile(r"^[A-Za-z0-9._~()'!*:@,;+?-]*$")
+        self.name_allowed = re.compile(r"^[A-Za-z0-9._~():+-]*$")
         self.sort_dir = {"asc": 1, "desc": -1}
         self.default_sort_str = "list_order:desc,"
         self.default_domain = {"active": True, "deleted": 0}

@@ -410,6 +410,7 @@ class OzonOrm:
         res = await self.runcmd(
             f"datamodel-codegen --input /tmp/{mod.name}.json"
             f" --output {self.models_path}/{mod.name}.py "
+            f" --output-model-type pydantic_v2.BaseModel "
             f"--base-class ozonenv.core.BaseModels.BasicModel"
         )
         if not res:

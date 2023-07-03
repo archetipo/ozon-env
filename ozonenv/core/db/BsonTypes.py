@@ -5,7 +5,7 @@
 import decimal
 import re
 import datetime
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Any, Dict, Pattern, cast
 
 import bson
@@ -13,9 +13,9 @@ import bson.binary
 import bson.decimal128
 import bson.int64
 import bson.regex
-from pydantic.datetime_parse import parse_datetime
+# from pydantic.datetime_parse import parse_datetime
 from pydantic.main import BaseModel
-from pydantic.validators import (
+from pydantic.field_validator import (
     bytes_validator,
     decimal_validator,
     int_validator,
@@ -27,6 +27,45 @@ from bson.codec_options import CodecOptions
 from bson.codec_options import TypeCodec
 from decimal import *
 import json
+
+
+def parse_datetime(value: Union[datetime, StrBytesIntFloat]) -> datetime:
+    """
+    Parse a datetime/int/float/string and return a datetime.datetime.
+
+    This function supports time zone offsets. When the input contains one,
+    the output uses a timezone with a fixed offset from UTC.
+
+    Raise ValueError if the input is well formatted but not a valid datetime.
+    Raise ValueError if the input isn't well formatted.
+    """
+    if isinstance(value, datetime):
+        return value
+
+    number = get_numeric(value, 'datetime')
+    if number is not None:
+        return from_unix_seconds(number)
+
+    if isinstance(value, bytes):
+        value = value.decode()
+
+    match = datetime_re.match(value)  # type: ignore
+    if match is None:
+        raise errors.DateTimeError()
+
+    kw = match.groupdict()
+    if kw['microsecond']:
+        kw['microsecond'] = kw['microsecond'].ljust(6, '0')
+
+    tzinfo = _parse_timezone(kw.pop('tzinfo'), errors.DateTimeError)
+    kw_: Dict[str, Union[None, int, timezone]] = {k: int(v) for k, v in
+                                                  kw.items() if v is not None}
+    kw_['tzinfo'] = tzinfo
+
+    try:
+        return datetime(**kw_)  # type: ignore
+    except ValueError:
+        raise errors.DateTimeError()
 
 
 class PyObjectId(BsonObjectId):

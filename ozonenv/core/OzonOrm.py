@@ -11,7 +11,6 @@ from ozonenv.core.db.mongodb_utils import (
 import time as time_
 from ozonenv.core.OzonModel import OzonModelBase, BasicReturn
 from ozonenv.core.OzonClient import OzonClient
-from ozonenv.core.db.BsonTypes import codec_options
 from ozonenv.core.BaseModels import (
     DbViewModel,
     Component,
@@ -136,9 +135,7 @@ class OzonEnvBase:
         return self.models.get(model_name)
 
     def get_collection(self, collection) -> Collection[_DocumentType]:
-        return self.db.engine.get_collection(
-            collection, codec_options=codec_options
-        )
+        return self.db.engine.get_collection(collection)
 
     async def add_schema(self, schema: dict) -> OzonModelBase:
         component_model = self.models.get("component")

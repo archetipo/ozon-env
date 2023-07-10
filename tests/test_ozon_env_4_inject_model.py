@@ -2,7 +2,7 @@ import pytest
 from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
 from ozonenv.core.BaseModels import CoreModel
-from pydantic.main import ModelMetaclass
+from pydantic._internal._model_construction import ModelMetaclass
 from ozonenv.OzonEnv import OzonEnv
 from datetime import *
 from dateutil.parser import *
@@ -86,7 +86,7 @@ async def test_add_component_resource_1_product():
                 "rec_name": f"prod{i}",
                 "label": f"Product{i}",
                 "quantity": i,
-                "price": "20.1"
+                "price": 20.1
             }
         )
         await product_model.insert(prod)

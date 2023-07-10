@@ -1,5 +1,6 @@
 # Copyright INRIM (https://www.inrim.eu)
 # See LICENSE file for full licensing details.
+
 from typing import List
 from pydantic import create_model
 from datetime import datetime
@@ -827,39 +828,60 @@ class BaseModelMaker:
     def parse_make_field(self, v, k=""):
         return (self.get_field_type(v), self.get_field_value(v))
 
+    def check_all_list(self, list_data: list, type_to_check: type) -> bool:
+        return all([type(x) == type_to_check for x in list_data])
+
     def _make_from_dict(self, dict_data, from_dict=False):
-        for k, v in dict_data.copy().items():
+        new_dict = copy.deepcopy(dict_data)
+        for k, v in new_dict.items():
             if isinstance(v, dict) and k != "data_value":  # For DICT
-                dict_data[k] = self._make_from_dict(v)
+                dict_data[k] = (dict, self._make_from_dict(v))
             elif isinstance(v, dict) and k == "data_value":
                 default = dict_data[k].copy()
                 dict_data[k] = (dict, default.copy())
             elif isinstance(v, list):  # For LIST
                 default = dict_data[k]
-                dict_data[k] = []
+                list_data = []
                 for i in v:
                     if isinstance(i, dict):
-                        dict_data[k].append(self._make_from_dict(i))
-                if not dict_data[k]:
-                    dict_data[k] = (List[self.get_field_type(v)], default)
+                        res = self._make_from_dict(i).copy()
+                        list_data.append(res)
+                if list_data:
+                    dict_data[k] = (List[dict], list_data)
+                if not list_data:
+                    if self.check_all_list(list_data, str):
+                        dict_data[k] = (List[str], default)
+                    if self.check_all_list(list_data, int):
+                        dict_data[k] = (List[int], default)
             else:  # Update Key-Value
                 if k != "_id":
                     dict_data[k] = self.parse_make_field(v)
-        return dict_data
+        return dict_data.copy()
 
     def _make_models(self, dict_data):
-        for k, v in dict_data.copy().items():
-            if isinstance(v, dict) and k != "data_value":  # For DICT
-                val = self._make_models(v).copy()
+        new_dict = copy.deepcopy(dict_data)
+        for k, v in new_dict.items():
+            if isinstance(v[1], dict) and k != "data_value":  # For DICT
+                val = self._make_models(v[1])
                 model = create_model(k, __base__=MainModel, **val)
-                dict_data[k] = model(**{})
-            elif isinstance(v, list):  # For LIST
-                for idx, i in enumerate(v):
-                    if isinstance(i, dict) and k != "data_value":
-                        row = self._make_models(i).copy()
-                        model = create_model(k, __base__=MainModel, **row)
-                        dict_data[k][idx] = model(**{})
-        return dict_data
+                dict_data[k] = (dict, model(**{}))
+            elif isinstance(v[1], list):  # For LIST
+                if self.check_all_list(v[1], dict):
+                    list_res = []
+                    for idx, i in enumerate(v[1]):
+                        if isinstance(i, dict) and k != "data_value":
+                            row = self._make_models(i)
+                            model = create_model(k, __base__=MainModel, **row)
+                            list_res.append(model(**{}))
+
+                    if list_res:
+                        dict_data[k] = (v[0], list_res)
+
+                elif self.check_all_list(v[1], int) or self.check_all_list(
+                    v[1], str
+                ):
+                    dict_data[k] = (v[0], v[1])
+        return copy.deepcopy(dict_data)
 
     def from_data_dict(self, data):
         self.virtual = True

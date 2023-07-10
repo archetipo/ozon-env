@@ -37,7 +37,8 @@
       "label": "Price",
       "tableView": true,
       "key": "price",
-      "type": "textfield",
+      "type": "number",
+      "requireDecimal": true,
       "input": true
     },
     {

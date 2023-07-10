@@ -255,7 +255,7 @@
                 "label": "idDg",
                 "tableView": false,
                 "key": "idDg",
-                "type": "textfield",
+                "type": "number",
                 "input": true
               }
             ],
@@ -1006,7 +1006,7 @@
                     "label": "Numero",
                     "tableView": true,
                     "key": "numeroRegistrazione",
-                    "type": "textfield",
+                    "type": "number",
                     "input": true
                   }
                 ],
@@ -1023,7 +1023,7 @@
                     "label": "Anno",
                     "tableView": true,
                     "key": "annoRif",
-                    "type": "textfield",
+                    "type": "number",
                     "input": true
                   }
                 ],

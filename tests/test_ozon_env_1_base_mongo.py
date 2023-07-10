@@ -1,7 +1,7 @@
 import pytest
 from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
-from pydantic.main import ModelMetaclass
+from pydantic._internal._model_construction import ModelMetaclass
 from ozonenv.OzonEnv import OzonEnv
 from dateutil.parser import *
 from ozonenv.core.db.mongodb_utils import (

@@ -2,7 +2,7 @@ import pytest
 from test_common import *
 from ozonenv.core.ModelMaker import ModelMaker, BasicModel
 from ozonenv.core.BaseModels import CoreModel
-from pydantic.main import ModelMetaclass
+from pydantic._internal._model_construction import ModelMetaclass
 from ozonenv.OzonEnv import OzonWorkerEnv, OzonEnv, BasicReturn
 from datetime import *
 from dateutil.parser import *

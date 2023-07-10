@@ -2,13 +2,9 @@
 # See LICENSE file for full licensing details.
 from __future__ import annotations
 from typing import List, Optional, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from typing import TypeVar
-from ozonenv.core.db.BsonTypes import (
-    BSON_TYPES_ENCODERS,
-    PyObjectId,
-    bson,
-)
+from ozonenv.core.db.BsonTypes import BSON_TYPES_ENCODERS, PyObjectId, bson
 import logging
 import copy
 from functools import reduce
@@ -164,17 +160,21 @@ class DbViewModel(BaseModel):
 class MainModel(BaseModel):
     @classmethod
     def str_name(cls, *args, **kwargs):
-        return cls.schema(*args, **kwargs).get("title", "").lower()
+        return cls.model_json_schema(*args, **kwargs).get("title", "").lower()
 
     def get_dict(self, exclude=[]):
         basic = ["status", "message", "res_data"]
         # d = json.loads(self.json(exclude=set().union(basic, exclude)))
-        d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        d = self.model_copy(deep=True).model_dump(
+            exclude=set().union(basic, exclude)
+        )
         return d
 
     def get_dict_json(self, exclude=[]):
         basic = ["status", "message", "res_data"]
-        return json.loads(self.json(exclude=set().union(basic, exclude)))
+        return json.loads(
+            self.model_dump_json(exclude=set().union(basic, exclude))
+        )
 
     def get_dict_copy(self):
         return copy.deepcopy(self.get_dict())
@@ -268,16 +268,22 @@ class CoreModel(MainModel):
     message: str = ""
     res_data: dict = Field(default={})
 
+    @field_serializer('id')
+    def serialize_dt(self, id: PyObjectId, _info):
+        return str(id)
+
     @classmethod
     def str_name(cls, *args, **kwargs):
-        return cls.schema(*args, **kwargs).get("title", "").lower()
+        return cls.model_json_schema(*args, **kwargs).get("title", "").lower()
 
     def renew_id(self):
         self.id = PyObjectId()
 
     def get_dict(self, exclude=[]):
         basic = ["status", "message", "res_data"]
-        d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        d = self.model_copy(deep=True).model_dump(
+            exclude=set().union(basic, exclude)
+        )
         return d
 
     def get_dict_copy(self, exclude=[]):
@@ -618,7 +624,7 @@ class DictRecord(BaseModel):
         self.data["data_value"][key] = src.data["data_value"][src_key]
 
     def get_dict(self):
-        return json.loads(self.json())
+        return json.loads(self.model_dump_json())
 
     def rec_name_domain(self):
         return {"rec_name": self.rec_name}.copy()

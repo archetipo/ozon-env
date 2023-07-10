@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from dateutil.parser import parse
-from pydantic.main import ModelMetaclass
-from ozonenv.core.db.BsonTypes import codec_options, JsonEncoder
+from pydantic._internal._model_construction import ModelMetaclass
+from ozonenv.core.db.BsonTypes import JsonEncoder
 from ozonenv.core.ModelMaker import ModelMaker
 from ozonenv.core.utils import is_json
 from typing import Any
@@ -319,16 +319,12 @@ class OzonModelBase(OzonMBase):
 
     async def set_unique(self, field_name):
         self.init_status()
-        component_coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        component_coll = self.db.engine.get_collection(self.data_model)
         await component_coll.create_index([(field_name, 1)], unique=True)
 
     async def count_by_filter(self, domain: dict) -> int:
         self.init_status()
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         val = await coll.count_documents(domain)
         if not val:
             val = 0
@@ -377,9 +373,7 @@ class OzonModelBase(OzonMBase):
                 self.error_status(msg, data=record.get_dict_json())
                 return None
 
-            coll = self.db.engine.get_collection(
-                self.data_model, codec_options=codec_options
-            )
+            coll = self.db.engine.get_collection(self.data_model)
 
             record.create_datetime = datetime.now().isoformat()
             record = self.set_user_data(record, self.user_session)
@@ -449,9 +443,7 @@ class OzonModelBase(OzonMBase):
             )
             return None
         try:
-            coll = self.db.engine.get_collection(
-                self.data_model, codec_options=codec_options
-            )
+            coll = self.db.engine.get_collection(self.data_model)
             original = await self.load(record.rec_name_domain())
             if not self.virtual:
                 to_save = original.get_dict_diff(
@@ -494,9 +486,7 @@ class OzonModelBase(OzonMBase):
                 _("Cannot delete a virtual object"), record.get_dict_copy()
             )
             return False
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         await coll.delete_one(record.rec_name_domain())
         return True
 
@@ -507,9 +497,7 @@ class OzonModelBase(OzonMBase):
             )
             self.error_status(msg, domain)
             return 0
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         num = await coll.delete_many(domain)
         return num
 
@@ -528,9 +516,7 @@ class OzonModelBase(OzonMBase):
             )
             self.error_status(msg, data=domain)
             return None
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         data = await coll.find_one(domain)
 
         if not data:
@@ -580,9 +566,7 @@ class OzonModelBase(OzonMBase):
             self.error_status(msg, domain)
             return []
         _sort = self.eval_sort_str(sort)
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         if fields and not pipeline_items:
             res = []
             if limit > 0:
@@ -623,9 +607,7 @@ class OzonModelBase(OzonMBase):
         if limit > 0:
             pipeline.append({"$skip": skip})
             pipeline.append({"$limit": limit})
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         datas = await coll.aggregate(pipeline).to_list(length=None)
         return datas
 
@@ -654,9 +636,7 @@ class OzonModelBase(OzonMBase):
             )
             self.error_status(msg, query)
             return []
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         datas = await coll.distinct(field_name, query)
         return datas
 

@@ -228,10 +228,21 @@ class MainModel(BaseModel):
             if hasattr(self, k):
                 setattr(self, k, v)
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = BSON_TYPES_ENCODERS
+    def selection_value(self, key, value, read_value):
+        setattr(self, key, value)
+        self.data_value[key] = read_value
+
+    def selection_value_from_record(self, key, src, src_key=""):
+        if not src_key:
+            src_key = key
+        setattr(self, key, getattr(src, src_key))
+        self.data_value[key] = src.data_value[src_key]
+
+    model_config = {
+        "allow_population_by_field_name": True,
+        "arbitrary_types_allowed": True,
+        "json_encoders": BSON_TYPES_ENCODERS,
+    }
 
 
 class CoreModel(MainModel):
@@ -314,16 +325,6 @@ class CoreModel(MainModel):
 
     def is_to_delete(self):
         return self.deleted > 0
-
-    def selection_value(self, key, value, read_value):
-        setattr(self, key, value)
-        self.data_value[key] = read_value
-
-    def selection_value_from_record(self, key, src, src_key=""):
-        if not src_key:
-            src_key = key
-        setattr(self, key, getattr(src, src_key))
-        self.data_value[key] = src.data_value[src_key]
 
     def set_active(self):
         self.deleted = 0

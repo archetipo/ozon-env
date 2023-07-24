@@ -307,8 +307,13 @@ class CoreModel(MainModel):
         return {"_id": bson.ObjectId(self.id)}.copy()
 
     def get_dict_diff(
-        self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+        self,
+        to_compare_dict: dict,
+        ignore_fields: list = None,
+        remove_ignore_fileds: bool = True,
     ):
+        if ignore_fields is None:
+            ignore_fields = []
         if ignore_fields and remove_ignore_fileds:
             original_dict = self.get_dict(exclude=ignore_fields)
         else:

@@ -18,6 +18,7 @@ from ozonenv.core.BaseModels import (
     Settings,
     AttachmentTrash,
     CoreModel,
+    Dict,
 )
 
 from starlette.concurrency import run_in_threadpool
@@ -43,7 +44,14 @@ base_model_path = dirname(__file__)
 
 
 class OzonEnvBase:
-    def __init__(self, cfg={}, upload_folder="", cls_model=OzonModelBase):
+    def __init__(
+        self,
+        cfg: dict = None,
+        upload_folder: str = "",
+        cls_model=OzonModelBase,
+    ):
+        if cfg is None:
+            cfg = {}
         self.orm: OzonOrm
         self.db: Mongo
         self.ozon_client: OzonClient
@@ -61,7 +69,7 @@ class OzonEnvBase:
             self.config_system = cfg.copy()
         self.db_settings = DbSettings(**self.config_system)
         self.model = ""
-        self.models = {}
+        self.models: Dict[str, cls_model] = {}
         self.params = {}
         self.session_is_api = False
         self.user_session: CoreModel
@@ -69,9 +77,11 @@ class OzonEnvBase:
         self.use_cache = False
         self.cache_index = "ozon_env"
         self.redis_url = ""
-        self.orm_from_cache = False
-        self.upload_folder = upload_folder
-        self.models_folder = self.config_system.get("models_folder", "/models")
+        self.orm_from_cache: bool = False
+        self.upload_folder: str = upload_folder
+        self.models_folder: str = self.config_system.get(
+            "models_folder", "/models"
+        )
         self.is_db_local = True
         self.app_code = self.config_system.get("app_code")
         self.cls_model = cls_model

@@ -45,10 +45,10 @@ base_model_path = dirname(__file__)
 
 class OzonEnvBase:
     def __init__(
-        self,
-        cfg: dict = None,
-        upload_folder: str = "",
-        cls_model=OzonModelBase,
+            self,
+            cfg: dict = None,
+            upload_folder: str = "",
+            cls_model=OzonModelBase,
     ):
         if cfg is None:
             cfg = {}
@@ -158,7 +158,7 @@ class OzonEnvBase:
             return self.get(component.data_model)
 
     async def add_model(
-        self, model_name, virtual=False, data_model=""
+            self, model_name, virtual=False, data_model=""
     ) -> OzonModelBase:
         if model_name not in self.models:
             await self.orm.add_model(
@@ -167,7 +167,7 @@ class OzonEnvBase:
         return self.get(model_name)
 
     async def add_static_model(
-        self, model_name: str, model_class: CoreModel
+            self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         return await self.orm.add_static_model(model_name, model_class)
 
@@ -201,13 +201,13 @@ class OzonEnvBase:
             await stop_cache()
 
     async def make_app_session(
-        self,
-        params: dict,
-        use_cache=True,
-        cache_idx="ozon_env",
-        redis_url="redis://redis_cache",
-        db=None,
-        local_model={},
+            self,
+            params: dict,
+            use_cache=True,
+            cache_idx="ozon_env",
+            redis_url="redis://redis_cache",
+            db=None,
+            local_model={},
     ) -> BasicReturn:
         try:
             self.params = copy.deepcopy(params)
@@ -242,7 +242,7 @@ class OzonOrm:
         self.lang = env.lang
         self.db: Mongo = env.db
         self.config_system = env.config_system.copy()
-        self.user_session: CoreModel = None
+        self.user_session: Session
         self.list_auto_models = []
         self.orm_models = [
             "component",
@@ -264,7 +264,7 @@ class OzonOrm:
         self.cls_model = cls_model
 
     async def add_static_model(
-        self, model_name: str, model_class: CoreModel
+            self, model_name: str, model_class: CoreModel
     ) -> OzonModelBase:
         _model_name = model_name.replace(" ", "").strip().lower()
         self.orm_models.append(_model_name)
@@ -352,8 +352,8 @@ class OzonOrm:
 
     async def create_view(self, dbviewcfg: DbViewModel):
         if (
-            not dbviewcfg.force_recreate
-            and dbviewcfg.name in self.db.engine.collection
+                not dbviewcfg.force_recreate
+                and dbviewcfg.name in self.db.engine.collection
         ):
             return False
         collections = await self.get_collections_names()
@@ -501,12 +501,12 @@ class OzonOrm:
         return {mod.mm.conditional}
 """
         async with aiofiles.open(
-            f"{self.models_path}/{mod.name}.py", "a+"
+                f"{self.models_path}/{mod.name}.py", "a+"
         ) as mod_file:
             await mod_file.write(tmp)
 
     async def init_model_and_write_code(
-        self, model_name, data_model, virtual, schema, component
+            self, model_name, data_model, virtual, schema, component
     ):
         session_model = model_name == "session"
         mod = self.cls_model(
@@ -530,9 +530,9 @@ class OzonOrm:
             if component:
                 schema = component.get_dict_copy()
         if (
-            schema
-            and model_name not in list(self.orm_static_models_map.keys())
-            and not virtual
+                schema
+                and model_name not in list(self.orm_static_models_map.keys())
+                and not virtual
         ):
             if not exists(f"{self.models_path}/{model_name}.py"):
                 await self.init_model_and_write_code(
@@ -545,16 +545,16 @@ class OzonOrm:
         self.db_models = await self.get_collections_names()
 
     async def make_model(
-        self, model_name, schema={}, virtual=False, data_model=""
+            self, model_name, schema={}, virtual=False, data_model=""
     ):
         if model_name in list(self.orm_static_models_map.keys()) or virtual:
             session_model = model_name == "session"
             if not data_model and schema:
                 data_model = schema.get("data_model", "")
             if (
-                not data_model
-                and not virtual
-                and self.orm_static_models_map[model_name].get_data_model()
+                    not data_model
+                    and not virtual
+                    and self.orm_static_models_map[model_name].get_data_model()
             ):
                 data_model = self.orm_static_models_map[
                     model_name
@@ -595,14 +595,14 @@ class OzonOrm:
 
 class OzonModel(OzonModelBase):
     def __init__(
-        self,
-        model_name,
-        orm: OzonOrm,
-        data_model="",
-        session_model=False,
-        virtual=False,
-        static: CoreModel = None,
-        schema={},
+            self,
+            model_name,
+            orm: OzonOrm,
+            data_model="",
+            session_model=False,
+            virtual=False,
+            static: CoreModel = None,
+            schema={},
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env

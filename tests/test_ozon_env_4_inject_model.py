@@ -1,11 +1,7 @@
-import pytest
-from test_common import *
-from ozonenv.core.ModelMaker import ModelMaker, BasicModel
-from ozonenv.core.BaseModels import CoreModel
-from pydantic._internal._model_construction import ModelMetaclass
 from ozonenv.OzonEnv import OzonEnv
-from datetime import *
-from dateutil.parser import *
+from ozonenv.core.BaseModels import CoreModel
+from ozonenv.core.exceptions import SessionException
+from test_common import *
 
 pytestmark = pytest.mark.asyncio
 
@@ -16,7 +12,7 @@ async def test_add_user_static_model():
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
-    user_model = await env.add_static_model('u SEr', User)
+    user_model = await env.add_static_model('u SEr', User, True)
     assert user_model.name == "user"
     ret_model = env.get('user')
     assert ret_model.name == "user"
@@ -28,10 +24,33 @@ async def test_add_user_static_model():
 
 
 @pytestmark
+async def test_add_user_static_model_check_public():
+    env = OzonEnv()
+    await env.init_env()
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    user_model = await env.add_static_model('u SEr', User, True)
+    users = await user_model.find({'uid': 'admin'})
+    assert len(users) == 0
+    env.params = {"current_session_token": "PUBLIC"}
+    await env.session_app()
+    assert env.user_session.uid == "public"
+    assert env.user_session.is_public is True
+    assert env.orm.user_session.is_public is True
+    with pytest.raises(SessionException) as excinfo:
+        users = await user_model.find({})
+    assert 'Permission Denied' in str(excinfo)
+    await env.close_env()
+
+
+@pytestmark
 async def test_user_static_model_add_data():
     data = await get_user_data()
     env = OzonEnv()
-    await env.init_env(local_model={'user': User})
+    await env.init_env(
+        local_model={'user': User},
+        local_model_private=["user"]
+    )
     await env.orm.init_session("BA6BA930")
     user_model = env.get('user')
     assert user_model.name == "user"

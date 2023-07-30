@@ -516,6 +516,7 @@ class Session(CoreModel):
     function: str = ""
     sector: Optional[str] = ""
     sector_id: Optional[int] = 0
+    expire_datetime: datetime
     user: dict = {}
     app: dict = {}
     apps: dict = {}

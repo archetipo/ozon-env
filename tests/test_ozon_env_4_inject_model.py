@@ -74,6 +74,7 @@ async def test_user_find_fields():
     env = OzonEnv()
     await env.init_env(local_model={'user': User})
     await env.orm.init_session("BA6BA930")
+    env.orm.add_private_model("user")
     user_model = env.get('user')
     users = await user_model.find_raw(
         {'uid': 'admin'},
@@ -105,7 +106,7 @@ async def test_add_component_resource_1_product():
                 "rec_name": f"prod{i}",
                 "label": f"Product{i}",
                 "quantity": i,
-                "price": 20.1
+                "price": "20.1"
             }
         )
         await product_model.insert(prod)
@@ -121,6 +122,7 @@ async def test_add_component_resource_1_product():
     product = await product_model.load({"rec_name": "prod2"})
     assert isinstance(product, CoreModel)
     assert product.label == "Product2"
+    assert product.price == 20.1
     # add list prduct and test find/ and distinct
     await env.close_env()
 

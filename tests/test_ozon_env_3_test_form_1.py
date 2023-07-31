@@ -168,7 +168,7 @@ async def test_test_form_1_public_init_data_err():
     test_form_1 = await test_form_1_model.new(data)
     assert test_form_1 is None
     assert test_form_1_model.message == "Session is Readonly"
-    session = env.get('session')
+    session = env.get('settings')
     with pytest.raises(SessionException) as excinfo:
         await session.find({})
     assert 'Permission Denied' in str(excinfo)

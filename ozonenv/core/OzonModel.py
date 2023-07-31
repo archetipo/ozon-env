@@ -309,7 +309,7 @@ class OzonModelBase(OzonMBase):
         record.owner_name = user.get("user.full_name", "")
         record.owner_mail = user.get("user.mail", "")
         record.owner_sector = user.get("sector", "")
-        record.owner_sector_id = user.get("sector_id", "")
+        record.owner_sector_id = user.get("sector_id", 0)
         record.owner_personal_type = user.get("user.tipo_personale", "")
         record.owner_job_title = user.get("user.qualifica", "")
         record.owner_function = user.get("function", "")

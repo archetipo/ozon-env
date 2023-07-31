@@ -670,6 +670,4 @@ class OzonModel(OzonModelBase):
 
     def chk_write_permission(self) -> bool:
         res = super().chk_write_permission()
-        if self.user_session and self.user_session.is_public:
-            return False
         return res

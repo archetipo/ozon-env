@@ -164,13 +164,9 @@ async def test_test_form_1_public_init_data_err():
     assert env.user_session.uid == "public"
     assert env.user_session.is_public is True
     assert env.orm.user_session.is_public is True
-    test_form_1_model = env.get('test_form_1')
-    test_form_1 = await test_form_1_model.new(data)
-    assert test_form_1 is None
-    assert test_form_1_model.message == "Session is Readonly"
-    session = env.get('settings')
+    settings = env.get('settings')
     with pytest.raises(SessionException) as excinfo:
-        await session.find({})
+        await settings.find({})
     assert 'Permission Denied' in str(excinfo)
     await env.close_env()
 
@@ -223,24 +219,7 @@ async def test_test_form_1_insert_ok():
     await env.close_env()
 
 
-@pytestmark
-async def test_test_form_1_public_check():
-    env = OzonEnv()
-    await env.init_env()
-    env.params = {"current_session_token": "PUBLIC"}
-    await env.session_app()
-    # model is in env.models
 
-    test_form_1_model = env.get('test_form_1')
-
-    test_form_1 = await test_form_1_model.load({"rec_name": "first_form"})
-    assert test_form_1.is_error() is False
-    assert test_form_1.get("rec_name") == "first_form"
-    test_form_1.lastName = "test"
-    test_form_1_new = await test_form_1_model.update(test_form_1)
-    assert test_form_1_new is None
-    assert test_form_1_model.message == "Session is Readonly"
-    await env.close_env()
 
 
 @pytestmark

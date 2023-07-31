@@ -408,7 +408,7 @@ class OzonModelBase(OzonMBase):
                 record.get_dict_copy(),
             )
             return None
-        except pydantic.error_wrappers.ValidationError as e:
+        except pydantic.ValidationError as e:
             logger.error(f" Validation {e}")
             self.error_status(
                 _("Validation Error  %s ") % str(e), record.get_dict_copy()
@@ -491,7 +491,7 @@ class OzonModelBase(OzonMBase):
                 record.get_dict_copy(),
             )
             return None
-        except pydantic.error_wrappers.ValidationError as e:
+        except pydantic.ValidationError as e:
             logger.error(f" Validation {e}")
             self.error_status(
                 _("Validation Error  %s ") % str(e),

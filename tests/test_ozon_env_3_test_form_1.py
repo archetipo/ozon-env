@@ -1,11 +1,11 @@
-import pytest
-from test_common import *
-from ozonenv.core.ModelMaker import ModelMaker, BasicModel
-from pydantic.main import ModelMetaclass
-from ozonenv.OzonEnv import OzonEnv
-from datetime import *
-from dateutil.parser import *
 import time as time_
+from datetime import *
+
+from dateutil.parser import *
+
+from ozonenv.OzonEnv import OzonEnv
+from ozonenv.core.exceptions import SessionException
+from test_common import *
 
 pytestmark = pytest.mark.asyncio
 
@@ -154,6 +154,28 @@ async def test_component_test_form_1_load():
 
 
 @pytestmark
+async def test_test_form_1_public_init_data_err():
+    data = await readfilejson('data', 'test_form_1_formio_data.json')
+    env = OzonEnv()
+    await env.init_env()
+    env.params = {"current_session_token": "PUBLIC"}
+    await env.session_app()
+    # model is in env.models
+    assert env.user_session.uid == "public"
+    assert env.user_session.is_public is True
+    assert env.orm.user_session.is_public is True
+    test_form_1_model = env.get('test_form_1')
+    test_form_1 = await test_form_1_model.new(data)
+    assert test_form_1 is None
+    assert test_form_1_model.message == "Session is Readonly"
+    session = env.get('session')
+    with pytest.raises(SessionException) as excinfo:
+        await session.find({})
+    assert 'Permission Denied' in str(excinfo)
+    await env.close_env()
+
+
+@pytestmark
 async def test_test_form_1_init_data():
     path = get_config_path()
     data = await readfilejson('data', 'test_form_1_formio_data.json')
@@ -163,7 +185,7 @@ async def test_test_form_1_init_data():
     await env.session_app()
     # model is in env.models
 
-    test_form_1_model = await env.add_model('test_form_1')
+    test_form_1_model = env.get('test_form_1')
     assert test_form_1_model.model.get_unique_fields() == ["rec_name",
                                                            "firstName"]
 
@@ -183,7 +205,7 @@ async def test_test_form_1_insert_ok():
     await env.session_app()
     # model exist in env models
     assert 'test_form_1' in list(env.models.keys())
-    test_form_1_model = await env.add_model('test_form_1')
+    test_form_1_model = env.get('test_form_1')
     test_form_1 = await test_form_1_model.new(data=data)
 
     assert test_form_1.is_error() is False
@@ -202,6 +224,26 @@ async def test_test_form_1_insert_ok():
 
 
 @pytestmark
+async def test_test_form_1_public_check():
+    env = OzonEnv()
+    await env.init_env()
+    env.params = {"current_session_token": "PUBLIC"}
+    await env.session_app()
+    # model is in env.models
+
+    test_form_1_model = env.get('test_form_1')
+
+    test_form_1 = await test_form_1_model.load({"rec_name": "first_form"})
+    assert test_form_1.is_error() is False
+    assert test_form_1.get("rec_name") == "first_form"
+    test_form_1.lastName = "test"
+    test_form_1_new = await test_form_1_model.update(test_form_1)
+    assert test_form_1_new is None
+    assert test_form_1_model.message == "Session is Readonly"
+    await env.close_env()
+
+
+@pytestmark
 async def test_test_form_1_insert_ko():
     data = await readfilejson('data', 'test_form_1_formio_data.json')
     env = OzonEnv()
@@ -210,7 +252,7 @@ async def test_test_form_1_insert_ko():
     await env.session_app()
     # model is in env.models
     assert 'test_form_1' in list(env.models.keys())
-    test_form_1_model = await env.add_model('test_form_1')
+    test_form_1_model = env.get('test_form_1')
     test_form_1 = await test_form_1_model.new(data=data)
     test_form_1_new = await test_form_1_model.insert(test_form_1)
     assert test_form_1_new is None

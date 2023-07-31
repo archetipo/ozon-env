@@ -1,10 +1,18 @@
+import copy
+import json
+import locale
+import logging
+import re
 from datetime import datetime, timedelta
-from dateutil.parser import parse
-from pydantic.main import ModelMetaclass
-from ozonenv.core.db.BsonTypes import codec_options, JsonEncoder
-from ozonenv.core.ModelMaker import ModelMaker
-from ozonenv.core.utils import is_json
 from typing import Any
+
+import bson
+import pydantic
+import pymongo
+from dateutil.parser import parse
+from pydantic._internal._model_construction import ModelMetaclass
+
+from exceptions import SessionException
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
@@ -15,15 +23,10 @@ from ozonenv.core.BaseModels import (
     default_list_metadata,
     default_list_metadata_fields_update,
 )
+from ozonenv.core.ModelMaker import ModelMaker
+from ozonenv.core.db.BsonTypes import JsonEncoder
 from ozonenv.core.i18n import _
-import re
-import copy
-import logging
-import pydantic
-import pymongo
-import locale
-import json
-import bson
+from ozonenv.core.utils import is_json
 
 logger = logging.getLogger(__name__)
 
@@ -243,10 +246,6 @@ class OzonModelBase(OzonMBase):
     def unique_fields(self):
         return self.model.unique_fields
 
-    @property
-    def user_session(self):
-        return self.orm.user_session
-
     def error_status(self, msg, data):
         self.status.fail = True
         self.status.msg = msg
@@ -256,6 +255,9 @@ class OzonModelBase(OzonMBase):
         self.status.fail = False
         self.status.msg = ""
         self.status.data = {}
+
+    def chk_write_permission(self) -> bool:
+        return True
 
     def is_error(self):
         return self.status.fail
@@ -319,16 +321,12 @@ class OzonModelBase(OzonMBase):
 
     async def set_unique(self, field_name):
         self.init_status()
-        component_coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        component_coll = self.db.engine.get_collection(self.data_model)
         await component_coll.create_index([(field_name, 1)], unique=True)
 
     async def count_by_filter(self, domain: dict) -> int:
         self.init_status()
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         val = await coll.count_documents(domain)
         if not val:
             val = 0
@@ -341,7 +339,12 @@ class OzonModelBase(OzonMBase):
         return await self.count_by_filter(domain)
 
     async def new(self, data={}, rec_name="", trnf_config={}) -> CoreModel:
-        self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data={})
+            return None
+        if not self.chk_write_permission():
+            raise SessionException(detail="Session is Readonly")
         if not data and rec_name or rec_name and self.virtual:
             if not self.is_session_model:
                 data["rec_name"] = rec_name
@@ -361,6 +364,10 @@ class OzonModelBase(OzonMBase):
 
     async def insert(self, record: CoreModel) -> CoreModel:
         self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data={})
+            return None
         if self.virtual and not self.data_model:
             self.error_status(
                 _("Cannot save on db a virtual object"),
@@ -377,9 +384,7 @@ class OzonModelBase(OzonMBase):
                 self.error_status(msg, data=record.get_dict_json())
                 return None
 
-            coll = self.db.engine.get_collection(
-                self.data_model, codec_options=codec_options
-            )
+            coll = self.db.engine.get_collection(self.data_model)
 
             record.create_datetime = datetime.now().isoformat()
             record = self.set_user_data(record, self.user_session)
@@ -412,6 +417,10 @@ class OzonModelBase(OzonMBase):
 
     async def copy(self, domain) -> CoreModel:
         self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data={})
+            return None
         if self.is_session_model or self.virtual:
             self.error_status(
                 _(
@@ -443,15 +452,17 @@ class OzonModelBase(OzonMBase):
 
     async def update(self, record: CoreModel, remove_mata=True) -> CoreModel:
         self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data=record.get_dict_json())
+            return None
         if self.virtual and not self.data_model:
             self.error_status(
                 _("Cannot update a virtual object"), record.get_dict_copy()
             )
             return None
         try:
-            coll = self.db.engine.get_collection(
-                self.data_model, codec_options=codec_options
-            )
+            coll = self.db.engine.get_collection(self.data_model)
             original = await self.load(record.rec_name_domain())
             if not self.virtual:
                 to_save = original.get_dict_diff(
@@ -489,27 +500,33 @@ class OzonModelBase(OzonMBase):
             return None
 
     async def remove(self, record: CoreModel) -> bool:
+        self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data=record.get_dict_json())
+            return None
         if self.virtual and not self.data_model:
             self.error_status(
                 _("Cannot delete a virtual object"), record.get_dict_copy()
             )
             return False
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         await coll.delete_one(record.rec_name_domain())
         return True
 
     async def remove_all(self, domain) -> int:
+        self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data={})
+            return None
         if self.virtual and not self.data_model:
             msg = _(
                 "Data Model is required for virtual model to get data from db"
             )
             self.error_status(msg, domain)
             return 0
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         num = await coll.delete_many(domain)
         return num
 
@@ -528,9 +545,7 @@ class OzonModelBase(OzonMBase):
             )
             self.error_status(msg, data=domain)
             return None
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         data = await coll.find_one(domain)
 
         if not data:
@@ -580,9 +595,7 @@ class OzonModelBase(OzonMBase):
             self.error_status(msg, domain)
             return []
         _sort = self.eval_sort_str(sort)
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         if fields and not pipeline_items:
             res = []
             if limit > 0:
@@ -623,9 +636,7 @@ class OzonModelBase(OzonMBase):
         if limit > 0:
             pipeline.append({"$skip": skip})
             pipeline.append({"$limit": limit})
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         datas = await coll.aggregate(pipeline).to_list(length=None)
         return datas
 
@@ -654,9 +665,7 @@ class OzonModelBase(OzonMBase):
             )
             self.error_status(msg, query)
             return []
-        coll = self.db.engine.get_collection(
-            self.data_model, codec_options=codec_options
-        )
+        coll = self.db.engine.get_collection(self.data_model)
         datas = await coll.distinct(field_name, query)
         return datas
 
@@ -726,6 +735,10 @@ class OzonModelBase(OzonMBase):
 
     async def set_to_delete(self, record: CoreModel) -> CoreModel:
         self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data=record.get_dict_json())
+            return None
         if self.virtual:
             msg = _("Unable to set to delete a virtual model")
             self.error_status(msg, record.get_dict_copy())
@@ -738,6 +751,10 @@ class OzonModelBase(OzonMBase):
 
     async def set_active(self, record: CoreModel) -> CoreModel:
         self.init_status()
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data=record.get_dict_json())
+            return None
         if self.virtual:
             msg = _("Unable to set to delete a virtual model")
             self.error_status(msg, record.get_dict_copy())

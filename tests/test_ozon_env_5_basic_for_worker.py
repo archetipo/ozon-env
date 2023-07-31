@@ -1,8 +1,8 @@
 import pytest
 from test_common import *
-from ozonenv.core.ModelMaker import ModelMaker, BasicModel
+from ozonenv.core.ModelMaker import ModelMaker, BasicModel, MainModel
 from ozonenv.core.BaseModels import CoreModel
-from pydantic.main import ModelMetaclass
+from pydantic._internal._model_construction import ModelMetaclass
 from ozonenv.OzonEnv import OzonWorkerEnv, OzonEnv, BasicReturn
 from datetime import *
 from dateutil.parser import *
@@ -103,10 +103,14 @@ class MockWorker1(OzonWorkerEnv):
         assert v_doc.dg18XIndModOrdinat.denominazione == "Mario Rossi"
 
         num_doc = len(v_doc.dg15XVoceCalcolata)
+        assert isinstance(v_doc.dg15XVoceCalcolata[0], MainModel) is True
+
         for id, row in enumerate(v_doc.dg15XVoceCalcolata):
+
             row_dictr = self.virtual_row_doc_model.get_dict_record(
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
 
+            # handle record and add fields at runtime
             row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
             row_dictr.selection_value("stato", "caricato", "Caricato")
             row_dictr.selection_value(

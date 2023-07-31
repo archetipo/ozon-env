@@ -1,10 +1,9 @@
-from ozonenv.core.OzonOrm import OzonEnvBase, BasicReturn, OzonModel
-from ozonenv.core.BaseModels import BasicReturn
-from ozonenv.core.OzonClient import OzonClient
-import json
-import copy
 import logging
 
+from ozonenv.core.BaseModels import BasicReturn
+from ozonenv.core.OzonClient import OzonClient
+from ozonenv.core.OzonOrm import OzonEnvBase, OzonModel
+from exceptions import SessionException
 logger = logging.getLogger(__file__)
 
 

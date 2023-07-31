@@ -2,13 +2,9 @@
 # See LICENSE file for full licensing details.
 from __future__ import annotations
 from typing import List, Optional, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from typing import TypeVar
-from ozonenv.core.db.BsonTypes import (
-    BSON_TYPES_ENCODERS,
-    PyObjectId,
-    bson,
-)
+from ozonenv.core.db.BsonTypes import BSON_TYPES_ENCODERS, PyObjectId, bson
 import logging
 import copy
 from functools import reduce
@@ -164,23 +160,27 @@ class DbViewModel(BaseModel):
 class MainModel(BaseModel):
     @classmethod
     def str_name(cls, *args, **kwargs):
-        return cls.schema(*args, **kwargs).get("title", "").lower()
+        return cls.model_json_schema(*args, **kwargs).get("title", "").lower()
 
     def get_dict(self, exclude=[]):
         basic = ["status", "message", "res_data"]
         # d = json.loads(self.json(exclude=set().union(basic, exclude)))
-        d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        d = self.model_copy(deep=True).model_dump(
+            exclude=set().union(basic, exclude)
+        )
         return d
 
     def get_dict_json(self, exclude=[]):
         basic = ["status", "message", "res_data"]
-        return json.loads(self.json(exclude=set().union(basic, exclude)))
+        return json.loads(
+            self.model_dump_json(exclude=set().union(basic, exclude))
+        )
 
     def get_dict_copy(self):
         return copy.deepcopy(self.get_dict())
 
     def get_dict_diff(
-            self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+        self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
     ):
         if ignore_fields and remove_ignore_fileds:
             original_dict = self.get_dict(exclude=ignore_fields)
@@ -228,10 +228,21 @@ class MainModel(BaseModel):
             if hasattr(self, k):
                 setattr(self, k, v)
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = BSON_TYPES_ENCODERS
+    def selection_value(self, key, value, read_value):
+        setattr(self, key, value)
+        self.data_value[key] = read_value
+
+    def selection_value_from_record(self, key, src, src_key=""):
+        if not src_key:
+            src_key = key
+        setattr(self, key, getattr(src, src_key))
+        self.data_value[key] = src.data_value[src_key]
+
+    model_config = {
+        "allow_population_by_field_name": True,
+        "arbitrary_types_allowed": True,
+        "json_encoders": BSON_TYPES_ENCODERS,
+    }
 
 
 class CoreModel(MainModel):
@@ -268,16 +279,22 @@ class CoreModel(MainModel):
     message: str = ""
     res_data: dict = Field(default={})
 
+    @field_serializer('id')
+    def serialize_dt(self, id: PyObjectId, _info):
+        return str(id)
+
     @classmethod
     def str_name(cls, *args, **kwargs):
-        return cls.schema(*args, **kwargs).get("title", "").lower()
+        return cls.model_json_schema(*args, **kwargs).get("title", "").lower()
 
     def renew_id(self):
         self.id = PyObjectId()
 
     def get_dict(self, exclude=[]):
         basic = ["status", "message", "res_data"]
-        d = self.copy(deep=True).dict(exclude=set().union(basic, exclude))
+        d = self.model_copy(deep=True).model_dump(
+            exclude=set().union(basic, exclude)
+        )
         return d
 
     def get_dict_copy(self, exclude=[]):
@@ -290,8 +307,13 @@ class CoreModel(MainModel):
         return {"_id": bson.ObjectId(self.id)}.copy()
 
     def get_dict_diff(
-            self, to_compare_dict, ignore_fields=[], remove_ignore_fileds=True
+        self,
+        to_compare_dict: dict,
+        ignore_fields: list = None,
+        remove_ignore_fileds: bool = True,
     ):
+        if ignore_fields is None:
+            ignore_fields = []
         if ignore_fields and remove_ignore_fileds:
             original_dict = self.get_dict(exclude=ignore_fields)
         else:
@@ -308,16 +330,6 @@ class CoreModel(MainModel):
 
     def is_to_delete(self):
         return self.deleted > 0
-
-    def selection_value(self, key, value, read_value):
-        setattr(self, key, value)
-        self.data_value[key] = read_value
-
-    def selection_value_from_record(self, key, src, src_key=""):
-        if not src_key:
-            src_key = key
-        setattr(self, key, getattr(src, src_key))
-        self.data_value[key] = src.data_value[src_key]
 
     def set_active(self):
         self.deleted = 0
@@ -342,8 +354,7 @@ class CoreModel(MainModel):
         return ""
 
     def selection_value_resources(
-            self, key: str, value: str, resources: list,
-            label_key: str = "label"
+        self, key: str, value: str, resources: list, label_key: str = "label"
     ):
         value_label = self.get_value_for_select_list(
             resources, value, label_key=label_key
@@ -478,6 +489,7 @@ class Component(BasicModel):
     handle_global_change: int = 1
     process_tenant: str = ""
     make_virtual_model: bool = False
+    authenticate: bool = True
     projectId: str = ""  # needed for compatibility with fomriojs
 
     @classmethod
@@ -504,6 +516,7 @@ class Session(CoreModel):
     function: str = ""
     sector: Optional[str] = ""
     sector_id: Optional[int] = 0
+    expire_datetime: datetime
     user: dict = {}
     app: dict = {}
     apps: dict = {}
@@ -619,7 +632,7 @@ class DictRecord(BaseModel):
         self.data["data_value"][key] = src.data["data_value"][src_key]
 
     def get_dict(self):
-        return json.loads(self.json())
+        return json.loads(self.model_dump_json())
 
     def rec_name_domain(self):
         return {"rec_name": self.rec_name}.copy()
@@ -680,7 +693,7 @@ class DictRecord(BaseModel):
         return ""
 
     def selection_value_resources(
-            self, key, value, list_src, label_key="label"
+        self, key, value, list_src, label_key="label"
     ):
         value_label = self.get_value_for_select_list(
             list_src, value, label_key=label_key
@@ -1009,7 +1022,7 @@ class Settings(BasicModel):
                 'resource_id': '',
                 'values': [],
                 'url': 'https://people.ininrim.it/api'
-                       '/get_addressbook_service_user/0',
+                '/get_addressbook_service_user/0',
                 'template_label_keys': [],
             },
             'module_type': {

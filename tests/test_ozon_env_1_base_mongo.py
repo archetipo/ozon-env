@@ -1,17 +1,13 @@
-import pytest
-from test_common import *
-from ozonenv.core.ModelMaker import ModelMaker, BasicModel
-from pydantic.main import ModelMetaclass
-from ozonenv.OzonEnv import OzonEnv
 from dateutil.parser import *
+
+from ozonenv.OzonEnv import OzonEnv
 from ozonenv.core.db.mongodb_utils import (
     connect_to_mongo,
     close_mongo_connection,
     DbSettings,
-    Mongo,
-    AsyncIOMotorClient,
     AsyncIOMotorCollection
 )
+from test_common import *
 
 pytestmark = pytest.mark.asyncio
 
@@ -68,6 +64,11 @@ async def test_init_env():
     await env.init_orm()
     await init_main_collections(env.db)
     session = env.db.engine.get_collection('session')
+    sessions = await session.find({}).to_list(length=None)
+    assert len(sessions) == 2
+    stored_obj = await session.find_one({'token': 'PUBLIC'})
+    assert stored_obj['uid'] == "public"
+    assert stored_obj['is_public'] is True
     stored_obj = await session.find_one({'token': 'BA6BA930'})
     assert stored_obj['uid'] == "admin"
     settings = env.db.engine.get_collection('settings')
@@ -81,6 +82,7 @@ async def test_init_env():
 @pytestmark
 async def test_make_app_session():
     env = OzonEnv()
+    assert env.cls_model.__name__ == "OzonModel"
     res = await env.make_app_session(
         {"current_session_token": "BA6BA930"},
         redis_url="redis://localhost:10001")

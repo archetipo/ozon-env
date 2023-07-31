@@ -1,5 +1,31 @@
+import asyncio
 import copy
 import json
+import logging
+
+# from ozonenv.core.cache.cache import get_cache
+import os
+import time as time_
+from importlib.machinery import SourceFileLoader
+from os.path import dirname, exists
+
+import aiofiles
+from aiopath import AsyncPath
+from starlette.concurrency import run_in_threadpool
+
+from ozonenv.core.BaseModels import (
+    DbViewModel,
+    Component,
+    Session,
+    Settings,
+    AttachmentTrash,
+    CoreModel,
+    Dict,
+    BasicModel,
+)
+from ozonenv.core.OzonClient import OzonClient
+from ozonenv.core.OzonModel import OzonModelBase, BasicReturn
+from ozonenv.core.cache.cache_utils import stop_cache  # , init_cache
 from ozonenv.core.db.mongodb_utils import (
     connect_to_mongo,
     close_mongo_connection,
@@ -8,33 +34,9 @@ from ozonenv.core.db.mongodb_utils import (
     Collection,
     _DocumentType,
 )
-import time as time_
-from ozonenv.core.OzonModel import OzonModelBase, BasicReturn
-from ozonenv.core.OzonClient import OzonClient
-from ozonenv.core.db.BsonTypes import codec_options
-from ozonenv.core.BaseModels import (
-    DbViewModel,
-    Component,
-    Session,
-    Settings,
-    AttachmentTrash,
-    CoreModel,
-)
-
-from starlette.concurrency import run_in_threadpool
-from ozonenv.core.i18n import update_translation
+from ozonenv.core.exceptions import SessionException
 from ozonenv.core.i18n import _
-
-from ozonenv.core.cache.cache_utils import stop_cache  # , init_cache
-
-# from ozonenv.core.cache.cache import get_cache
-import os
-from os.path import dirname, exists
-import aiofiles
-import logging
-import asyncio
-from importlib.machinery import SourceFileLoader
-from aiopath import AsyncPath
+from ozonenv.core.i18n import update_translation
 
 logger = logging.getLogger(__file__)
 
@@ -44,7 +46,14 @@ base_model_path = dirname(__file__)
 
 
 class OzonEnvBase:
-    def __init__(self, cfg={}, upload_folder="", cls_model=OzonModelBase):
+    def __init__(
+        self,
+        cfg: dict = None,
+        upload_folder: str = "",
+        cls_model=OzonModelBase,
+    ):
+        if cfg is None:
+            cfg = {}
         self.orm: OzonOrm
         self.db: Mongo
         self.ozon_client: OzonClient
@@ -62,7 +71,7 @@ class OzonEnvBase:
             self.config_system = cfg.copy()
         self.db_settings = DbSettings(**self.config_system)
         self.model = ""
-        self.models = {}
+        self.models: Dict[str, cls_model] = {}
         self.params = {}
         self.session_is_api = False
         self.user_session: CoreModel
@@ -70,9 +79,11 @@ class OzonEnvBase:
         self.use_cache = False
         self.cache_index = "ozon_env"
         self.redis_url = ""
-        self.orm_from_cache = False
-        self.upload_folder = upload_folder
-        self.models_folder = self.config_system.get("models_folder", "/models")
+        self.orm_from_cache: bool = False
+        self.upload_folder: str = upload_folder
+        self.models_folder: str = self.config_system.get(
+            "models_folder", "/models"
+        )
         self.is_db_local = True
         self.app_code = self.config_system.get("app_code")
         self.cls_model = cls_model
@@ -136,9 +147,7 @@ class OzonEnvBase:
         return self.models.get(model_name)
 
     def get_collection(self, collection) -> Collection[_DocumentType]:
-        return self.db.engine.get_collection(
-            collection, codec_options=codec_options
-        )
+        return self.db.engine.get_collection(collection)
 
     async def add_schema(self, schema: dict) -> OzonModelBase:
         component_model = self.models.get("component")
@@ -153,6 +162,8 @@ class OzonEnvBase:
     async def add_model(
         self, model_name, virtual=False, data_model=""
     ) -> OzonModelBase:
+        if self.user_session.is_public:
+            return None
         if model_name not in self.models:
             await self.orm.add_model(
                 model_name, virtual=virtual, data_model=data_model
@@ -160,9 +171,11 @@ class OzonEnvBase:
         return self.get(model_name)
 
     async def add_static_model(
-        self, model_name: str, model_class: CoreModel
+        self, model_name: str, model_class: BasicModel, private: bool = False
     ) -> OzonModelBase:
-        return await self.orm.add_static_model(model_name, model_class)
+        return await self.orm.add_static_model(
+            model_name, model_class, private
+        )
 
     async def connect_db(self):
         self.db = await connect_to_mongo(self.db_settings)
@@ -170,7 +183,16 @@ class OzonEnvBase:
     async def close_db(self):
         await close_mongo_connection()
 
-    async def init_orm(self, db=None, local_model={}):
+    async def init_orm(
+        self,
+        db=None,
+        local_model: dict = None,
+        local_model_private: list = None,
+    ):
+        if local_model is None:
+            local_model = {}
+        if local_model_private is None:
+            local_model_private = []
         if db:
             self.db = db
             self.is_db_local = False
@@ -182,9 +204,24 @@ class OzonEnvBase:
             for k, v in local_model.items():
                 self.orm.orm_models.append(k)
                 self.orm.orm_static_models_map[k] = v
+                if k in local_model_private:
+                    self.orm.add_private_model(k)
 
-    async def init_env(self, db=None, local_model={}):
-        await self.init_orm(db=db, local_model=local_model)
+    async def init_env(
+        self,
+        db: Mongo = None,
+        local_model: dict = None,
+        local_model_private: list = None,
+    ):
+        if local_model is None:
+            local_model = {}
+        if local_model_private is None:
+            local_model_private = []
+        await self.init_orm(
+            db=db,
+            local_model=local_model,
+            local_model_private=local_model_private,
+        )
         await self.orm.init_models()
 
     async def close_env(self):
@@ -235,7 +272,7 @@ class OzonOrm:
         self.lang = env.lang
         self.db: Mongo = env.db
         self.config_system = env.config_system.copy()
-        self.user_session: CoreModel = None
+        self.user_session: Session = None
         self.list_auto_models = []
         self.orm_models = [
             "component",
@@ -251,13 +288,18 @@ class OzonOrm:
         }
         self.db_models = []
         self.orm_sys_models = ["component", "session", "settings"]
+        self.private_models = ["session", "settings"]
         self.models_path = self.env.models_folder
         self.app_settings: Settings = None
         self.app_code = self.env.app_code
         self.cls_model = cls_model
 
+    def add_private_model(self, name):
+        if name not in self.private_models:
+            self.private_models.append(name)
+
     async def add_static_model(
-        self, model_name: str, model_class: CoreModel
+        self, model_name: str, model_class: BasicModel, private: bool = False
     ) -> OzonModelBase:
         _model_name = model_name.replace(" ", "").strip().lower()
         self.orm_models.append(_model_name)
@@ -269,6 +311,8 @@ class OzonOrm:
         )
         await self.env.models[_model_name].init_model()
         await self.env.models[_model_name].init_unique()
+        if private:
+            self.add_private_model(_model_name)
         return self.env.models[_model_name]
 
     async def init_db_models(self):
@@ -410,6 +454,7 @@ class OzonOrm:
         res = await self.runcmd(
             f"datamodel-codegen --input /tmp/{mod.name}.json"
             f" --output {self.models_path}/{mod.name}.py "
+            f" --output-model-type pydantic_v2.BaseModel "
             f"--base-class ozonenv.core.BaseModels.BasicModel"
         )
         if not res:
@@ -602,6 +647,7 @@ class OzonModel(OzonModelBase):
         self.db: Mongo = orm.env.db
         self.mm_from_cache = False
         self.use_cache = False
+        self.private_models = ["session", "settings"]
         super(OzonModel, self).__init__(
             model_name=model_name,
             setting_app=self.setting_app,
@@ -611,3 +657,19 @@ class OzonModel(OzonModelBase):
             static=static,
             schema=schema,
         )
+
+    @property
+    def user_session(self):
+        return self.orm.user_session
+
+    def init_status(self):
+        if self.user_session and self.user_session.is_public:
+            if self.name.lower() in self.orm.private_models:
+                raise SessionException(detail="Permission Denied")
+        super().init_status()
+
+    def chk_write_permission(self) -> bool:
+        res = super().chk_write_permission()
+        if self.user_session and self.user_session.is_public:
+            return False
+        return res

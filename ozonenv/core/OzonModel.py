@@ -362,7 +362,7 @@ class OzonModelBase(OzonMBase):
 
         return self.modelr
 
-    async def insert(self, record: CoreModel) -> CoreModel:
+    async def insert(self, record: CoreModel) -> CoreModel | None:
         self.init_status()
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
@@ -397,6 +397,9 @@ class OzonModelBase(OzonMBase):
             result = None
             if result_save:
                 return await self.load({"rec_name": to_save['rec_name']})
+            self.error_status(
+                _("Error save  %s ") % str(to_save['rec_name']), to_save
+            )
             return result
         except pymongo.errors.DuplicateKeyError as e:
             logger.error(f" Duplicate {e.details['errmsg']}")

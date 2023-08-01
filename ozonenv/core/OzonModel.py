@@ -715,7 +715,6 @@ class OzonModelBase(OzonMBase):
                 label = {"$first": f"${label_lst[0]}"}
         else:
             project.update({"title": 1})
-        print(project)
         pipeline = [
             {"$match": query},
             {"$project": project},

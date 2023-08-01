@@ -470,7 +470,8 @@ class BasicModel(CoreModel):
 class AttachmentTrash(BasicModel):
     parent: str = ""
     model: str = ""
-    # modell_ because model_rec_name has conflict with protected namespace "model_".
+    # modell_ because model_rec_name has
+    # conflict with protected namespace "model_".
     modell_rec_name: str = ""
     attachments: List[Dict] = []
 

@@ -695,6 +695,7 @@ class OzonModelBase(OzonMBase):
         label_lst = compute_label.split(",")
         project = {
             distinct: {"$toString": f"${distinct}"},
+            "value": {"$toString": f"${distinct}"},
             "type": {"$toString": "$type"},
         }
         if compute_label:
@@ -714,7 +715,7 @@ class OzonModelBase(OzonMBase):
                 label = {"$first": f"${label_lst[0]}"}
         else:
             project.update({"title": 1})
-
+        print(project)
         pipeline = [
             {"$match": query},
             {"$project": project},
@@ -722,7 +723,9 @@ class OzonModelBase(OzonMBase):
                 "$group": {
                     "_id": "$_id",
                     f"{distinct}": {"$first": f"${distinct}"},
+                    "value": {"$first": f"${distinct}"},
                     "title": label,
+                    "label": label,
                     "type": {"$first": "$type"},
                 }
             },

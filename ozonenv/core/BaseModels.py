@@ -1,21 +1,23 @@
 # Copyright INRIM (https://www.inrim.eu)
 # See LICENSE file for full licensing details.
 from __future__ import annotations
-from typing import List, Optional, Dict
-from pydantic import BaseModel, Field, field_serializer
-from typing import TypeVar
-from ozonenv.core.db.BsonTypes import BSON_TYPES_ENCODERS, PyObjectId, bson
-import logging
+
 import copy
-from functools import reduce
-import operator
-from datetime import datetime
 import json
+import logging
+import operator
 import re
-import ozonenv
+from datetime import datetime
+from functools import reduce
+from typing import List, Optional, Dict
+from typing import TypeVar
 
 # from datetime import datetime
 from dateutil.parser import parse
+from pydantic import BaseModel, Field, field_serializer
+
+import ozonenv
+from ozonenv.core.db.BsonTypes import BSON_TYPES_ENCODERS, PyObjectId, bson
 
 logger = logging.getLogger("asyncio")
 
@@ -468,7 +470,8 @@ class BasicModel(CoreModel):
 class AttachmentTrash(BasicModel):
     parent: str = ""
     model: str = ""
-    model_rec_name: str = ""
+    # modell_ because model_rec_name has conflict with protected namespace "model_".
+    modell_rec_name: str = ""
     attachments: List[Dict] = []
 
 

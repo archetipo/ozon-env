@@ -241,7 +241,7 @@ class MainModel(BaseModel):
         self.data_value[key] = src.data_value[src_key]
 
     model_config = {
-        "allow_population_by_field_name": True,
+        "populate_by_name": True,
         "arbitrary_types_allowed": True,
         "json_encoders": BSON_TYPES_ENCODERS,
     }

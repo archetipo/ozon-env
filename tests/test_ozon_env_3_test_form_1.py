@@ -6,7 +6,7 @@ from dateutil.parser import *
 from ozonenv.OzonEnv import OzonEnv
 from ozonenv.core.exceptions import SessionException
 from test_common import *
-
+import iso8601
 pytestmark = pytest.mark.asyncio
 
 
@@ -187,7 +187,7 @@ async def test_test_form_1_init_data():
 
     test_form_1 = await test_form_1_model.new(data)
     assert test_form_1.is_error() is False
-    assert test_form_1.birthdate == parse("1987-12-17T12:00:00")
+    assert test_form_1.birthdate == iso8601.parse_date("1987-12-17T12:00:00+02:00")
     await env.close_env()
 
 
@@ -207,7 +207,7 @@ async def test_test_form_1_insert_ok():
     assert test_form_1.is_error() is False
     assert test_form_1.get("owner_uid") == ""
     assert test_form_1.get("rec_name") == "first_form"
-    assert test_form_1.get('birthdate') == parse("1987-12-17T12:00:00")
+    assert test_form_1.get('birthdate') == iso8601.parse_date("1987-12-17T12:00:00+02:00")
     assert test_form_1.get('data_value.birthdate') == "17/12/1987"
 
     test_form_1 = await test_form_1_model.insert(test_form_1)

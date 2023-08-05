@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import bson
+import iso8601
 import pydantic
 import pymongo
 from dateutil.parser import parse
@@ -170,7 +171,14 @@ class OzonMBase:
 
     def _readable_datetime(self, val):
         if isinstance(val, str):
-            return parse(val).strftime(self.setting_app.ui_datetime_mask)
+            try:
+                return parse(val).strftime(self.setting_app.ui_datetime_mask)
+            except Exception as e:
+                return (
+                    iso8601.parse_date(val)
+                    .isoformat(timespec="seconds")
+                    .strftime(self.setting_app.ui_datetime_mask)
+                )
         else:
             return val.strftime(self.setting_app.ui_datetime_mask)
 

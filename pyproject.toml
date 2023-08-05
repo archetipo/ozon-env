@@ -55,6 +55,7 @@ isort = ">=5.8.0"
 black = ">=22.10.0"
 types-toml = "*"
 httpx = "*"
+iso8601 = "*"
 
 [tool.flake8]
 max-complexity = 15

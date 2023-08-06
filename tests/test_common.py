@@ -9,10 +9,10 @@ pytestmark = pytest.mark.asyncio
 def init_env_var():
     os.environ["APP_CODE"] = "test"
     os.environ["STACK"] = "test"
-    os.environ["MONGO_DB"] = "servicemci"
+    os.environ["MONGO_DB"] = "servicetest"
     os.environ["MONGO_USER"] = "servicetest"
     os.environ["MONGO_PASS"] = "servicetest"
-    os.environ["MONGO_URL"] = "localhost:10000"
+    os.environ["MONGO_URL"] = "localhost:10002"
     os.environ["MONGO_REPLICA"] = ""
     os.environ["MODELS_FOLDER"] = "tests/models"
 

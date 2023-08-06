@@ -10,14 +10,14 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: servicetest
       MONGO_INITDB_DATABASE: servicetest
     ports:
-      - "10000:27017"
+      - "10002:27017"
 
 
   mongo-express:
     image: mongo-express
     restart: always
     ports:
-      - 9000:8081
+      - 9003:8081
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
@@ -27,4 +27,4 @@ services:
     image: redis:latest
     command: redis-server --maxmemory 100mb  --maxmemory-policy allkeys-lfu --appendonly no --stop-writes-on-bgsave-error no --lfu-log-factor 10 --lfu-decay-time 1
     ports:
-      - "10001:6379"
+      - "10003:6379"

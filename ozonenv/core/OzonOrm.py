@@ -511,7 +511,15 @@ class OzonOrm:
          
     @classmethod
     def config_fields(cls):
-        return {mod.mm.config_fields}
+        return {mod.mm.config_fields} 
+             
+    @classmethod
+    def all_fields(cls) -> list:
+        return {mod.mm.fields}      
+               
+    @classmethod
+    def table_columns(cls) -> dict:
+        return {mod.mm.columns}
          
     @classmethod
     def components_ext_data_src(cls):

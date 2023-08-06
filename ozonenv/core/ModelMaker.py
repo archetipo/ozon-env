@@ -1,21 +1,23 @@
 # Copyright INRIM (https://www.inrim.eu)
 # See LICENSE file for full licensing details.
 
-from typing import List
-from pydantic import create_model
+import copy
+import json
+import logging
+import re
+import uuid
 from datetime import datetime
+from typing import List
+
+from json_logic import jsonLogic
+from pydantic import create_model
+
 from ozonenv.core.BaseModels import BasicModel, BaseModel, MainModel
 from ozonenv.core.utils import (
     fetch_dict_get_value,
     is_json,
     decode_resource_template,
 )
-import logging
-import re
-import uuid
-import copy
-import json
-from json_logic import jsonLogic
 
 logger = logging.getLogger(__file__)
 
@@ -916,6 +918,8 @@ class FormioModelMaker(BaseModelMaker):
         self.schema_type = "form"
         self.data_model = ""
         self.title = ""
+        self.fields = []
+        self.columns = {}
 
     def from_formio(
         self, schema: dict, simple=False, parent="", parent_builder=None
@@ -950,6 +954,10 @@ class FormioModelMaker(BaseModelMaker):
         self.add_nested(comp)
 
     def complete_component(self, field: Component):
+        if field.input and field:
+            self.fields.append(field.raw.copy())
+        if field and field.tableView:
+            self.columns[field.key] = field.label
         if field.type == "table" and field:
             self.computed_fields[field.key] = field.calculateServer
         if field.type == "fieldset" and field.action_type:

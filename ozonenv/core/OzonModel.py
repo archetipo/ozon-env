@@ -58,6 +58,7 @@ class OzonMBase:
                     maker.
         :param schema: formio form schema, mandatory if
         """
+        self.model = None
         self.name = model_name
         self.setting_app: Settings = setting_app
         self.virtual = virtual
@@ -115,7 +116,7 @@ class OzonMBase:
     async def init_model(self):
         self.mm = ModelMaker(self.name)
         if self.static:
-            self.model = self.static
+            self.model: BasicModel = self.static
             self.tranform_data_value = self.model.tranform_data_value()
         elif not self.static and not self.virtual:
             c_maker = ModelMaker("component")
@@ -173,7 +174,7 @@ class OzonMBase:
         if isinstance(val, str):
             try:
                 return parse(val).strftime(self.setting_app.ui_datetime_mask)
-            except Exception as e:
+            except Exception:
                 return (
                     iso8601.parse_date(val)
                     .isoformat(timespec="seconds")
@@ -253,6 +254,14 @@ class OzonModelBase(OzonMBase):
     @property
     def unique_fields(self):
         return self.model.unique_fields
+
+    @property
+    def form_fields(self):
+        return self.model.all_fields()
+
+    @property
+    def table_columns(self):
+        return self.model.table_columns()
 
     def error_status(self, msg, data):
         self.status.fail = True

@@ -85,7 +85,7 @@ async def test_make_app_session():
     assert env.cls_model.__name__ == "OzonModel"
     res = await env.make_app_session(
         {"current_session_token": "BA6BA930"},
-        redis_url="redis://localhost:10001")
+        redis_url="redis://localhost:10003")
     assert res.fail is False
     assert len(env.models) == 4
     assert env.orm.user_session.get('uid') == "admin"
@@ -102,6 +102,6 @@ async def test_make_app_session_error():
     res = await env.make_app_session(
         {"current_session_token": "BA6B----"},
         use_cache=True,
-        redis_url="redis://localhost:10001")
+        redis_url="redis://localhost:100013")
     assert res.fail is True
     assert res.msg == "Token BA6B---- non abilitato"

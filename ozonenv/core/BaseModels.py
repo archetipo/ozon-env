@@ -459,6 +459,14 @@ class BasicModel(CoreModel):
         return {}
 
     @classmethod
+    def all_fields(cls) -> list:
+        return []
+
+    @classmethod
+    def table_columns(cls) -> dict:
+        return {}
+
+    @classmethod
     def conditional(cls) -> {str, dict}:
         return {}
 

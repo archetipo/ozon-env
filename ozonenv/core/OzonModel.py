@@ -13,7 +13,6 @@ import pymongo
 from dateutil.parser import parse
 from pydantic._internal._model_construction import ModelMetaclass
 
-from exceptions import SessionException
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
@@ -23,9 +22,11 @@ from ozonenv.core.BaseModels import (
     DictRecord,
     default_list_metadata,
     default_list_metadata_fields_update,
+    defaultdt,
 )
 from ozonenv.core.ModelMaker import ModelMaker
 from ozonenv.core.db.BsonTypes import JsonEncoder
+from ozonenv.core.exceptions import SessionException
 from ozonenv.core.i18n import _
 from ozonenv.core.utils import is_json
 
@@ -230,6 +231,13 @@ class OzonMBase:
 
         return res_dict.copy()
 
+    def decode_datetime(self, data):
+        if self.name not in ["component", "session"]:
+            print(f"clean data for {self.name}")
+            # cleaner: BasicModel = self.model(**{})
+            data = self.model.compute_datetime_fields(data, '', defaultdt)
+        return data
+
     def load_data(self, data):
         if not self.virtual:
             self.modelr = self.model(**data)
@@ -309,11 +317,24 @@ class OzonModelBase(OzonMBase):
                     sort[rule_list[0]] = self.sort_dir[rule_list[1]]
         return sort
 
-    def get_dict(self, rec: CoreModel, exclude=[]) -> CoreModel:
-        return rec.get_dict(exclude=exclude)
+    def get_dict(
+        self,
+        rec: CoreModel,
+        exclude: list = None,
+        compute_datetime: bool = True,
+    ) -> CoreModel:
+        if exclude is None:
+            exclude = []
+        return rec.get_dict(exclude=exclude, compute_datetime=compute_datetime)
 
-    def get_dict_record(self, rec: CoreModel, rec_name="") -> DictRecord:
-        dictd = self.get_dict(rec, exclude=default_list_metadata + ["_id"])
+    def get_dict_record(
+        self, rec: CoreModel, rec_name: str = "", compute_datetime: bool = True
+    ) -> DictRecord:
+        dictd = self.get_dict(
+            rec,
+            exclude=default_list_metadata + ["_id"],
+            compute_datetime=compute_datetime,
+        )
         if rec_name:
             dictd["rec_name"] = rec_name
         dat = DictRecord(
@@ -366,6 +387,7 @@ class OzonModelBase(OzonMBase):
             if not self.is_session_model:
                 data["rec_name"] = rec_name
         if not self.virtual:
+            data = self.decode_datetime(data)
             data = self._make_from_dict(copy.deepcopy(data))
         self.transform_config = trnf_config.copy()
         self.load_data(data)
@@ -407,7 +429,9 @@ class OzonModelBase(OzonMBase):
             record = self.set_user_data(record, self.user_session)
             record.list_order = await self.count()
             record.active = True
-            to_save = self._make_from_dict(copy.deepcopy(record.get_dict()))
+            to_save = self._make_from_dict(
+                copy.deepcopy(record.get_dict(compute_datetime=False))
+            )
             if "_id" not in to_save:
                 to_save['_id'] = bson.ObjectId(to_save['id'])
             result_save = await coll.insert_one(to_save)
@@ -462,7 +486,9 @@ class OzonModelBase(OzonMBase):
         self.modelr.list_order = await self.count()
         self.modelr.create_datetime = datetime.now().isoformat()
         self.modelr.update_datetime = datetime.now().isoformat()
-        record = await self.new(data=self.modelr.get_dict())
+        record = await self.new(
+            data=self.modelr.get_dict(compute_datetime=False)
+        )
         record = self.set_user_data(record, self.user_session)
         for k in self.model.get_unique_fields():
             if k not in ["rec_name"]:
@@ -493,7 +519,7 @@ class OzonModelBase(OzonMBase):
 
             else:
                 to_save = self._make_from_dict(
-                    copy.deepcopy(record.get_dict())
+                    copy.deepcopy(record.get_dict(compute_datetime=False))
                 )
             if "rec_name" in to_save:
                 to_save.pop("rec_name")

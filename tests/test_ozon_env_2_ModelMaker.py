@@ -38,6 +38,8 @@ async def test_make_form_schema():
     test_2.new({"rec_name": "test"})
     assert isinstance(test_2.instance, MainModel) is True
     assert test_2.instance.rec_name == "test"
+    # pop appointmentDateTime1 needed for nexts tests
+    formio_data_json.pop("appointmentDateTime1")
     test_2.new(formio_data_json)
     assert test_2.instance.textFieldTab1 == "text in tab 1"
     assert test_2.instance.email == 'name@company.it'

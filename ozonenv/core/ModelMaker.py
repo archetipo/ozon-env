@@ -5,14 +5,13 @@ import copy
 import json
 import logging
 import re
-import uuid
 from datetime import datetime
 from typing import List
 
 from json_logic import jsonLogic
 from pydantic import create_model
 
-from ozonenv.core.BaseModels import BasicModel, BaseModel, MainModel
+from ozonenv.core.BaseModels import BasicModel, BaseModel, MainModel, defaultdt
 from ozonenv.core.utils import (
     fetch_dict_get_value,
     is_json,
@@ -65,17 +64,6 @@ class Component:
         self.cfg = {}
         self.index = 0
         self.iindex = 0
-        # self.update_config()
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, id=False):
-        if not id:
-            id = str(uuid.uuid4())
-        self._id = id
 
     @property
     def value(self):
@@ -712,7 +700,7 @@ class BaseModelMaker:
             "radio": [str, ""],
             "survey": [dict, {}],
             "jsondata": [dict, {}],
-            "datetime": [datetime, "1970-01-01T00:00:00"],
+            "datetime": [datetime, defaultdt],
             "datagrid": [list[dict], []],
             "table": [list[dict], []],
             "form": [list[dict], {}],
@@ -893,8 +881,11 @@ class BaseModelMaker:
             self.model_name, __base__=BasicModel, **self.components
         )
 
-    def new(self, data={}):
-        self.instance = self.model(**json.loads(json.dumps(data)))
+    def new(self, data: dict = None):
+        if data is None:
+            data = {}
+        payload = json.loads(json.dumps(data))
+        self.instance = self.model(**payload)
         return self.instance
 
 

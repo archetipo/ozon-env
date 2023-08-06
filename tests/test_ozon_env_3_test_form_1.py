@@ -1,12 +1,14 @@
 import time as time_
 from datetime import *
 
+import iso8601
 from dateutil.parser import *
 
 from ozonenv.OzonEnv import OzonEnv
 from ozonenv.core.exceptions import SessionException
+from ozonenv.core.BaseModels import defaultdt
 from test_common import *
-import iso8601
+
 pytestmark = pytest.mark.asyncio
 
 
@@ -100,7 +102,7 @@ async def test_component_test_form_1_raw_update():
     await env.session_app()
     old_test_form_1_model = env.get('test_form_1')
     old_test_form_1 = await old_test_form_1_model.new()
-    assert len(old_test_form_1_model.form_fields) == 20
+    assert len(old_test_form_1_model.form_fields) == 21
     assert len(old_test_form_1_model.table_columns.keys()) == 7
     assert hasattr(old_test_form_1, "uploadBase64") is False
     assert hasattr(old_test_form_1, "content") is False
@@ -190,6 +192,9 @@ async def test_test_form_1_init_data():
     test_form_1 = await test_form_1_model.new(data)
     assert test_form_1.is_error() is False
     assert test_form_1.birthdate == iso8601.parse_date("1987-12-17T12:00:00+02:00")
+    assert test_form_1.appointmentDateTime1 == parse(defaultdt)
+    dictres = test_form_1.model_dump()
+    assert dictres['appointmentDateTime1'] == ''
     await env.close_env()
 
 

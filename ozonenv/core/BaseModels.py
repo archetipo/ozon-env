@@ -9,15 +9,24 @@ import operator
 import re
 from datetime import datetime
 from functools import reduce
+from typing import Any
 from typing import List, Optional, Dict
 from typing import TypeVar
+
+import typing_extensions
 
 # from datetime import datetime
 from dateutil.parser import parse
 from pydantic import BaseModel, Field, field_serializer
+from typing_extensions import Literal
 
 import ozonenv
 from ozonenv.core.db.BsonTypes import BSON_TYPES_ENCODERS, PyObjectId, bson
+
+IncEx: typing_extensions.TypeAlias = (
+    'set[int] | set[str] | dict[int, Any] | ' 'dict[str, Any] | None'
+)
+defaultdt = '1970-01-01T00:00:00'
 
 logger = logging.getLogger("asyncio")
 
@@ -164,11 +173,75 @@ class MainModel(BaseModel):
     def str_name(cls, *args, **kwargs):
         return cls.model_json_schema(*args, **kwargs).get("title", "").lower()
 
-    def get_dict(self, exclude=[]):
+    @classmethod
+    def all_fields(cls) -> list:
+        return []
+
+    @classmethod
+    def compute_datetime_fields(
+        cls, data: dict, check: str, set_as: str
+    ) -> dict:
+        """
+        :param data: data dict to compute
+        :param check: string to chechk
+        :param set_as: replace "check" with this value
+        :return:
+        """
+        for compo in cls.all_fields():
+            if compo['type'] == 'datetime':
+                ckey = compo['key']
+                if data.get(ckey, set_as) == check:
+                    data[ckey] = set_as
+                if data.get('data_value', {}).get(ckey, set_as) == check:
+                    data['data_value'][ckey] = set_as
+        return data
+
+    def model_dump(
+        self,
+        *,
+        compute_data: bool = True,
+        mode: Literal['json', 'python'] | str = 'python',
+        include: IncEx = None,
+        exclude: IncEx = None,
+        by_alias: bool = False,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        round_trip: bool = False,
+        warnings: bool = True,
+    ) -> dict[str, Any]:
+        """
+        Usage docs: https://docs.pydantic.dev/dev-v2/usage/serialization
+        /#modelmodel_dump
+
+        check fileds datetime if it has 1970-01-01T00:00:00 default value
+        replace it with empt string
+
+        Returns:
+            A dictionary representation of the model.
+        """
+        res = super().model_dump(
+            mode=mode,
+            by_alias=by_alias,
+            include=include,
+            exclude=exclude,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            round_trip=round_trip,
+            warnings=warnings,
+        )
+
+        if isinstance(res, dict) and compute_data:
+            res = self.compute_datetime_fields(res, parse(defaultdt), '')
+        return res
+
+    def get_dict(self, exclude=None, compute_datetime: bool = True):
+        if exclude is None:
+            exclude = []
         basic = ["status", "message", "res_data"]
-        # d = json.loads(self.json(exclude=set().union(basic, exclude)))
         d = self.model_copy(deep=True).model_dump(
-            exclude=set().union(basic, exclude)
+            compute_data=compute_datetime, exclude=set().union(basic, exclude)
         )
         return d
 
@@ -275,8 +348,8 @@ class CoreModel(MainModel):
     active: bool = True
     demo: bool = False
     childs: List[Dict] = Field(default=[])
-    create_datetime: datetime = Field(default="1970-01-01T00:00:00")
-    update_datetime: datetime = Field(default="1970-01-01T00:00:00")
+    create_datetime: datetime = Field(default=defaultdt)
+    update_datetime: datetime = Field(default=defaultdt)
     status: str = "ok"
     message: str = ""
     res_data: dict = Field(default={})
@@ -291,13 +364,6 @@ class CoreModel(MainModel):
 
     def renew_id(self):
         self.id = PyObjectId()
-
-    def get_dict(self, exclude=[]):
-        basic = ["status", "message", "res_data"]
-        d = self.model_copy(deep=True).model_dump(
-            exclude=set().union(basic, exclude)
-        )
-        return d
 
     def get_dict_copy(self, exclude=[]):
         return self.get_dict(exclude=exclude)
@@ -358,6 +424,14 @@ class CoreModel(MainModel):
     def selection_value_resources(
         self, key: str, value: str, resources: list, label_key: str = "label"
     ):
+        '''
+
+        :param key:
+        :param value:
+        :param resources:
+        :param label_key:
+        :return:
+        '''
         value_label = self.get_value_for_select_list(
             resources, value, label_key=label_key
         )
@@ -440,8 +514,6 @@ class CoreModel(MainModel):
 
 
 class BasicModel(CoreModel):
-    rec_name: str = ""
-
     @classmethod
     def get_unique_fields(cls) -> []:
         return ["rec_name"]
@@ -457,10 +529,6 @@ class BasicModel(CoreModel):
     @classmethod
     def config_fields(cls) -> {}:
         return {}
-
-    @classmethod
-    def all_fields(cls) -> list:
-        return []
 
     @classmethod
     def table_columns(cls) -> dict:
@@ -509,7 +577,7 @@ class Component(BasicModel):
         return ["rec_name", "title"]
 
 
-class Session(CoreModel):
+class Session(BasicModel):
     parent_session: str = ""
     app_code: str = ""
     uid: str

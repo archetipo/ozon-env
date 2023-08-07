@@ -448,7 +448,7 @@ class OzonOrm:
         self.orm_static_models_map[model_name] = model
 
     async def make_local_model(self, mod, version):
-        jdata = mod.mm.model.model_json_schema(indent=2)
+        jdata = mod.mm.model.model_json_schema()
         async with aiofiles.open(f"/tmp/{mod.name}.json", "w+") as mod_file:
             await mod_file.write(jdata)
         res = await self.runcmd(

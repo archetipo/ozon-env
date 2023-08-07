@@ -33,7 +33,7 @@ class PyObjectId(BsonObjectId):
         if isinstance(v, (BsonObjectId, cls)):
             return v
         if isinstance(v, str) and BsonObjectId.is_valid(v):
-            return BsonObjectId(v)
+            return v
         raise PydanticCustomError("invalid ObjectId specified")
 
     @classmethod

@@ -1,31 +1,32 @@
 # Copyright INRIM (https://www.inrim.eu)
 # See LICENSE file for full licensing details.
 
+import datetime
+import json
+from typing import Any
+
 import bson
 import bson.decimal128
-# from pydantic.datetime_parse import parse_datetime
-from pydantic_core import PydanticCustomError, core_schema
-from typing import Any
+from bson.objectid import ObjectId as BsonObjectId
 from pydantic import (
-    BaseModel,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
-    ValidationError,
 )
-import datetime
 from pydantic.json_schema import JsonSchemaValue
-from bson.objectid import ObjectId as BsonObjectId
-import json
+
+# from pydantic.datetime_parse import parse_datetime
+from pydantic_core import PydanticCustomError, core_schema
 
 
 class PyObjectId(BsonObjectId):
     @classmethod
     def __get_pydantic_core_schema__(
-            cls, _source_type: Any, _handler: GetCoreSchemaHandler
+        cls, _source_type: Any, _handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
         return core_schema.no_info_after_validator_function(
             cls.validate,
             core_schema.str_schema(),
+            serialization=core_schema.format_ser_schema(""),
         )
 
     @classmethod
@@ -38,7 +39,7 @@ class PyObjectId(BsonObjectId):
 
     @classmethod
     def __get_pydantic_json_schema__(
-            cls, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+        cls, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
         json_schema = handler(schema)
         json_schema.update(type="string")

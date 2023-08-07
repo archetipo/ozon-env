@@ -443,12 +443,12 @@ class OzonOrm:
         mclass = camel(model_name)
         module_name = f"{model_name}"
         file_path = f"{self.models_path}/{model_name}.py"
-        module = SourceFileLoader(module_name, file_path).load_module()
+        module = SourceFileLoader(module_name, file_path).exec_module()
         model, parent = _getattribute(module, mclass)
         self.orm_static_models_map[model_name] = model
 
     async def make_local_model(self, mod, version):
-        jdata = mod.mm.model.schema_json(indent=2)
+        jdata = mod.mm.model.model_json_schema(indent=2)
         async with aiofiles.open(f"/tmp/{mod.name}.json", "w+") as mod_file:
             await mod_file.write(jdata)
         res = await self.runcmd(
@@ -651,7 +651,7 @@ class OzonModel(OzonModelBase):
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env
-        self.setting_app = orm.app_settings.copy()
+        self.setting_app = orm.app_settings.model_copy()
         self.db: Mongo = orm.env.db
         self.mm_from_cache = False
         self.use_cache = False

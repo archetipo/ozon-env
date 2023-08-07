@@ -365,8 +365,10 @@ class CoreModel(MainModel):
     def renew_id(self):
         self.id = PyObjectId()
 
-    def get_dict_copy(self, exclude=[]):
-        return self.get_dict(exclude=exclude)
+    def get_dict_copy(self, exclude=[], compute_datetime: bool = True):
+        return self.get_dict(
+            exclude=exclude, compute_datetime=compute_datetime
+        )
 
     def rec_name_domain(self):
         return {"rec_name": self.rec_name}.copy()
@@ -383,9 +385,11 @@ class CoreModel(MainModel):
         if ignore_fields is None:
             ignore_fields = []
         if ignore_fields and remove_ignore_fileds:
-            original_dict = self.get_dict(exclude=ignore_fields)
+            original_dict = self.get_dict(
+                exclude=ignore_fields, compute_datetime=False
+            )
         else:
-            original_dict = self.get_dict()
+            original_dict = self.get_dict(compute_datetime=False)
         diff = {
             k: v
             for k, v in to_compare_dict.items()

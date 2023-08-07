@@ -511,16 +511,16 @@ class OzonModelBase(OzonMBase):
             coll = self.db.engine.get_collection(self.data_model)
             original = await self.load(record.rec_name_domain())
             if not self.virtual:
+                _save = record.get_dict(compute_datetime=False)
                 to_save = original.get_dict_diff(
-                    record.get_dict_copy(),
+                    _save.copy(),
                     ignore_fields=default_list_metadata_fields_update,
                     remove_ignore_fileds=remove_mata,
                 )
-
             else:
-                to_save = self._make_from_dict(
-                    copy.deepcopy(record.get_dict(compute_datetime=False))
-                )
+                to_save = record.get_dict(compute_datetime=False)
+
+            to_save = self._make_from_dict(copy.deepcopy(to_save))
             if "rec_name" in to_save:
                 to_save.pop("rec_name")
             to_save["update_uid"] = self.orm.user_session.get("user.uid")

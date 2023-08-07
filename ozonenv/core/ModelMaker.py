@@ -694,7 +694,7 @@ class BaseModelMaker:
             "textarea": [str, ""],
             "number": [int, 0],
             "number_f": [float, 0.0],
-            "select": [Any, ""],
+            "select": [str, ""],
             "select_multi": [List[Any], []],
             "checkbox": [bool, False],
             "radio": [str, ""],

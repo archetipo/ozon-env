@@ -2,7 +2,7 @@
 echo "update system"
 poetry update
 echo "make compose"
-docker-compose up -d
+docker-compose  up -d --force-recreate
 echo "check code"
 poetry run black ozonenv/**/*.py
 poetry run flake8 ozonenv/**/*.py

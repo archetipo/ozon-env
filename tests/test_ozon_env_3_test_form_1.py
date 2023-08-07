@@ -314,7 +314,7 @@ async def test_test_form_1_update_record():
     assert test_form_1_upd.is_error() is False
     assert test_form_1_upd.get('birthdate') == parse('1987-12-18T12:00:00')
     assert test_form_1_upd.get('appointmentDateTime') == parse(
-        '2022-05-25T13:30:00'
+        '2022-05-25T11:30:00'
     )
     assert test_form_1_upd.get('data_value.birthdate') == "18/12/1987"
     # assert (

@@ -443,12 +443,14 @@ class OzonOrm:
         mclass = camel(model_name)
         module_name = f"{model_name}"
         file_path = f"{self.models_path}/{model_name}.py"
-        module = SourceFileLoader(module_name, file_path).exec_module()
+        module = SourceFileLoader(module_name, file_path).load_module()
         model, parent = _getattribute(module, mclass)
         self.orm_static_models_map[model_name] = model
 
     async def make_local_model(self, mod, version):
-        jdata = mod.mm.model.model_json_schema()
+        jdata = mod.mm.model.schema_json(indent=2)
+        # TODO but generator rise exception in asyncfile
+        # jdata = mod.mm.model.model_json_schema()
         async with aiofiles.open(f"/tmp/{mod.name}.json", "w+") as mod_file:
             await mod_file.write(jdata)
         res = await self.runcmd(

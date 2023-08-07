@@ -6,7 +6,7 @@ import json
 import logging
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Any
 
 from json_logic import jsonLogic
 from pydantic import create_model
@@ -694,8 +694,8 @@ class BaseModelMaker:
             "textarea": [str, ""],
             "number": [int, 0],
             "number_f": [float, 0.0],
-            "select": [str, ""],
-            "select_multi": [List[str], []],
+            "select": [Any, ""],
+            "select_multi": [List[Any], []],
             "checkbox": [bool, False],
             "radio": [str, ""],
             "survey": [dict, {}],
@@ -724,6 +724,9 @@ class BaseModelMaker:
         self.fields_limit_value = {}
         self.default_sort_str = "list_order:desc,"
         self.schema_object = None
+        self.regex_dt = re.compile(
+            r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})"
+        )
 
     def get_field_value(self, v):
         type_def = {
@@ -744,8 +747,7 @@ class BaseModelMaker:
             r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
             r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
         )
-        regex_dt = re.compile(r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})")
-        dtr = regex_dt.search(s)
+        dtr = self.regex_dt.search(s)
         if dtr:
             return dtr.group(0)
         else:
@@ -797,8 +799,7 @@ class BaseModelMaker:
             r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
             r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
         )
-        regex_dt = re.compile(r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})")
-        dtr = regex_dt.search(s)
+        dtr = self.regex_dt.search(s)
         if dtr:
             return datetime
         else:

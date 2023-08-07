@@ -5,8 +5,8 @@ import iso8601
 from dateutil.parser import *
 
 from ozonenv.OzonEnv import OzonEnv
-from ozonenv.core.exceptions import SessionException
 from ozonenv.core.BaseModels import defaultdt
+from ozonenv.core.exceptions import SessionException
 from test_common import *
 
 pytestmark = pytest.mark.asyncio
@@ -61,15 +61,15 @@ async def test_env_data_file_virtual_model():
     doc_not_saved = await virtual_doc_model.insert(doc)
     assert doc_not_saved is None
     assert (
-            virtual_doc_model.message ==
-            "Non è consetito salvare un oggetto virtuale"
+        virtual_doc_model.message
+        == "Non è consetito salvare un oggetto virtuale"
     )
 
     doc_not_saved = await virtual_doc_model.update(doc)
     assert doc_not_saved is None
     assert (
-            virtual_doc_model.message ==
-            "Non e' consentito aggiornare un oggetto virtuale"
+        virtual_doc_model.message
+        == "Non e' consentito aggiornare un oggetto virtuale"
     )
 
     await env.close_db()
@@ -88,8 +88,8 @@ async def test_component_test_form_1_init():
     assert component.update_datetime == parse("1970-01-01T00:00:00")
     assert len(component.get('components')) == 10
     assert (
-            env.get('test_form_1').schema.get(
-                "components")[0].get("key") == "columns"
+        env.get('test_form_1').schema.get("components")[0].get("key")
+        == "columns"
     )
     await env.close_db()
 
@@ -186,12 +186,16 @@ async def test_test_form_1_init_data():
     # model is in env.models
 
     test_form_1_model = env.get('test_form_1')
-    assert test_form_1_model.model.get_unique_fields() == ["rec_name",
-                                                           "firstName"]
+    assert test_form_1_model.model.get_unique_fields() == [
+        "rec_name",
+        "firstName",
+    ]
 
     test_form_1 = await test_form_1_model.new(data)
     assert test_form_1.is_error() is False
-    assert test_form_1.birthdate == iso8601.parse_date("1987-12-17T12:00:00+02:00")
+    assert test_form_1.birthdate == iso8601.parse_date(
+        "1987-12-17T12:00:00+02:00"
+    )
     assert test_form_1.appointmentDateTime1 == parse(defaultdt)
     dictres = test_form_1.model_dump()
     assert dictres['appointmentDateTime1'] == ''
@@ -214,19 +218,19 @@ async def test_test_form_1_insert_ok():
     assert test_form_1.is_error() is False
     assert test_form_1.get("owner_uid") == ""
     assert test_form_1.get("rec_name") == "first_form"
-    assert test_form_1.get('birthdate') == iso8601.parse_date("1987-12-17T12:00:00+02:00")
+    assert test_form_1.get('birthdate') == iso8601.parse_date(
+        "1987-12-17T12:00:00+02:00"
+    )
     assert test_form_1.get('data_value.birthdate') == "17/12/1987"
 
     test_form_1 = await test_form_1_model.insert(test_form_1)
     assert test_form_1.is_error() is False
     assert test_form_1.get("owner_uid") == test_form_1_model.user_session.get(
-        'uid')
+        'uid'
+    )
     assert test_form_1.get("rec_name") == "first_form"
     assert test_form_1.create_datetime.date() == datetime.now().date()
     await env.close_env()
-
-
-
 
 
 @pytestmark
@@ -247,23 +251,29 @@ async def test_test_form_1_insert_ko():
     await env.set_lang("en")
     test_form_en = await test_form_1_model.insert(test_form_1)
     assert test_form_en is None
-    assert test_form_1_model.message == "Duplicate key error" \
-                                        " rec_name: first_form"
+    assert (
+        test_form_1_model.message == "Duplicate key error"
+        " rec_name: first_form"
+    )
 
     await env.set_lang("it")
 
     test_form_1.set('rec_name', "first form")
     test_form_e1 = await test_form_1_model.insert(test_form_1)
     assert test_form_e1 is None
-    assert test_form_1_model.message == "Caratteri non consetiti" \
-                                        " nel campo name: first form"
+    assert (
+        test_form_1_model.message == "Caratteri non consetiti"
+        " nel campo name: first form"
+    )
 
     data_err = data.copy()
     data_err['rec_name'] = "first/form"
     test_form_e2 = await test_form_1_model.new(data=data_err)
     assert test_form_e2 is None
-    assert test_form_1_model.message == "Caratteri non consetiti " \
-                                        "nel campo name: first/form"
+    assert (
+        test_form_1_model.message == "Caratteri non consetiti "
+        "nel campo name: first/form"
+    )
 
     await env.close_env()
 
@@ -281,5 +291,35 @@ async def test_test_form_1_copy_record():
     assert test_form_1_copy.create_datetime.date() == datetime.now().date()
     test_form_1_copy = await test_form_1_model.insert(test_form_1_copy)
     assert test_form_1_copy.is_error() is False
+    # test rec_name --> model.ids
+    await env.close_env()
+
+
+async def test_test_form_1_update_record():
+    env = OzonEnv()
+    await env.init_env()
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    test_form_1_model = await env.add_model('test_form_1')
+    test_form_1 = await test_form_1_model.load({'rec_name': 'first_form'})
+    assert test_form_1.get("rec_name") == f"first_form"
+    assert test_form_1.appointmentDateTime == parse('2022-05-25T13:30:00')
+    assert (
+        test_form_1.get('data_value.appointmentDateTime')
+        == '25/05/2022 13:30:00'
+    )
+    assert test_form_1.get('data_value.birthdate') == "17/12/1987"
+    test_form_1.birthdate = parse('1987-12-18T12:00:00')
+    test_form_1_upd = await test_form_1_model.update(test_form_1)
+    assert test_form_1_upd.is_error() is False
+    assert test_form_1_upd.get('birthdate') == parse('1987-12-18T12:00:00')
+    assert test_form_1_upd.get('appointmentDateTime') == parse(
+        '2022-05-25T13:30:00'
+    )
+    assert test_form_1_upd.get('data_value.birthdate') == "18/12/1987"
+    assert (
+        test_form_1_upd.get('data_value.appointmentDateTime')
+        == '25/05/2022 13:30:00'
+    )
     # test rec_name --> model.ids
     await env.close_env()

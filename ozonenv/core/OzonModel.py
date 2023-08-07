@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import bson
-import iso8601
 import pydantic
 import pymongo
 from dateutil.parser import parse
@@ -174,13 +173,21 @@ class OzonMBase:
     def _readable_datetime(self, val):
         if isinstance(val, str):
             try:
-                return parse(val).strftime(self.setting_app.ui_datetime_mask)
-            except Exception:
-                return (
-                    iso8601.parse_date(val)
-                    .isoformat(timespec="seconds")
-                    .strftime(self.setting_app.ui_datetime_mask)
+                g = self.mm.regex_dt.search(val)
+                return parse(g.group(0)).strftime(
+                    self.setting_app.ui_datetime_mask
                 )
+            except Exception:
+                logger.error(f" parsin {g}")
+                return datetime.now()
+                # return parse(g.group(0)).strftime(
+                #     self.setting_app.ui_datetime_mask
+                # )
+                # return (
+                #     iso8601.parse_date(g.group(0))
+                #     .isoformat(timespec="seconds")
+                #     .strftime(self.setting_app.ui_datetime_mask)
+                # )
         else:
             return val.strftime(self.setting_app.ui_datetime_mask)
 
@@ -512,15 +519,16 @@ class OzonModelBase(OzonMBase):
             original = await self.load(record.rec_name_domain())
             if not self.virtual:
                 _save = record.get_dict(compute_datetime=False)
+                to_save_base = self._make_from_dict(copy.deepcopy(_save))
                 to_save = original.get_dict_diff(
                     _save.copy(),
                     ignore_fields=default_list_metadata_fields_update,
                     remove_ignore_fileds=remove_mata,
                 )
+                to_save['data_value'] = to_save_base['data_value']
             else:
                 to_save = record.get_dict(compute_datetime=False)
-
-            to_save = self._make_from_dict(copy.deepcopy(to_save))
+                to_save = self._make_from_dict(copy.deepcopy(to_save))
             if "rec_name" in to_save:
                 to_save.pop("rec_name")
             to_save["update_uid"] = self.orm.user_session.get("user.uid")

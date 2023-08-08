@@ -1,12 +1,13 @@
 import asyncio
 import copy
 import json
+import sys
+import importlib
 import logging
 
 # from ozonenv.core.cache.cache import get_cache
 import os
 import time as time_
-from importlib.machinery import SourceFileLoader
 from os.path import dirname, exists
 
 import aiofiles
@@ -442,7 +443,10 @@ class OzonOrm:
         mclass = camel(model_name)
         module_name = f"{model_name}"
         file_path = f"{self.models_path}/{model_name}.py"
-        module = SourceFileLoader(module_name, file_path).load_module()
+        spec = importlib.util.spec_from_file_location(module_name, file_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
         model, parent = _getattribute(module, mclass)
         self.orm_static_models_map[model_name] = model
 

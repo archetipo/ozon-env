@@ -451,11 +451,9 @@ class OzonOrm:
         self.orm_static_models_map[model_name] = model
 
     async def make_local_model(self, mod, version):
-        jdata = mod.mm.model.schema_json(indent=2)
-        # TODO but generator rise exception in asyncfile
-        # jdata = mod.mm.model.model_json_schema()
+        jdata = mod.mm.model.model_json_schema()
         async with aiofiles.open(f"/tmp/{mod.name}.json", "w+") as mod_file:
-            await mod_file.write(jdata)
+            await mod_file.write(json.dumps(jdata))
         res = await self.runcmd(
             f"datamodel-codegen --input /tmp/{mod.name}.json"
             f" --output {self.models_path}/{mod.name}.py "

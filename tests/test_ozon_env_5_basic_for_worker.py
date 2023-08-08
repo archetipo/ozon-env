@@ -117,7 +117,7 @@ class MockWorker1(OzonWorkerEnv):
             row_o = await self.virtual_row_doc_model.new(
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
                 data=row_dictr.data.copy(),
-                fields_parser={"code": {"type": "string"}}
+                fields_parser={"code": {"type": "string"}},
             )
             row_o.parent = v_doc.rec_name
             assert row_o.nrRiga == row.nrRiga

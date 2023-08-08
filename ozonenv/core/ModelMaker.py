@@ -845,7 +845,7 @@ class BaseModelMaker:
                     if self.check_all_list(list_data, int):
                         dict_data[k] = (List[int], default)
             else:  # Update Key-Value
-                if k != "_id":
+                if not k == "_id":
                     dict_data[k] = self.parse_make_field(v, k)
         return dict_data.copy()
 

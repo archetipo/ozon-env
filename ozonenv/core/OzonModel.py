@@ -10,8 +10,6 @@ import bson
 import pydantic
 import pymongo
 from dateutil.parser import parse
-from pydantic._internal._model_construction import ModelMetaclass
-
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
@@ -28,6 +26,7 @@ from ozonenv.core.db.BsonTypes import JsonEncoder
 from ozonenv.core.exceptions import SessionException
 from ozonenv.core.i18n import _
 from ozonenv.core.utils import is_json
+from pydantic._internal._model_construction import ModelMetaclass
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +35,15 @@ class OzonMBase:
     def __init__(
         self,
         model_name,
-        setting_app={},
+        setting_app: dict = None,
         data_model="",
         session_model=False,
         virtual=False,
         static: BasicModel = None,
-        schema={},
+        schema: dict = None,
     ):
         """
+
         :param model_name: the name of model must be unique
         :param setting_app: base App settings
         :param data_model: the name of data model in case of virtual model
@@ -58,6 +58,11 @@ class OzonMBase:
                     maker.
         :param schema: formio form schema, mandatory if
         """
+
+        if schema is None:
+            schema = {}
+        if setting_app is None:
+            setting_app = {}
         self.model = None
         self.name = model_name
         self.setting_app: Settings = setting_app
@@ -160,7 +165,11 @@ class OzonMBase:
                 return type_def.get(rgx.lastgroup)
 
     def make_data_value(self, val, cfg):
-        if cfg["type"] == "datetime":
+        if cfg["type"] == "int":
+            res = int(val)
+        elif cfg["type"] == "str":
+            res = str(val)
+        elif cfg["type"] == "datetime":
             res = self._readable_datetime(val)
         elif cfg["type"] == "date":
             res = self._readable_date(val)
@@ -383,7 +392,13 @@ class OzonModelBase(OzonMBase):
             domain = self.default_domain
         return await self.count_by_filter(domain)
 
-    async def new(self, data={}, rec_name="", trnf_config={}) -> CoreModel:
+    async def new(
+        self, data: dict = None, rec_name="", trnf_config: dict = None
+    ) -> CoreModel:
+        if trnf_config is None:
+            trnf_config = {}
+        if data is None:
+            data = {}
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
             self.error_status(msg, data={})
@@ -396,6 +411,7 @@ class OzonModelBase(OzonMBase):
         if not self.virtual:
             data = self.decode_datetime(data)
             data = self._make_from_dict(copy.deepcopy(data))
+
         self.transform_config = trnf_config.copy()
         self.load_data(data)
         if not self.name_allowed.match(self.modelr.rec_name):

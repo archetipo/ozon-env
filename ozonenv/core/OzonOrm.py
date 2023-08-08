@@ -11,8 +11,6 @@ from os.path import dirname, exists
 
 import aiofiles
 from aiopath import AsyncPath
-from starlette.concurrency import run_in_threadpool
-
 from ozonenv.core.BaseModels import (
     DbViewModel,
     Component,
@@ -37,6 +35,7 @@ from ozonenv.core.db.mongodb_utils import (
 from ozonenv.core.exceptions import SessionException
 from ozonenv.core.i18n import _
 from ozonenv.core.i18n import update_translation
+from starlette.concurrency import run_in_threadpool
 
 logger = logging.getLogger(__file__)
 
@@ -570,6 +569,7 @@ class OzonOrm:
 
     async def add_model(self, model_name, virtual=False, data_model=""):
         schema = {}
+        component = None
         if not virtual:
             component = await self.env.get("component").load(
                 {"rec_name": model_name}
@@ -580,6 +580,7 @@ class OzonOrm:
             schema
             and model_name not in list(self.orm_static_models_map.keys())
             and not virtual
+            and component
         ):
             if not exists(f"{self.models_path}/{model_name}.py"):
                 await self.init_model_and_write_code(
@@ -592,8 +593,10 @@ class OzonOrm:
         self.db_models = await self.get_collections_names()
 
     async def make_model(
-        self, model_name, schema={}, virtual=False, data_model=""
+        self, model_name, schema: dict = None, virtual=False, data_model=""
     ):
+        if schema is None:
+            schema = {}
         if model_name in list(self.orm_static_models_map.keys()) or virtual:
             session_model = model_name == "session"
             if not data_model and schema:

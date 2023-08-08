@@ -649,7 +649,9 @@ class surveyComponent(Component):
 
 
 class BaseModelMaker:
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, fields_parser: dict = None):
+        if not fields_parser:
+            fields_parser = {}
         self.components = {}
         self.components_keys = []
         self.model_form_fields = {}
@@ -680,6 +682,7 @@ class BaseModelMaker:
         self.no_clone_field_keys = ["rec_name"]
         self.computed_fields = {}
         self.fields_properties = {}
+        self.fields_parser = fields_parser
         self.create_task_action = []
         self.create_model_to_nesteded = ["datagrid", "form", "table"]
         self.create_simple_model_to_nesteded = []
@@ -727,9 +730,7 @@ class BaseModelMaker:
         self.regex_dt = re.compile(
             r"(\d{4}-\d{2}-\d{2})[A-Z]+(\d{2}:\d{2}:\d{2})"
         )
-
-    def get_field_value(self, v):
-        type_def = {
+        self.type_def = {
             "int": int,
             "string": str,
             "float": float,
@@ -738,6 +739,8 @@ class BaseModelMaker:
             "date": datetime,
         }
 
+    def get_field_value(self, v):
+        type_def = self.type_def
         s = v
         if not isinstance(v, str):
             s = str(v)
@@ -782,14 +785,7 @@ class BaseModelMaker:
                     return s
 
     def get_field_type(self, v):
-        type_def = {
-            "int": int,
-            "string": str,
-            "float": float,
-            "dict": dict,
-            "list": list,
-            "date": datetime,
-        }
+        type_def = self.type_def
         s = v
         if not isinstance(v, str):
             s = str(v)
@@ -816,8 +812,12 @@ class BaseModelMaker:
             else:
                 return type_def.get(rgx.lastgroup)
 
-    def parse_make_field(self, v, k=""):
-        return (self.get_field_type(v), self.get_field_value(v))
+    def parse_make_field(self, v, k="") -> tuple[type, Any]:
+        if k in self.fields_parser:
+            ftype = self.type_def[self.fields_parser[k]['type']]
+            return ftype, ftype(v)
+        else:
+            return self.get_field_type(v), self.get_field_value(v)
 
     def check_all_list(self, list_data: list, type_to_check: type) -> bool:
         return all([type(x) == type_to_check for x in list_data])
@@ -846,7 +846,7 @@ class BaseModelMaker:
                         dict_data[k] = (List[int], default)
             else:  # Update Key-Value
                 if k != "_id":
-                    dict_data[k] = self.parse_make_field(v)
+                    dict_data[k] = self.parse_make_field(v, k)
         return dict_data.copy()
 
     def _make_models(self, dict_data):
@@ -891,8 +891,10 @@ class BaseModelMaker:
 
 
 class FormioModelMaker(BaseModelMaker):
-    def __init__(self, model_name: str):
-        super(FormioModelMaker, self).__init__(model_name=model_name)
+    def __init__(self, model_name: str, fields_parser: dict = None):
+        super(FormioModelMaker, self).__init__(
+            model_name=model_name, fields_parser=fields_parser
+        )
         self.default_sort_str = "list_order:desc,"
         self.component_props = {}
         self.select_fields = []

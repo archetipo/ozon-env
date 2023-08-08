@@ -1,20 +1,15 @@
-import pytest
-from test_common import *
-from ozonenv.core.ModelMaker import ModelMaker, BasicModel, MainModel
-from ozonenv.core.BaseModels import CoreModel
-from pydantic._internal._model_construction import ModelMetaclass
-from ozonenv.OzonEnv import OzonWorkerEnv, OzonEnv, BasicReturn
-from datetime import *
-from dateutil.parser import *
-import traceback
 import locale
-import logging
+import traceback
+
+from ozonenv.OzonEnv import OzonWorkerEnv, OzonEnv, BasicReturn
+from ozonenv.core.BaseModels import CoreModel
+from ozonenv.core.ModelMaker import MainModel
+from test_common import *
 
 pytestmark = pytest.mark.asyncio
 
 
 class MockWorker1(OzonWorkerEnv):
-
     async def session_app(self) -> BasicReturn:
         sres = await super(MockWorker1, self).session_app()
         if sres.fail:
@@ -27,22 +22,25 @@ class MockWorker1(OzonWorkerEnv):
         assert self.p_model.data_model == "documento"
 
         self.virtual_doc_model = await self.add_model(
-            'virtual_doc', virtual=True,
-            data_model=self.p_model.data_model)
+            'virtual_doc', virtual=True, data_model=self.p_model.data_model
+        )
 
         self.virtual_row_doc_model = await self.add_model(
-            'virtual_row_doc', virtual=True,
-            data_model='riga_doc')
+            'virtual_row_doc', virtual=True, data_model='riga_doc'
+        )
         try:
             documento = await self.process_document(data)
             if not documento:
                 return self.exception_response(
-                    self.virtual_row_doc_model.message)
+                    self.virtual_row_doc_model.message
+                )
 
             action_next_page = f"/action/doc/{documento.rec_name}"
             action_next_page = self.next_client_url(
-                params=self.params, default_url=action_next_page,
-                rec_ref=documento.rec_name)
+                params=self.params,
+                default_url=action_next_page,
+                rec_ref=documento.rec_name,
+            )
             result = {
                 "done": True,
                 "error": False,
@@ -53,29 +51,27 @@ class MockWorker1(OzonWorkerEnv):
                 "update_data": True,
                 "valis": False,
                 "model": self.p_model.name,
-                "rec_name": documento.rec_name
+                "rec_name": documento.rec_name,
             }
             res_data = {
                 self.topic_name: result,
-                self.p_model.name: documento.get_dict_json()
+                self.p_model.name: documento.get_dict_json(),
             }
 
-            return self.success_response(
-                msg="Done", data=res_data
-            )
+            return self.success_response(msg="Done", data=res_data)
         except Exception as e:
             print(f"session_app exception {traceback.format_exc()}")
             return self.exception_response(
-                str(e), err_details=str(traceback.format_exc()))
+                str(e), err_details=str(traceback.format_exc())
+            )
 
     async def process_document(self, data_doc) -> CoreModel:
         data_doc['stato'] = ""
         data_doc['tipologia'] = []
         data_doc['document_type'] = ""
-        data_doc['document_type'] = ""
         data_doc['ammImpEuro'] = 0.0
         data_doc['ammImpScontatoConIvaEuro'] = 0.0
-        data_doc['ammImpScontatoEuro'] = 00
+        data_doc['ammImpScontatoEuro'] = 0.0
         data_doc['ammIvaEuro'] = 0.0
         data_doc['ammScontoEuro'] = 0.0
         data_doc['anomalia_gestita'] = False
@@ -86,15 +82,14 @@ class MockWorker1(OzonWorkerEnv):
             trnf_config={
                 "dtRegistrazione": {"type": 'date'},
                 "ammImpEuro": {"type": 'float', "dp": 2},
-            })
+            },
+        )
 
         if self.virtual_doc_model.is_error():
             return v_doc
 
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
-        v_doc.selection_value(
-            'tipologia', ["a", "b"], ["A", "B"]
-        )
+        v_doc.selection_value('tipologia', ["a", "b"], ["A", "B"])
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
         v_doc.selection_value("stato", "caricato", "Caricato")
 
@@ -106,21 +101,23 @@ class MockWorker1(OzonWorkerEnv):
         assert isinstance(v_doc.dg15XVoceCalcolata[0], MainModel) is True
 
         for id, row in enumerate(v_doc.dg15XVoceCalcolata):
-
             row_dictr = self.virtual_row_doc_model.get_dict_record(
-                row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
+                row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}"
+            )
 
             # handle record and add fields at runtime
-            row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
+            row_dictr.set_many(
+                {"stato": "", "prova": "test", "prova1": 0, "code": "27"}
+            )
             row_dictr.selection_value("stato", "caricato", "Caricato")
-            row_dictr.selection_value(
-                'tipologia', ["a", "b"], ["A", "B"])
+            row_dictr.selection_value('tipologia', ["a", "b"], ["A", "B"])
 
             assert row_dictr.get('data_value.stato').startswith("Car") is True
 
             row_o = await self.virtual_row_doc_model.new(
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
-                data=row_dictr.data.copy()
+                data=row_dictr.data.copy(),
+                fields_parser={"code": {"type": "string"}}
             )
             row_o.parent = v_doc.rec_name
             assert row_o.nrRiga == row.nrRiga
@@ -132,6 +129,7 @@ class MockWorker1(OzonWorkerEnv):
             assert row_o.get('dett.test').startswith("a") is True
             assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
+            assert row_o.code == "27"
             assert row_o.active is True
             assert row_o.deleted == 0
 
@@ -169,7 +167,8 @@ class MockWorker1(OzonWorkerEnv):
             assert row_db.list_order == id
 
         rows = await self.virtual_row_doc_model.find(
-            {"parent": v_doc.rec_name})
+            {"parent": v_doc.rec_name}
+        )
 
         assert len(rows) == num_doc
 
@@ -177,7 +176,8 @@ class MockWorker1(OzonWorkerEnv):
 
         assert documento.dec_nome == "Test Dec"
         assert documento.data_value['ammImpEuro'] == locale.format_string(
-            '%.2f', 1446.16, grouping=True)
+            '%.2f', 1446.16, grouping=True
+        )
         assert documento.anomalia_gestita is False
         assert documento.data_value['dtRegistrazione'] == "24/05/2022"
         doc_bn = await self.p_model.load({"rec_name": documento.rec_name})
@@ -186,7 +186,6 @@ class MockWorker1(OzonWorkerEnv):
 
 
 class MockWorker2(MockWorker1):
-
     async def process_document(self, data_doc) -> CoreModel:
         data_doc["numeroRegistrazione"] = "9"
         data_doc["idDg"] = "99998"
@@ -207,7 +206,8 @@ class MockWorker2(MockWorker1):
             trnf_config={
                 "dtRegistrazione": {"type": 'date'},
                 "ammImpEuro": {"type": 'float', "dp": 2},
-            })
+            },
+        )
 
         if self.virtual_doc_model.is_error():
             return v_doc
@@ -217,41 +217,44 @@ class MockWorker2(MockWorker1):
         query = {
             "$and": [
                 {"active": True},
-                {"document_type": {
-                    "$in": ["ordine"]}},
+                {"document_type": {"$in": ["ordine"]}},
                 {"numeroRegistrazione": 8},
-                {"annoRif": v_doc.annoRif}
+                {"annoRif": v_doc.annoRif},
             ]
         }
         other_doc_raw = await self.p_model.load_raw(query)
         assert other_doc_raw['rec_name'] == "DOC99999"
         v_doc.other_doc = other_doc_raw.copy()
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
-        v_doc.selection_value(
-            'tipologia', ["a", "b"], ["A", "B"])
+        v_doc.selection_value('tipologia', ["a", "b"], ["A", "B"])
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
         v_doc.selection_value("stato", "caricato", "Caricato")
 
         assert v_doc.ammImpEuro == 1446.16
         assert v_doc.other_doc.get("ammImpEuro") == 1446.16
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133
-        assert v_doc.other_doc.get(
-            "dg18XIndModOrdinat").get("denominazione") == "Mario Rossi"
+        assert (
+            v_doc.other_doc.get("dg18XIndModOrdinat").get("denominazione")
+            == "Mario Rossi"
+        )
 
         for id, row in enumerate(v_doc.dg15XVoceCalcolata):
             row_dictr = self.virtual_row_doc_model.get_dict_record(
-                row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}")
+                row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}"
+            )
 
-            row_dictr.set_many({"stato": "", "prova": "test", "prova1": 0})
+            row_dictr.set_many(
+                {"stato": "", "prova": "test", "prova1": 0, "code": "27"}
+            )
             row_dictr.selection_value("stato", "caricato", "Caricato")
-            row_dictr.selection_value(
-                'tipologia', ["a", "b"], ["A", "B"])
+            row_dictr.selection_value('tipologia', ["a", "b"], ["A", "B"])
 
             assert row_dictr.get('data_value.stato').startswith("Car") is True
 
             row_o = await self.virtual_row_doc_model.new(
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
-                data=row_dictr.data.copy()
+                data=row_dictr.data.copy(),
+                fields_parser={"code": {"type": "string"}},
             )
 
             assert row_o.nrRiga == row.nrRiga
@@ -263,6 +266,7 @@ class MockWorker2(MockWorker1):
             assert row_o.get('dett.test').startswith("a") is True
             assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
+            assert row_o.code == "27"
 
             row_db = await self.virtual_row_doc_model.insert(row_o)
 
@@ -293,10 +297,13 @@ class MockWorker2(MockWorker1):
 
         assert documento.dec_nome == "Test Dec"
         assert documento.data_value['ammImpEuro'] == locale.format_string(
-            '%.2f', 1446.16, grouping=True)
+            '%.2f', 1446.16, grouping=True
+        )
         assert documento.other_doc.get("ammImpEuro") == 1446.16
-        assert documento.other_doc.get(
-            "dg18XIndModOrdinat").get("denominazione") == "Mario Rossi"
+        assert (
+            documento.other_doc.get("dg18XIndModOrdinat").get("denominazione")
+            == "Mario Rossi"
+        )
         assert documento.data_value['dtRegistrazione'] == "24/05/2022"
         return documento
 
@@ -310,7 +317,7 @@ async def test_base_worker_env():
         "topic_name": "test_topic",
         "document_type": "standard",
         "model": "",
-        "session_is_api": False
+        "session_is_api": False,
     }
     await worker.session_app()
     assert worker.model == ""
@@ -356,8 +363,8 @@ async def test_init_worker_ok():
             "session_is_api": False,
             "action_next_page": {
                 "success": {"form": "/open/doc"},
-            }
-        }
+            },
+        },
     )
     assert res.fail is False
     assert res.data['test_topic']["error"] is False
@@ -381,8 +388,8 @@ async def test_init_worker_fail():
             "session_is_api": False,
             "action_next_page": {
                 "success": {"form": "/open/doc"},
-            }
-        }
+            },
+        },
     )
     assert res.fail is True
     assert res.msg == "Errore Duplicato rec_name: DOC99999.1"
@@ -406,8 +413,8 @@ async def test_worker2_with_nested():
             "session_is_api": False,
             "action_next_page": {
                 "success": {"form": "/open/doc"},
-            }
-        }
+            },
+        },
     )
     assert res.fail is False
     assert res.data['test_topic']["error"] is False

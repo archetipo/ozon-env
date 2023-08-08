@@ -10,6 +10,8 @@ import bson
 import pydantic
 import pymongo
 from dateutil.parser import parse
+from pydantic._internal._model_construction import ModelMetaclass
+
 from ozonenv.core.BaseModels import (
     Component,
     BasicModel,
@@ -26,7 +28,6 @@ from ozonenv.core.db.BsonTypes import JsonEncoder
 from ozonenv.core.exceptions import SessionException
 from ozonenv.core.i18n import _
 from ozonenv.core.utils import is_json
-from pydantic._internal._model_construction import ModelMetaclass
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ class OzonMBase:
         self.default_domain = {"active": True, "deleted": 0}
         self.archived_domain = {"active": False, "deleted": {"$gt": 0}}
         self.transform_config = {}
+        self.virtual_fields_parser = {}
         self.status: BasicReturn = BasicReturn(
             **{"fail": False, "msg": "", "data": {}}
         )
@@ -258,12 +260,11 @@ class OzonMBase:
         if not self.virtual:
             self.modelr = self.model(**data)
         else:
-            self.mm = ModelMaker(self.data_model)
+            self.mm = ModelMaker(
+                self.data_model, fields_parser=self.virtual_fields_parser
+            )
             if self.transform_config:
                 self.tranform_data_value = self.transform_config.copy()
-            data = self._make_from_dict(copy.deepcopy(data))
-            # if data.get("_id"):
-            #     data.pop("_id")
             self.mm.from_data_dict(data)
 
             self.modelr = self.mm.new()
@@ -359,7 +360,9 @@ class OzonModelBase(OzonMBase):
         )
         return dat
 
-    def set_user_data(self, record: CoreModel, user={}) -> CoreModel:
+    def set_user_data(self, record: CoreModel, user: dict = None) -> CoreModel:
+        if user is None:
+            user = {}
         record.owner_uid = user.get("user.uid")
         record.owner_name = user.get("user.full_name", "")
         record.owner_mail = user.get("user.mail", "")
@@ -387,19 +390,37 @@ class OzonModelBase(OzonMBase):
             val = 0
         return int(val)
 
-    async def count(self, domain={}) -> int:
+    async def count(self, domain: dict = None) -> int:
+        if domain is None:
+            domain = {}
         self.init_status()
         if not domain:
             domain = self.default_domain
         return await self.count_by_filter(domain)
 
     async def new(
-        self, data: dict = None, rec_name="", trnf_config: dict = None
+        self,
+        data: dict = None,
+        rec_name="",
+        trnf_config: dict = None,
+        fields_parser: dict = None,
     ) -> CoreModel:
+        """
+        :param data: dict data for new record.
+        :param rec_name: name value  for new record if not specify in data
+                         dict or if you want to customize it
+        :param trnf_config: dict with info to make data_value
+                            see MockWorker1 Test for an exampel
+        :param fields_parser: dict with info for parsing data when is ambigous
+                              see MockWorker1 Test for an exampel
+        :return: CoreModel
+        """
         if trnf_config is None:
             trnf_config = {}
         if data is None:
             data = {}
+        if fields_parser is None:
+            fields_parser = {}
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
             self.error_status(msg, data={})
@@ -412,7 +433,7 @@ class OzonModelBase(OzonMBase):
         if not self.virtual:
             data = self.decode_datetime(data)
             data = self._make_from_dict(copy.deepcopy(data))
-
+        self.virtual_fields_parser = fields_parser.copy()
         self.transform_config = trnf_config.copy()
         self.load_data(data)
         if not self.name_allowed.match(self.modelr.rec_name):

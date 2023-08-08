@@ -261,6 +261,7 @@ class OzonMBase:
             self.mm = ModelMaker(self.data_model)
             if self.transform_config:
                 self.tranform_data_value = self.transform_config.copy()
+            data = self._make_from_dict(copy.deepcopy(data))
             # if data.get("_id"):
             #     data.pop("_id")
             self.mm.from_data_dict(data)

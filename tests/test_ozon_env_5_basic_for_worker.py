@@ -372,7 +372,7 @@ async def test_init_worker_ok():
     assert res.data['test_topic']['next_page'] == "/open/doc/DOC99999"
     assert res.data['test_topic']['model'] == "documento_beni_servizi"
     assert res.data['documento_beni_servizi']['stato'] == "caricato"
-
+    await worker.close_env()
 
 @pytestmark
 async def test_init_worker_fail():
@@ -397,6 +397,7 @@ async def test_init_worker_fail():
     assert res.data['test_topic']["done"] is True
     assert res.data['test_topic']['next_page'] == "self"
     assert res.data['test_topic']['model'] == "documento_beni_servizi"
+    await worker.close_env()
 
 
 @pytestmark
@@ -422,3 +423,4 @@ async def test_worker2_with_nested():
     assert res.data['test_topic']['next_page'] == "/open/doc/DOC99998"
     assert res.data['test_topic']['model'] == "documento_beni_servizi"
     assert res.data['documento_beni_servizi']['stato'] == "caricato"
+    await worker.close_env()

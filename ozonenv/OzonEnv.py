@@ -1,9 +1,10 @@
 import logging
+import os
 
 from ozonenv.core.BaseModels import BasicReturn
 from ozonenv.core.OzonClient import OzonClient
 from ozonenv.core.OzonOrm import OzonEnvBase, OzonModel
-from exceptions import SessionException
+
 logger = logging.getLogger(__file__)
 
 
@@ -123,6 +124,7 @@ class OzonWorkerEnv(OzonEnv):
         self.topic_name = self.params.get('topic_name', "")
         self.model = self.params.get('model', "")
         self.ozon_client = OzonClient.create(
-            self.session_token, is_api=self.session_is_api
+            self.session_token, is_api=self.session_is_api,
+            url=os.getenv("OZON_CLIENT", "http://client:8526")
         )
         return self.default_response(msg="Done")

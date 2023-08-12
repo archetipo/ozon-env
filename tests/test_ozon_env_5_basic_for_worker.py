@@ -83,15 +83,16 @@ class MockWorker1(OzonWorkerEnv):
                 "dtRegistrazione": {"type": 'date'},
                 "ammImpEuro": {"type": 'float', "dp": 2},
             },
+            data_value={"tipologia": ["A", "B"], "stato": "Caricato"},
         )
 
         if self.virtual_doc_model.is_error():
             return v_doc
 
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
-        v_doc.selection_value('tipologia', ["a", "b"], ["A", "B"])
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
-        v_doc.selection_value("stato", "caricato", "Caricato")
+        v_doc.tipologia = ["a", "b"]
+        v_doc.stato = "caricato"
 
         assert v_doc.ammImpEuro == 1446.16
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133
@@ -107,17 +108,20 @@ class MockWorker1(OzonWorkerEnv):
 
             # handle record and add fields at runtime
             row_dictr.set_many(
-                {"stato": "", "prova": "test", "prova1": 0, "code": "27"}
+                {
+                    "prova": "test",
+                    "prova1": 0,
+                    "code": "27",
+                    "stato": "caricato",
+                    "tipologia": ["a", "b"],
+                }
             )
-            row_dictr.selection_value("stato", "caricato", "Caricato")
-            row_dictr.selection_value('tipologia', ["a", "b"], ["A", "B"])
-
-            assert row_dictr.get('data_value.stato').startswith("Car") is True
 
             row_o = await self.virtual_row_doc_model.new(
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
                 data=row_dictr.data.copy(),
                 fields_parser={"code": {"type": "string"}},
+                data_value={"tipologia": ["A", "B"], "stato": "Caricato"},
             )
             row_o.parent = v_doc.rec_name
             assert row_o.nrRiga == row.nrRiga
@@ -251,7 +255,7 @@ class MockWorker2(MockWorker1):
 
             assert row_dictr.get('data_value.stato').startswith("Car") is True
 
-            row_o = await self.virtual_row_doc_model.new(
+            row_o = await self.virtual_row_doc_model.upsert(
                 rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
                 data=row_dictr.data.copy(),
                 fields_parser={"code": {"type": "string"}},
@@ -262,36 +266,31 @@ class MockWorker2(MockWorker1):
             assert row_o.prova == "test"
             assert row_o.tipologia == ["a", "b"]
             assert row_o.data_value.get('stato') == "Caricato"
+            assert row_o.data_value.get('tipologia') ==["A", "B"]
             assert row_o.get('data_value.stato').startswith("Car") is True
             assert row_o.get('dett.test').startswith("a") is True
             assert row_o.stato == "caricato"
             assert row_o.prova1 == 0
             assert row_o.code == "27"
 
-            row_db = await self.virtual_row_doc_model.insert(row_o)
+            # load form
+            row_db = row_o.get_dict()
+            # post update
+            row_db["stato"] = "done"
+            row_db["tipologia"] = ["a", "c"]
 
-            if not row_db:
-                return row_db
-
-            assert row_db.nrRiga == row.nrRiga
-            assert row_db.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
-            assert row_db.tipologia == ["a", "b"]
-            assert row_db.data_value.get('stato') == "Caricato"
-            assert row_db.get('data_value.stato').startswith("Car") is True
-            assert row_db.stato == "caricato"
-
-            row_db.selection_value("stato", "done", 'Done')
-            row_db.selection_value("tipologia", ["a", "c"], ["A", "C"])
-
-            row_upd = await self.row_model.update(row_db)
+            row_upd = await self.row_model.upsert(
+                data=row_db,
+                data_value={"stato": "Done", "tipologia": ["A", "C"]},
+            )
 
             assert row_upd.nrRiga == row.nrRiga
             assert row_upd.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_upd.tipologia == ["a", "c"]
+            assert row_upd.stato == "done"
             assert row_upd.data_value.get('stato') == "Done"
             assert row_upd.data_value.get('tipologia') == ["A", "C"]
             assert row_upd.get('data_value.stato').startswith("Do") is True
-            assert row_upd.stato == "done"
 
         documento = await self.virtual_doc_model.insert(v_doc)
 
@@ -373,6 +372,7 @@ async def test_init_worker_ok():
     assert res.data['test_topic']['model'] == "documento_beni_servizi"
     assert res.data['documento_beni_servizi']['stato'] == "caricato"
     await worker.close_env()
+
 
 @pytestmark
 async def test_init_worker_fail():

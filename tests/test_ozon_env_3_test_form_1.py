@@ -32,17 +32,19 @@ async def test_env_data_file_virtual_model():
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     data = await get_file_data()
-    data['stato'] = ""
-    data['document_type'] = ""
+    data['stato'] = "caricato"
+    data['document_type'] = "ordine"
     data['ammImpEuro'] = 0.0
     virtual_doc_model = await env.add_model('virtual_doc', virtual=True)
     assert virtual_doc_model.virtual is True
     assert virtual_doc_model.modelr == virtual_doc_model.mm.instance
-    doc = await virtual_doc_model.new(data=data, rec_name="virtual_data.test")
+    doc = await virtual_doc_model.new(
+        data=data,
+        rec_name="virtual_data.test",
+        data_value={"stato": "Caricato", "document_type": "Ordine"}
+    )
     assert doc.get('rec_name') == 'virtual_data.test'
     assert doc.active is True
-    doc.selection_value("stato", "caricato", "Caricato")
-    doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
     doc.set_from_child('ammImpEuro', 'dg10XComm.ammImpEuro', 0.0)
     assert doc.ammImpEuro == 0.0
     assert doc.dg15XVoceTe.get('importo') == 1446.16
@@ -223,13 +225,13 @@ async def test_test_form_1_insert_ok():
     )
     assert test_form_1.get('data_value.birthdate') == "17/12/1987"
 
-    test_form_1 = await test_form_1_model.insert(test_form_1)
-    assert test_form_1.is_error() is False
-    assert test_form_1.get("owner_uid") == test_form_1_model.user_session.get(
+    test_form_1_us = await test_form_1_model.upsert(data)
+    assert test_form_1_us.is_error() is False
+    assert test_form_1_us.get("owner_uid") == test_form_1_model.user_session.get(
         'uid'
     )
-    assert test_form_1.get("rec_name") == "first_form"
-    assert test_form_1.create_datetime.date() == datetime.now().date()
+    assert test_form_1_us.get("rec_name") == "first_form"
+    assert test_form_1_us.create_datetime.date() == datetime.now().date()
     await env.close_env()
 
 
@@ -296,30 +298,18 @@ async def test_test_form_1_copy_record():
 
 
 async def test_test_form_1_update_record():
+    data = await readfilejson('data', 'test_form_1_formio_data.json')
     env = OzonEnv()
     await env.init_env()
     env.params = {"current_session_token": "BA6BA930"}
     await env.session_app()
     test_form_1_model = await env.add_model('test_form_1')
-    test_form_1 = await test_form_1_model.load({'rec_name': 'first_form'})
-    assert test_form_1.get("rec_name") == f"first_form"
-    # assert test_form_1.appointmentDateTime == parse('2022-05-25T13:30:00')
-    assert (
-        test_form_1.get('data_value.appointmentDateTime')
-        == '25/05/2022 13:30:00'
-    )
-    assert test_form_1.get('data_value.birthdate') == "17/12/1987"
-    test_form_1.birthdate = parse('1987-12-18T12:00:00')
-    test_form_1_upd = await test_form_1_model.update(test_form_1)
+    data['birthdate'] = '1987-12-18T12:00:00'
+    test_form_1_upd = await test_form_1_model.upsert(data)
     assert test_form_1_upd.is_error() is False
     assert test_form_1_upd.get('birthdate') == parse('1987-12-18T12:00:00')
     assert test_form_1_upd.get('appointmentDateTime') == parse(
         '2022-05-25T11:30:00'
     )
     assert test_form_1_upd.get('data_value.birthdate') == "18/12/1987"
-    # assert (
-    #     test_form_1_upd.get('data_value.appointmentDateTime')
-    #     == '25/05/2022 13:30:00'
-    # )
-    # test rec_name --> model.ids
     await env.close_env()

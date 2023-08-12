@@ -3,8 +3,9 @@ import json
 import locale
 import logging
 import re
+import uuid
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Union
 
 import bson
 import pydantic
@@ -213,39 +214,41 @@ class OzonMBase:
             val = float(val)
         return locale.format_string(f"%.{dp}f", val, g)
 
-    def _make_from_dict(self, dict_data):
+    def _make_from_dict(self, dict_data, data_value: dict = None):
         res_dict = {}
+        if data_value is None:
+            data_value = {}
         for k, v in dict_data.items():
             if isinstance(v, dict):  # For DICT
                 if not k == "data_value":
-                    res_dict[k] = self._make_from_dict(v)
-                else:
-                    res_dict[k] = v
+                    res_dict[k] = self._make_from_dict(v, data_value)
             elif isinstance(v, list):  # For LIST
                 res_dict[k] = []
                 for i in v:
                     if isinstance(i, dict):
-                        res_dict[k].append(self._make_from_dict(i))
+                        res_dict[k].append(self._make_from_dict(i, data_value))
                     else:
                         res_dict[k].append(i)
+            if "data_value" not in res_dict or not isinstance(res_dict, dict):
+                res_dict["data_value"] = {}
+            if k in self.tranform_data_value:
+                res_dict["data_value"][k] = self.make_data_value(
+                    v, self.tranform_data_value[k]
+                )
+            elif self._value_type(v) is datetime:
+                res_dict["data_value"][k] = self.make_data_value(
+                    v, {"type": datetime}
+                )
+            elif self._value_type(v) is float:
+                res_dict["data_value"][k] = self.make_data_value(
+                    v, {"type": float, "dp": 2}
+                )
             else:
-                if "data_value" not in res_dict or not isinstance(
-                    res_dict, dict
-                ):
-                    res_dict["data_value"] = {}
-                if k in self.tranform_data_value:
-                    res_dict["data_value"][k] = self.make_data_value(
-                        v, self.tranform_data_value[k]
-                    )
-                elif self._value_type(v) is datetime:
-                    res_dict["data_value"][k] = self.make_data_value(
-                        v, {"type": datetime}
-                    )
-                elif self._value_type(v) is float:
-                    res_dict["data_value"][k] = self.make_data_value(
-                        v, {"type": float, "dp": 2}
-                    )
-                res_dict[k] = v
+                if k in data_value:
+                    res_dict["data_value"][k] = data_value[k]
+                elif k not in res_dict["data_value"]:
+                    res_dict["data_value"][k] = v
+            res_dict[k] = v
 
         return res_dict.copy()
 
@@ -398,17 +401,23 @@ class OzonModelBase(OzonMBase):
             domain = self.default_domain
         return await self.count_by_filter(domain)
 
+    async def by_name(self, name: str) -> CoreModel:
+        return await self.load({'rec_name': name})
+
     async def new(
         self,
         data: dict = None,
         rec_name="",
+        data_value: dict = None,
         trnf_config: dict = None,
         fields_parser: dict = None,
-    ) -> CoreModel:
+    ) -> Union[None, CoreModel]:
         """
+
         :param data: dict data for new record.
         :param rec_name: name value  for new record if not specify in data
                          dict or if you want to customize it
+        :param data_value: if set fill the recod data_value
         :param trnf_config: dict with info to make data_value
                             see MockWorker1 Test for an exampel
         :param fields_parser: dict with info for parsing data when is ambigous
@@ -421,6 +430,8 @@ class OzonModelBase(OzonMBase):
             data = {}
         if fields_parser is None:
             fields_parser = {}
+        if data_value is None:
+            data_value = {}
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
             self.error_status(msg, data={})
@@ -432,7 +443,14 @@ class OzonModelBase(OzonMBase):
                 data["rec_name"] = rec_name
         if not self.virtual:
             data = self.decode_datetime(data)
-            data = self._make_from_dict(copy.deepcopy(data))
+            data = self._make_from_dict(
+                copy.deepcopy(data), data_value=data_value
+            )
+        else:
+            if data_value:
+                if "data_value" not in data:
+                    data['data_value'] = {}
+                data['data_value'].update(data_value)
         self.virtual_fields_parser = fields_parser.copy()
         self.transform_config = trnf_config.copy()
         self.load_data(data)
@@ -446,7 +464,75 @@ class OzonModelBase(OzonMBase):
 
         return self.modelr
 
-    async def insert(self, record: CoreModel) -> CoreModel | None:
+    async def upsert(
+        self,
+        data: dict = None,
+        rec_name="",
+        data_value: dict = None,
+        trnf_config: dict = None,
+        fields_parser: dict = None,
+    ) -> Union[None, CoreModel]:
+        """
+
+        :param data: dict data for new record.
+        :param rec_name: name value  for new record if not specify in data
+                         dict or if you want to customize it
+        :param data_value: if set fill the recod data_value
+        :param trnf_config: dict with info to make data_value
+                            see MockWorker1 Test for an exampel
+        :param fields_parser: dict with info for parsing data when is ambigous
+                              see MockWorker1 Test for an exampel
+        :return: CoreModel
+        """
+        if trnf_config is None:
+            trnf_config = {}
+        if data is None:
+            data = {}
+        if fields_parser is None:
+            fields_parser = {}
+        if data_value is None:
+            data_value = {}
+        if self.virtual and not self.data_model:
+            self.error_status(_("Cannot update a virtual object"), data)
+            return None
+        if not self.chk_write_permission():
+            msg = _("Session is Readonly")
+            self.error_status(msg, data={})
+            return None
+        if not self.chk_write_permission():
+            raise SessionException(detail="Session is Readonly")
+        if not data and rec_name or rec_name and self.virtual:
+            data["rec_name"] = rec_name
+        if not data.get("rec_name"):
+            data["rec_name"] = f"{self.name}.{str(uuid.uuid4().hex)}"
+        if not self.name_allowed.match(data["rec_name"]):
+            msg = (
+                _("Not allowed chars in field name: %s") % self.modelr.rec_name
+            )
+            self.error_status(msg, data=data)
+            return None
+
+        exist = await self.by_name(data["rec_name"])
+        if not self.virtual:
+            data = self.decode_datetime(data)
+            data = self._make_from_dict(
+                copy.deepcopy(data), data_value=data_value
+            )
+        else:
+            if data_value:
+                if "data_value" not in data:
+                    data['data_value'] = {}
+                data['data_value'].update(data_value)
+            self.virtual_fields_parser = fields_parser.copy()
+            self.transform_config = trnf_config.copy()
+        self.load_data(data)
+        self.modelr.set_active()
+        if exist:
+            return await self.update(self.modelr)
+        else:
+            return await self.insert(self.modelr)
+
+    async def insert(self, record: CoreModel) -> Union[None, CoreModel]:
         self.init_status()
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
@@ -475,7 +561,7 @@ class OzonModelBase(OzonMBase):
             record.list_order = await self.count()
             record.active = True
             to_save = self._make_from_dict(
-                copy.deepcopy(record.get_dict(compute_datetime=False))
+                record.get_dict(compute_datetime=False)
             )
             if "_id" not in to_save:
                 to_save['_id'] = bson.ObjectId(to_save['id'])
@@ -504,7 +590,7 @@ class OzonModelBase(OzonMBase):
             )
             return None
 
-    async def copy(self, domain) -> CoreModel:
+    async def copy(self, domain) -> Union[None, CoreModel]:
         self.init_status()
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
@@ -541,7 +627,9 @@ class OzonModelBase(OzonMBase):
         record.set_active()
         return record
 
-    async def update(self, record: CoreModel, remove_mata=True) -> CoreModel:
+    async def update(
+        self, record: CoreModel, remove_mata=True
+    ) -> Union[None, CoreModel]:
         self.init_status()
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
@@ -557,13 +645,11 @@ class OzonModelBase(OzonMBase):
             original = await self.load(record.rec_name_domain())
             if not self.virtual:
                 _save = record.get_dict(compute_datetime=False)
-                to_save_base = self._make_from_dict(copy.deepcopy(_save))
                 to_save = original.get_dict_diff(
                     _save.copy(),
                     ignore_fields=default_list_metadata_fields_update,
                     remove_ignore_fileds=remove_mata,
                 )
-                to_save['data_value'] = to_save_base['data_value']
             else:
                 to_save = record.get_dict(compute_datetime=False)
                 to_save = self._make_from_dict(copy.deepcopy(to_save))
@@ -622,14 +708,14 @@ class OzonModelBase(OzonMBase):
         num = await coll.delete_many(domain)
         return num
 
-    async def load(self, domain: dict) -> CoreModel:
+    async def load(self, domain: dict) -> Union[None, CoreModel]:
         data = await self.load_raw(domain)
         if self.status.fail:
             return None
         self.load_data(data)
         return self.modelr
 
-    async def load_raw(self, domain: dict) -> dict:
+    async def load_raw(self, domain: dict) -> Union[None, dict]:
         self.init_status()
         if self.virtual and not self.data_model:
             msg = _(
@@ -826,7 +912,7 @@ class OzonModelBase(OzonMBase):
                 pipeline, sort=sort, limit=limit, skip=skip
             )
 
-    async def set_to_delete(self, record: CoreModel) -> CoreModel:
+    async def set_to_delete(self, record: CoreModel) -> Union[None, CoreModel]:
         self.init_status()
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
@@ -835,14 +921,14 @@ class OzonModelBase(OzonMBase):
         if self.virtual:
             msg = _("Unable to set to delete a virtual model")
             self.error_status(msg, record.get_dict_copy())
-            return False
+            return None
         delete_at_datetime = datetime.now() + timedelta(
             days=self.setting_app.delete_record_after_days
         )
         record.set_to_delete(delete_at_datetime.timestamp())
         return await self.update(record)
 
-    async def set_active(self, record: CoreModel) -> CoreModel:
+    async def set_active(self, record: CoreModel) -> Union[None, CoreModel]:
         self.init_status()
         if not self.chk_write_permission():
             msg = _("Session is Readonly")
@@ -851,7 +937,6 @@ class OzonModelBase(OzonMBase):
         if self.virtual:
             msg = _("Unable to set to delete a virtual model")
             self.error_status(msg, record.get_dict_copy())
-            return False
+            return None
         record.set_active()
-        await self.update(record)
-        return record
+        return await self.update(record)

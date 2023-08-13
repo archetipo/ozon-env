@@ -102,6 +102,7 @@ class MockWorker1(OzonWorkerEnv):
         assert isinstance(v_doc.dg15XVoceCalcolata[0], MainModel) is True
 
         for id, row in enumerate(v_doc.dg15XVoceCalcolata):
+            # row.parent = v_doc.rec_name
             row_dictr = self.virtual_row_doc_model.get_dict_record(
                 row, rec_name=f"{v_doc.rec_name}.{row.nrRiga}"
             )
@@ -114,16 +115,16 @@ class MockWorker1(OzonWorkerEnv):
                     "code": "27",
                     "stato": "caricato",
                     "tipologia": ["a", "b"],
+                    "parent": v_doc.rec_name,
                 }
             )
 
             row_o = await self.virtual_row_doc_model.new(
-                rec_name=f"{v_doc.rec_name}.{row.nrRiga}",
                 data=row_dictr.data.copy(),
                 fields_parser={"code": {"type": "string"}},
                 data_value={"tipologia": ["A", "B"], "stato": "Caricato"},
             )
-            row_o.parent = v_doc.rec_name
+
             assert row_o.nrRiga == row.nrRiga
             assert row_o.rec_name == f"{v_doc.rec_name}.{row.nrRiga}"
             assert row_o.prova == "test"
@@ -266,7 +267,7 @@ class MockWorker2(MockWorker1):
             assert row_o.prova == "test"
             assert row_o.tipologia == ["a", "b"]
             assert row_o.data_value.get('stato') == "Caricato"
-            assert row_o.data_value.get('tipologia') ==["A", "B"]
+            assert row_o.data_value.get('tipologia') == ["A", "B"]
             assert row_o.get('data_value.stato').startswith("Car") is True
             assert row_o.get('dett.test').startswith("a") is True
             assert row_o.stato == "caricato"

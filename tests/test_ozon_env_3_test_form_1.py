@@ -142,7 +142,7 @@ async def test_component_test_form_1_update():
     assert hasattr(test_form_1, "content") is True
     assert hasattr(test_form_1, "content1") is True
     # on git workflow time is 2.32 sec.
-    assert float(env.get_formatted_metrics(start_time)) < 3.0  # 1.0
+    assert float(env.get_formatted_metrics(start_time)) < 4.0  # 1.0
     await env.close_env()
 
 

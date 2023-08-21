@@ -37,7 +37,7 @@ class OzonMBase:
     def __init__(
         self,
         model_name,
-        setting_app: dict = None,
+        setting_app: Settings = None,
         data_model="",
         session_model=False,
         virtual=False,
@@ -63,8 +63,6 @@ class OzonMBase:
 
         if schema is None:
             schema = {}
-        if setting_app is None:
-            setting_app = {}
         self.model = None
         self.name = model_name
         self.setting_app: Settings = setting_app

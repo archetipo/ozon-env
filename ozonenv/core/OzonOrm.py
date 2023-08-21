@@ -1,17 +1,19 @@
 import asyncio
 import copy
-import json
-import sys
 import importlib
+import json
 import logging
 
 # from ozonenv.core.cache.cache import get_cache
 import os
+import sys
 import time as time_
 from os.path import dirname, exists
 
 import aiofiles
 from aiopath import AsyncPath
+from starlette.concurrency import run_in_threadpool
+
 from ozonenv.core.BaseModels import (
     DbViewModel,
     Component,
@@ -36,7 +38,6 @@ from ozonenv.core.db.mongodb_utils import (
 from ozonenv.core.exceptions import SessionException
 from ozonenv.core.i18n import _
 from ozonenv.core.i18n import update_translation
-from starlette.concurrency import run_in_threadpool
 
 logger = logging.getLogger(__file__)
 
@@ -658,7 +659,7 @@ class OzonModel(OzonModelBase):
     ):
         self.orm: OzonOrm = orm
         self.env: OzonEnvBase = orm.env
-        self.setting_app = orm.app_settings.model_copy()
+        self.setting_app: Settings = orm.app_settings
         self.db: Mongo = orm.env.db
         self.mm_from_cache = False
         self.use_cache = False

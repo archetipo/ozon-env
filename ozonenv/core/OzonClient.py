@@ -118,7 +118,7 @@ class OzonClient:
         )
 
     async def post_form(
-        self, action_name, model, form_data: dict = None, files: list = None
+        self, action_name, model, form_data: dict = None, files: dict = None
     ):
         if files is None:
             files = []
@@ -129,7 +129,7 @@ class OzonClient:
             url = f"{url}/{form_data.get('rec_name')}"
         headers = self.get_headers()
         form_data['data_model'] = model
-        if file_dict:
+        if files:
             res = await self.post_form_with_file(
                 url, headers, form_data, files
             )

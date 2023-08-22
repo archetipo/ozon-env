@@ -1,10 +1,19 @@
+import json
 import logging
+from datetime import date, datetime
+
 import aiofiles
 import aiohttp
-import json
 import httpx
 
 logger = logging.getLogger("asyncio")
+
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
 
 
 class OzonClient:
@@ -90,9 +99,8 @@ class OzonClient:
                 return {"status": "error", "message": res}
 
     async def post_form_with_file(
-            self, url, headers, form_data: dict = {}, files: list = []
+        self, url, headers, form_data: dict = {}, files: list = []
     ):
-
         files_to_send = {}
         file_list = []
         headers.pop('content-type')
@@ -105,18 +113,20 @@ class OzonClient:
         return await client.post(
             url,
             files=file_list,
-            data={'formObj': json.dumps(form_data)},
-            headers=headers
+            data={
+                'formObj': json.dumps(
+                    form_data, sort_keys=True, indent=1, default=json_serial
+                )
+            },
+            headers=headers,
         )
 
-    async def post_form_data(
-            self, url, headers, form_data={}
-    ):
+    async def post_form_data(self, url, headers, form_data={}):
         client = httpx.AsyncClient(timeout=10)
         return await client.post(
-            url,
-            data={'formObj': json.dumps(form_data)},
-            headers=headers
+            url, data={'formObj': json.dumps(
+                    form_data, sort_keys=True, indent=1, default=json_serial
+                )}, headers=headers
         )
 
     async def post_form(

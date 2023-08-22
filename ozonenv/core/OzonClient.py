@@ -100,7 +100,7 @@ class OzonClient:
         for f_todo in files:
             f = await aiofiles.open(f_todo['file_path'], 'rb')
             data = await f.read()
-            files_to_send.append((file_dict['file_key'], data))
+            files_to_send.append((f_todo['file_key'], data))
         client = httpx.AsyncClient(timeout=10)
         return await client.post(
             url,

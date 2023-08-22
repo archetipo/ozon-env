@@ -89,7 +89,7 @@ class OzonClient:
                 return {"status": "error", "message": res}
 
     async def post_form_with_file(
-        self, url, headers, form_data: dict = None, files: dict = None
+        self, url, headers, form_data: dict = None, files: list = None
     ):
         if files is None:
             files = []
@@ -118,7 +118,7 @@ class OzonClient:
         )
 
     async def post_form(
-        self, action_name, model, form_data: dict = None, files: dict = None
+        self, action_name, model, form_data: dict = None, files: list = None
     ):
         if files is None:
             files = []

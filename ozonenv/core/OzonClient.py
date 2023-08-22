@@ -89,32 +89,33 @@ class OzonClient:
                 return {"status": "error", "message": res}
 
     async def post_form_with_file(
-        self, url, headers, form_data: dict = None, files: list = None
+            self, url, headers, form_data: dict = {}, files: list = []
     ):
-        if files is None:
-            files = []
-        if form_data is None:
-            form_data = {}
-        files_to_send = []
+
+        files_to_send = {}
+        file_list = []
         headers.pop('content-type')
         for f_todo in files:
             f = await aiofiles.open(f_todo['file_path'], 'rb')
             data = await f.read()
-            files_to_send.append((f_todo['file_key'], data))
+            file_list.append((f_todo['file_key'], (f_todo['file_name'], data)))
+            await f.close()
         client = httpx.AsyncClient(timeout=10)
         return await client.post(
             url,
-            files=files_to_send,
+            files=file_list,
             data={'formObj': json.dumps(form_data)},
-            headers=headers,
+            headers=headers
         )
 
-    async def post_form_data(self, url, headers, form_data: dict = None):
-        if form_data is None:
-            form_data = {}
+    async def post_form_data(
+            self, url, headers, form_data={}
+    ):
         client = httpx.AsyncClient(timeout=10)
         return await client.post(
-            url, data={'formObj': json.dumps(form_data)}, headers=headers
+            url,
+            data={'formObj': json.dumps(form_data)},
+            headers=headers
         )
 
     async def post_form(

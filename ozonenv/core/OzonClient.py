@@ -101,7 +101,6 @@ class OzonClient:
     async def post_form_with_file(
         self, url, headers, form_data: dict = {}, files: list = []
     ):
-        files_to_send = {}
         file_list = []
         headers.pop('content-type')
         for f_todo in files:
@@ -124,9 +123,13 @@ class OzonClient:
     async def post_form_data(self, url, headers, form_data={}):
         client = httpx.AsyncClient(timeout=10)
         return await client.post(
-            url, data={'formObj': json.dumps(
+            url,
+            data={
+                'formObj': json.dumps(
                     form_data, sort_keys=True, indent=1, default=json_serial
-                )}, headers=headers
+                )
+            },
+            headers=headers,
         )
 
     async def post_form(

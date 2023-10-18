@@ -113,7 +113,6 @@ async def test_add_component_resource_1_product():
     products = await product_model.find(
         product_model.get_domain())
     assert len(products) == 10
-    print(products)
     assert isinstance(products[3], CoreModel)
     assert products[3].rec_name == "prod6"
     products = await product_model.find(

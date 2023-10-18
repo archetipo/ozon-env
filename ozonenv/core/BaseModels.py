@@ -281,16 +281,20 @@ class MainModel(BaseModel):
             lastplace = reduce(operator.getitem, keys[:-1], dict(data))
             return lastplace.get(keys[-1], default)
         except Exception as e:
-            print(f" error scan_data {e} field not foud")
+            print(f" error scan_data {e} field not found")
             return default
 
     def get(self, val, default: Optional = None):
-        if "." in val:
-            return self.scan_data(val, default)
-        elif default:
-            return getattr(self, val, default)
-        else:
-            return getattr(self, val)
+        try:
+            if "." in val:
+                return self.scan_data(val, default)
+            elif default:
+                return getattr(self, val, default)
+            else:
+                return getattr(self, val)
+        except Exception as e:
+            print(f" error  {e} field {val} not found return default")
+            return default
 
     def set_from_child(self, key, nodes: str, default):
         setattr(self, key, self.get(nodes, default))

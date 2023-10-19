@@ -3,7 +3,6 @@ import logging
 from datetime import date, datetime
 
 import aiofiles
-import aiohttp
 import httpx
 
 logger = logging.getLogger("asyncio")
@@ -236,9 +235,9 @@ class LabelPrinter:
         headers = self.get_headers()
 
         try:
-            async with aiohttp.ClientSession() as client:
-                async with client.get(url, headers=headers) as resp:
-                    return await resp.json()
+            async with httpx.AsyncClient(timeout=None) as client:
+                resp = await client.get(url, headers=headers)
+                return resp.json()
         except Exception as e:
             logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}
@@ -249,11 +248,9 @@ class LabelPrinter:
         headers = self.get_headers()
 
         try:
-            async with aiohttp.ClientSession() as client:
-                async with client.post(
-                    url, json=payload, headers=headers
-                ) as resp:
-                    return await resp.json()
+            async with httpx.AsyncClient(timeout=None) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+                return resp.json()
         except Exception as e:
             logger.error(e, exc_info=True)
             return {"status": "error", "message": str(e)}

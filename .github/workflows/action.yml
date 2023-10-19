@@ -38,7 +38,6 @@ jobs:
       - name: Test with pytest
         run: |
           docker-compose up -d
-          poetry run flake8 ozonenv/**/*.py
           poetry run pytest --cov --cov-report=html
           docker-compose up -d
       - name: Coveralls

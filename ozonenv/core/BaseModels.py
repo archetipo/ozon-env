@@ -169,6 +169,7 @@ class DbViewModel(BaseModel):
 
 
 class MainModel(BaseModel):
+
     @classmethod
     def str_name(cls, *args, **kwargs):
         return cls.model_json_schema(*args, **kwargs).get("title", "").lower()
@@ -321,6 +322,7 @@ class MainModel(BaseModel):
         "populate_by_name": True,
         "arbitrary_types_allowed": True,
         "json_encoders": BSON_TYPES_ENCODERS,
+        "alias_generator": lambda f_name: f_name.replace(".", "_"),
     }
 
 

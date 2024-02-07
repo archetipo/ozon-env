@@ -632,7 +632,7 @@ class surveyComponent(Component):
                 value = {
                     "label": val_label,
                     "value": b_val["value"],
-                    "checked": False
+                    "checked": False,
                     # default as fallback (if new values in builder)
                 }
 

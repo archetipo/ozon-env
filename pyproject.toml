@@ -26,7 +26,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-pydantic = "=2.5.3"
+pydantic = ">=2.0b3,<=2.5.3"
 httpx = ">=0.23.0"
 pytz = ">=2023.3"
 motor = ">=3.1.1"

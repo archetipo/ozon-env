@@ -10,5 +10,5 @@ pip install --upgrade -e .
 echo "run test"
 poetry run pytest --cov --cov-report=html -vv
 docker compose down
-#rm -rf tests/models
+rm -rf tests/models
 echo "make project: Done."

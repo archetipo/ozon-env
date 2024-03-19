@@ -9,7 +9,7 @@
 <a href="https://github.com/archetipo/ozon-env"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 </p>
 
-ozon-env lib is a api system to interact with Service App project
+ozon-env lib is an api system to interact with [Service App](https://github.com/INRIM/service-app) project
 
 For information about the Service App project,
 see https://github.com/INRIM/service-app

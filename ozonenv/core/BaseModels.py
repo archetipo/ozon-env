@@ -17,7 +17,7 @@ import typing_extensions
 
 # from datetime import datetime
 from dateutil.parser import parse
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer, model_validator
 from typing_extensions import Literal
 
 import ozonenv
@@ -169,6 +169,15 @@ class DbViewModel(BaseModel):
 
 
 class MainModel(BaseModel):
+
+    # @model_validator(mode="before")
+    # def handle_naive_datetime(cls, values):
+    #     for field, value in values.items():
+    #         if isinstance(value, datetime) and value.tzinfo is None:
+    #             # If the datetime is naive, leave it or modify it here (set UTC timezone if needed)
+    #             # Uncomment below if you want to make the naive datetime timezone-aware (UTC)
+    #             # values[field] = value.replace(tzinfo=timezone.utc)
+    #             values[field]
 
     @classmethod
     def str_name(cls, *args, **kwargs):
@@ -323,6 +332,7 @@ class MainModel(BaseModel):
         "arbitrary_types_allowed": True,
         "json_encoders": BSON_TYPES_ENCODERS,
         "alias_generator": lambda f_name: f_name.replace(".", "_"),
+        "tz_aware": False,
     }
 
 

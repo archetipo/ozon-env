@@ -22,7 +22,7 @@ class MockWorker1(OzonWorkerEnv):
         assert self.p_model.data_model == "documento"
 
         self.virtual_doc_model = await self.add_model(
-            'virtual_doc', virtual=True, data_model=self.p_model.data_model
+            'virtual_doc', virtual=True, data_model=self.p_model.name
         )
 
         self.virtual_row_doc_model = await self.add_model(

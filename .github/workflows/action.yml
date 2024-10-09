@@ -39,7 +39,7 @@ jobs:
         run: |
           docker-compose up -d
           poetry run pytest --cov --cov-report=html
-          docker-compose up -d
+          docker-compose down
       - name: Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

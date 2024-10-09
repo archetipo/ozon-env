@@ -41,7 +41,9 @@ Babel = ">=2.10.3"
 anyio = ">=0.20"
 starlette = ">=0.20.4"
 redis = ">=4.2.0rc1"
-datamodel-code-generator = ">=0.24.0,<=0.24.4"
+#datamodel-code-generator = ">=0.24.0,<=0.24.4"
+datamodel-code-generator = ">=0.25.5"
+pendulum = ">=3.0.0"
 iso8601 = "*"
 
 

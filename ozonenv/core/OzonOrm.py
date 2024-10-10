@@ -616,7 +616,7 @@ class OzonOrm:
                 ].get_data_model()
             if data_model and virtual:
                 data_model_o = self.env.models.get(data_model)
-                if data_model_o.data_model:
+                if data_model_o and data_model_o.data_model:
                     data_model = data_model_o.data_model
             self.env.models[model_name] = self.cls_model(
                 model_name,

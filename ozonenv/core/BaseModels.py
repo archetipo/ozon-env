@@ -7,17 +7,18 @@ import json
 import logging
 import operator
 import re
+from dataclasses import dataclass
 from datetime import datetime
 from functools import reduce
 from typing import Any
-from typing import List, Optional, Dict
-from typing import TypeVar
+from typing import Optional
+from typing import TypeVar, Generic, List, Dict
 
 import typing_extensions
 
 # from datetime import datetime
 from dateutil.parser import parse
-from pydantic import BaseModel, Field, field_serializer, model_validator
+from pydantic import BaseModel, Field, field_serializer
 from typing_extensions import Literal
 
 import ozonenv
@@ -31,6 +32,7 @@ defaultdt = '1970-01-01T00:00:00'
 logger = logging.getLogger("asyncio")
 
 T = TypeVar("T", bound=BaseModel)
+D = TypeVar("D")
 ModelType = TypeVar("ModelType", bound=BaseModel)
 
 default_fields = [
@@ -1610,3 +1612,10 @@ class Settings(BasicModel):
     @classmethod
     def get_data_model(cls):
         return ""
+
+
+@dataclass
+class DataReturn(Generic[D]):
+    data: D | None = None
+    fail: bool = False
+    msg: str = ""

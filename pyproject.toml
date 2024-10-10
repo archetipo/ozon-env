@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ozon-env"
-version = "2.2.15"
+version = "2.2.16"
 homepage = "https://github.com/archetipo/ozon-env"
 description = "Ozon Env API"
 readme = "README.md"
@@ -34,14 +34,14 @@ ujson = ">=5.5.0"
 python-dateutil = ">=2.8.2"
 json_logic_qubit = ">=0.9.1"
 aiofiles = ">=22.1.0"
-aiopath = [{version = "^0.6.11", python =">=3.10,<3.12"},{version = ">=0.7.7", python =">=3.12,<4"}]
-setuptools = {version =">=75.1.0", python =">=3.12"}
+aiopath = [{ version = "^0.6.11", python = ">=3.10,<3.12" }, { version = ">=0.7.7", python = ">=3.12,<4" }]
+setuptools = { version = ">=75.1.0", python = ">=3.12" }
 jinja2 = ">=3.1.4"
 Babel = ">=2.10.3"
 anyio = ">=0.20"
 starlette = ">=0.39.2"
 redis = ">=4.2.0rc1"
-datamodel-code-generator = ">=0.24.0,<=0.24.4"
+datamodel-code-generator = { git = "https://github.com/archetipo/datamodel-code-generator.git", branch = "support_multiple_datime_types" }
 #datamodel-code-generator = ">=0.25.5"
 pendulum = ">=3.0.0"
 iso8601 = "*"
@@ -86,9 +86,8 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     # note the use of single quote below to denote "raw" strings in TOML
     'ignore:function ham\(\) is deprecated:DeprecationWarning',
-
 ]
-show-capture='all'
+show-capture = 'all'
 
 [tool.coverage.report]
 ignore_errors = true

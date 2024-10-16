@@ -252,7 +252,6 @@ class OzonMBase:
 
     def decode_datetime(self, data):
         if self.name not in ["component", "session"]:
-            print(f"clean data for {self.name}")
             # cleaner: BasicModel = self.model(**{})
             data = self.model.compute_datetime_fields(data, '', defaultdt)
         return data

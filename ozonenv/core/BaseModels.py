@@ -322,6 +322,7 @@ class MainModel(BaseModel):
                 val = f"{prefix} {val}"
             setattr(self, key, val)
         else:
+            val = value
             if prefix:
                 val = f"{prefix} {val}"
             setattr(self, key, val)

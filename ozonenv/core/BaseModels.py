@@ -314,13 +314,17 @@ class MainModel(BaseModel):
     def set(self, key, value):
         setattr(self, key, value)
 
-    def add_text(self, key, value: str):
+    def add_text(self, key, value: str, prefix:str=""):
         val = getattr(self, key)
         if val and not val == "":
             val = f"{val}, {value}"
+            if prefix:
+                val = f"{prefix} {val}"
             setattr(self, key, val)
         else:
-            setattr(self, key, value)
+            if prefix:
+                val = f"{prefix} {val}"
+            setattr(self, key, val)
 
     def set_many(self, data_dict):
         for k, v in data_dict.items():

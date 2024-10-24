@@ -314,6 +314,14 @@ class MainModel(BaseModel):
     def set(self, key, value):
         setattr(self, key, value)
 
+    def add_text(self, key, value: str):
+        val = getattr(self, key)
+        if val and not val == "":
+            val = f"{val}, {value}"
+            setattr(self, key, val)
+        else:
+            setattr(self, key, value)
+
     def set_many(self, data_dict):
         for k, v in data_dict.items():
             if hasattr(self, k):

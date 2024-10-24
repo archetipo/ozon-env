@@ -92,7 +92,7 @@ class MockWorker1(OzonWorkerEnv):
         v_doc.selection_value_resources("document_type", "ordine", DOC_TYPES)
         v_doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
         v_doc.tipologia = ["a", "b"]
-        v_doc.stato = "caricato"
+        v_doc.add_text("stato", "caricato")
 
         assert v_doc.ammImpEuro == 1446.16
         assert v_doc.dg18XIndModOrdinat.cdCap == 10133

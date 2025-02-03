@@ -314,7 +314,7 @@ class MainModel(BaseModel):
     def set(self, key, value):
         setattr(self, key, value)
 
-    def add_text(self, key, value: str, prefix:str=""):
+    def add_text(self, key, value: str, prefix: str = ""):
         val = getattr(self, key)
         if val and not val == "":
             val = f"{val}, {value}"

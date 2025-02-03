@@ -107,10 +107,7 @@ omit = [
     "ozonenv/core/OzonClient.py"
 ]
 
-[project]
-dynamic = ["dependencies"]
 
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+
 
 

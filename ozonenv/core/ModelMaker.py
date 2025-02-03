@@ -972,7 +972,7 @@ class FormioModelMaker(BaseModelMaker):
         try:
             field.eval_components()
         except Exception as e:
-            logger.error(f"Error eval_components {field.key} {e}")
+            logger.error(f"Error eval_component {field.key} {e}")
 
     def complete_component_field(self, comp, compo_todo):
         builder = self

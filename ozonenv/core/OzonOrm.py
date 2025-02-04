@@ -552,7 +552,7 @@ class OzonOrm:
         return {mod.mm.conditional}
 """
         async with aiofiles.open(
-            f"{self.models_path}/{mod.name}.py", "a+"
+            f"{self.models_path}/{mod.name}.py", "a+", encoding="utf-8"
         ) as mod_file:
             await mod_file.write(tmp)
 

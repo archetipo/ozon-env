@@ -453,7 +453,9 @@ class OzonOrm:
 
     async def make_local_model(self, mod, version):
         jdata = mod.mm.model.model_json_schema()
-        async with aiofiles.open(f"/tmp/{mod.name}.json", "w+") as mod_file:
+        async with aiofiles.open(
+            f"/tmp/{mod.name}.json", "w+", encoding="utf-8"
+        ) as mod_file:
             await mod_file.write(json.dumps(jdata, ensure_ascii=False))
         res = await self.runcmd(
             f"datamodel-codegen --input /tmp/{mod.name}.json"

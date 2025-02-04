@@ -41,8 +41,7 @@ Babel = ">=2.10.3"
 anyio = ">=0.20"
 starlette = ">=0.39.2"
 redis = ">=4.2.0rc1"
-datamodel-code-generator = { git = "https://github.com/archetipo/datamodel-code-generator.git", branch = "support_multiple_datime_types" }
-#datamodel-code-generator = ">=0.25.5"
+datamodel-code-generator = ">=0.26.5"
 pendulum = ">=3.0.0"
 iso8601 = "*"
 

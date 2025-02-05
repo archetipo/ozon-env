@@ -727,7 +727,9 @@ class OzonModelBase(OzonMBase):
             return {}
         if data.get("_id"):
             data.pop("_id")
-        return json.loads(json.dumps(data, cls=JsonEncoder, ensure_ascii=False))
+        return json.loads(
+            json.dumps(data, cls=JsonEncoder, ensure_ascii=False)
+        )
 
     async def find(
         self, domain: dict, sort: str = "", limit=0, skip=0, pipeline_items=[]
@@ -744,7 +746,8 @@ class OzonModelBase(OzonMBase):
         if datas:
             for rec_dat in datas:
                 rec_data = json.loads(
-                    json.dumps(rec_dat, cls=JsonEncoder, ensure_ascii=False))
+                    json.dumps(rec_dat, cls=JsonEncoder, ensure_ascii=False)
+                )
                 if "_id" in rec_data:
                     rec_data['id'] = rec_data.pop("_id")
                 if self.virtual:
@@ -824,7 +827,8 @@ class OzonModelBase(OzonMBase):
         res = []
         for rec_dat in datas:
             rec_data = json.loads(
-                json.dumps(rec_dat, cls=JsonEncoder), ensure_ascii=False)
+                json.dumps(rec_dat, cls=JsonEncoder, ensure_ascii=False)
+            )
             agg_mm = ModelMaker(f"{self.data_model}.agg")
             if "_id" in rec_data:
                 rec_data['id'] = rec_data.pop("_id")

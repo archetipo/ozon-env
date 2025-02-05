@@ -157,6 +157,11 @@ class OzonClient:
                 if r.get("status") == "error":
                     result["status"] = "error"
                     return result
+            elif isinstance(res, dict):
+                if "data" in res:
+                    result["data"] = res["data"]
+                    return result
+
             return result
         else:
             return {"status": "error", "message": res}

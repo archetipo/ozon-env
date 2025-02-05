@@ -1,6 +1,7 @@
-name: CI
+name: ci
 
-on: [push, pull_request]
+on: [ push,pull_request ]
+
 
 jobs:
   ci:
@@ -9,45 +10,40 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
-        os: [ubuntu-latest]
+        python-version: [ "3.10", "3.11", "3.12" ]
+        os: [ ubuntu-latest ]
     defaults:
       run:
         shell: bash
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
+      ISORT: ${{ matrix.isort-version }}
     steps:
+      - uses: docker-practice/actions-setup-docker@master
+      - run: |
+            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+      - run: |
+          set -x
+          docker version
+          docker-compose --version
       - uses: actions/checkout@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-
-      - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
-
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install poetry
           pip install -e .
           poetry install --no-interaction --no-root
-
       - name: Test with pytest
         run: |
-          docker compose up -d
+          docker-compose up -d
           poetry run pytest --cov --cov-report=html
-          docker compose down
-
+          docker-compose down
       - name: Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

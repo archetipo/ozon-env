@@ -107,7 +107,7 @@ class OzonClient:
             data = await f.read()
             file_list.append((f_todo['file_key'], (f_todo['file_name'], data)))
             await f.close()
-        client = httpx.AsyncClient(timeout=10)
+        client = httpx.AsyncClient(timeout=120)
         return await client.post(
             url,
             files=file_list,
@@ -120,7 +120,7 @@ class OzonClient:
         )
 
     async def post_form_data(self, url, headers, form_data={}):
-        client = httpx.AsyncClient(timeout=10)
+        client = httpx.AsyncClient(timeout=90)
         return await client.post(
             url,
             data={

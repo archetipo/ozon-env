@@ -4,6 +4,8 @@ import logging
 from pydantic import BaseModel
 from pymongo.collection import Collection
 from pymongo.typings import _DocumentType
+from pymongo.write_concern import WriteConcern
+
 
 logger = logging.getLogger("asyncio")
 
@@ -42,8 +44,13 @@ async def connect_to_mongo(settings: DbSettings):
             maxIdleTimeMS=10000,
             socketTimeoutMS=None,
             minPoolSize=20)
-        db.engine = db.client[settings.mongo_db]  #
-        logging.info("connected new connection")
+    write_concern = WriteConcern(
+        w="majority",  # Conferma da majority dei nodi
+        j=True,  # Attendere il journal
+        wtimeout=5000,  # Timeout in millisecondi
+    )
+    db.engine = db.client.get_database(settings.mongo_db, write_concern=write_concern)  #
+    logging.info("connected new connection")
     return db
 
 

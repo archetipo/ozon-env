@@ -12,6 +12,7 @@ import pydantic
 import pymongo
 from dateutil.parser import parse
 from pydantic._internal._model_construction import ModelMetaclass
+from pymongo.errors import DuplicateKeyError, OperationFailure
 
 from ozonenv.core.BaseModels import (
     Component,
@@ -562,8 +563,8 @@ class OzonModelBase(OzonMBase):
             )
             if "_id" not in to_save:
                 to_save['_id'] = bson.ObjectId(to_save['id'])
-            result_save = await coll.insert_one(to_save)
             result = None
+            result_save = await coll.insert_one(to_save)
             if result_save:
                 return await self.load({"rec_name": to_save['rec_name']})
             self.error_status(
@@ -673,6 +674,21 @@ class OzonModelBase(OzonMBase):
                 record.get_dict_copy(),
             )
             return None
+        except OperationFailure as e:
+            logger.error(f" OperationFailure {e}")
+            self.error_status(
+                _("OperationFailure Error  %s ") % str(e),
+                record.get_dict_copy(),
+            )
+            if e.code == 112:  # WriteConflict (transazioni)
+                logger.error(f"Conflitto di scrittura")
+                self.error_status(
+                    _("Conflitto di scrittura "),
+                    record.get_dict_copy(),
+                )
+                return None
+            else:
+                return None
 
     async def remove(self, record: CoreModel) -> bool:
         self.init_status()

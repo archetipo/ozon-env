@@ -18,11 +18,14 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 
 dependencies = [
-    "pydantic>=2.12.5",
+    "pydantic>=2.12.5; python_version < '3.15'",
+    "pydantic>=2.14.0; python_version >= '3.15'",
     "httpx>=0.28.1",
     "pytz>=2025.2",
     "motor>=3.7.1",
@@ -35,7 +38,8 @@ dependencies = [
     "anyio>=4.10.0",
     "starlette>=0.52.1",
     "redis>=5.3.1",
-    "datamodel-code-generator==0.54.0",
+    "datamodel-code-generator==0.54.0; python_version < '3.15'",
+    "datamodel-code-generator==0.96.0; python_version >= '3.15'",
     "pendulum>=3.0.0",
     "iso8601",
     "setuptools>=82.0.0; python_version >= '3.12'"

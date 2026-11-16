@@ -219,7 +219,7 @@ class MainModel(BaseModel):
             _keys = key.split(".")
             keys = []
             for v in _keys:
-                if str(v).isdigit():
+                if str(v).lstrip("-").isdigit() and str(v).count("-") < 2:
                     keys.append(int(v))
                 else:
                     keys.append(v)
@@ -934,7 +934,7 @@ class DictRecord(BaseModel):
             _keys = key.split(".")
             keys = []
             for v in _keys:
-                if str(v).isdigit():
+                if str(v).lstrip("-").isdigit() and str(v).count("-") < 2:
                     keys.append(int(v))
                 else:
                     keys.append(v)

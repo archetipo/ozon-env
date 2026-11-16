@@ -74,6 +74,48 @@ async def test_env_data_file_virtual_model():
 
 
 @pytestmark
+async def test_env_data_file_virtual_model_negative_numbers():
+    env = OzonEnv()
+    await env.init_env()
+    env.params = {"current_session_token": "BA6BA930"}
+    await env.session_app()
+    data = await get_file_data()
+    data['stato'] = "caricato"
+    data['document_type'] = "nota_credito"
+    data['ammImpEuro'] = -1446.16
+    data['saldo'] = "-289.23"
+    data['qta'] = "-3"
+    data['dg15XVoceTe']['importo'] = "-1446.16"
+    data['dg15XVoceCalcolata'][1]['imponibile'] = "-1446.16"
+    data['dg15XVoceCalcolata'][1]['aliquota'] = "-20"
+    virtual_doc_model = await env.add_model('virtual_doc_neg', virtual=True)
+    assert virtual_doc_model.virtual is True
+    doc = await virtual_doc_model.new(
+        data=data, rec_name="virtual_data.negative"
+    )
+    assert virtual_doc_model.is_error() is False
+    assert doc.get('rec_name') == 'virtual_data.negative'
+    assert doc.ammImpEuro == -1446.16
+    assert doc.saldo == -289.23
+    assert doc.qta == -3
+    assert type(doc.qta) is int
+    assert doc.dg15XVoceTe.get('importo') == -1446.16
+    assert doc.get('dg15XVoceCalcolata.1.imponibile') == -1446.16
+    assert doc.dg15XVoceCalcolata[1].get('aliquota') == -20
+    # negative index: last row of the list
+    assert doc.get('dg15XVoceCalcolata.-1.imponibile') == doc.get(
+        f"dg15XVoceCalcolata.{len(doc.dg15XVoceCalcolata) - 1}.imponibile"
+    )
+    # positive values are untouched
+    assert doc.idDg == 99999
+    assert doc.get('annoRif') == 2022
+    doc.set_from_child('ammImpEuro', 'dg15XVoceTe.importo', 0.0)
+    assert doc.ammImpEuro == -1446.16
+
+    await env.close_db()
+
+
+@pytestmark
 async def test_component_test_form_1_init():
     env = OzonEnv()
     await env.init_env()

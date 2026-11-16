@@ -824,13 +824,18 @@ class BaseModelMaker:
     def get_field_value(self, v):
         type_def = self.type_def
         s = v
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            # native numbers keep sign and precision as they are
+            return v
         if not isinstance(v, str):
             s = str(v)
         if s in ["false", "true", "True", "False"]:
             return bool("true" == s.lower())
+        # the optional sign keeps negative numbers negative ("-12.5")
         regex = re.compile(
-            r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])|(?P<float>\d*\.\d+)"
-            r"|(?P<int>\d+)|(?P<string>[a-zA-Z]+)"
+            r"(?P<dict>\{[^{}]+\})|(?P<list>\[[^]]+\])"
+            r"|(?P<float>[-+]?\d*\.\d+)"
+            r"|(?P<int>[-+]?\d+)|(?P<string>[a-zA-Z]+)"
         )
         dtr = self.regex_dt.search(s)
         if dtr:

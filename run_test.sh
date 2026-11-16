@@ -12,7 +12,9 @@ trap cleanup EXIT
 echo "setup poetry env"
 poetry config virtualenvs.in-project true --local
 if ! poetry env info --path >/dev/null 2>&1; then
-  if command -v python3.14 >/dev/null 2>&1; then
+  if command -v python3.15 >/dev/null 2>&1; then
+    poetry env use "$(command -v python3.15)"
+  elif command -v python3.14 >/dev/null 2>&1; then
     poetry env use "$(command -v python3.14)"
   elif command -v python3.12 >/dev/null 2>&1; then
     poetry env use "$(command -v python3.12)"
